@@ -6,6 +6,10 @@ sentence embeddings — SetPoolN lineage). Reference task: train on Steam
 reviews, evaluate on wiki-derived rewritten queries under the
 fully-inductive R60 protocol.
 
+## Paper appendices (supplementary material)
+
+The paper's Appendices A–K — detailed experimental settings, hyperparameter sweeps, the full ablation tables (A1–A14), the query-rewrite prompts, and the tag-vocabulary definition — are in [`APPENDIX.pdf`](APPENDIX.pdf) (source: `APPENDIX.docx`). Appendix letters and table numbers match the citations in the paper.
+
 ## Three layers (strictly one-way dependencies: experiment → framework → main_model)
 
 ```
