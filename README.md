@@ -6,6 +6,10 @@ sentence embeddings — SetPoolN lineage). Reference task: train on Steam
 reviews, evaluate on wiki-derived rewritten queries under the
 fully-inductive R60 protocol.
 
+## Interactive Figure 4 (trend river)
+
+[`figures/trend_river/`](figures/trend_river/) holds the interactive generator of the paper's content-trend river plus its bundled dataset (1,919 games: champion-tower centroids, release times, coarse tags, titles). Open `cluster_share_stack.html` in any browser — no build step. See its README for the data schema and the pressure-driven event model behind the stream junctions.
+
 ## Paper appendices (supplementary material)
 
 The paper's Appendices A–K — detailed experimental settings, hyperparameter sweeps, the full ablation tables (A1–A14), the query-rewrite prompts, and the tag-vocabulary definition — are in [`APPENDIX.pdf`](APPENDIX.pdf) (source: `APPENDIX.docx`). Appendix letters and table numbers match the citations in the paper.

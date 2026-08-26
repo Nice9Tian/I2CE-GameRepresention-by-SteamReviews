@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cluster Heat Flow · Pressure-Driven Event Model</title>
+<style>
+  :root{ --bg:#06060e; --ink:#c9cee0; --dim:#5a6078; --accent:#7ec8ff; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+    font-family:"SF Mono","Cascadia Code",Consolas,monospace;
+    color:var(--ink)}
+  canvas{display:block;position:fixed;inset:0}
+  #hud{position:fixed;top:22px;left:26px;pointer-events:none;z-index:10}
+  #hud h1{font-size:15px;font-weight:600;letter-spacing:.14em}
+  #hud .sub{margin-top:6px;font-size:11px;letter-spacing:.08em;color:var(--dim);line-height:1.7}
+  #hud .sub b{color:var(--accent);font-weight:500}
+  #panel{position:fixed;bottom:22px;left:26px;z-index:10;
+    display:flex;flex-direction:column;gap:12px;
+    background:rgba(10,11,22,.72);border:1px solid rgba(126,200,255,.14);
+    padding:16px 18px;border-radius:6px;backdrop-filter:blur(6px);min-width:270px;
+    max-height:74vh;overflow-y:auto}
+  .ctl{display:flex;flex-direction:column;gap:6px}
+  .ctl label{font-size:10px;letter-spacing:.12em;color:var(--dim);
+    display:flex;justify-content:space-between}
+  .ctl label output{color:var(--accent)}
+  .ctl .hint{font-size:9px;color:var(--dim);letter-spacing:.06em;
+    display:flex;justify-content:space-between;opacity:.75}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;
+    background:rgba(126,200,255,.22);border-radius:1px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:11px;height:11px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px rgba(126,200,255,.8)}
+  #panel button{background:rgba(126,200,255,.12);border:1px solid rgba(126,200,255,.3);
+    color:var(--accent);font:inherit;font-size:10px;letter-spacing:.12em;
+    padding:6px 10px;border-radius:4px;cursor:pointer}
+  #panel button:hover{background:rgba(126,200,255,.22)}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud">
+  <h1>HEAT FLOW · CLUSTER RELEASE SHARE · PRESSURE-DRIVEN EVENTS</h1>
+  <div class="sub">
+    Main-stream width = an event ledger: <b>it changes only at the vertical fork/merge steps</b>, constant between events<br>
+    Share changes deposit continuously as pending parcels; opposite parcels inside a cluster cancel first (wiggles annihilate locally)<br>
+    <b>Pairwise trigger</b>: pair (i, j) transports when source surplus pressure P_i + target deficit pressure Q_j > Θ·(1+D²/ε)<br>
+    Pressure accrues as m·(e^{β·age}−1); semantically close pairs fire first, so each target receives at its own time
+  </div>
+</div>
+
+<div id="panel">
+  <div class="ctl">
+    <label>Clusters K <output id="kOut">8</output></label>
+    <input type="range" id="k" min="3" max="14" step="1" value="8">
+  </div>
+  <div class="ctl">
+    <label>Decay τ (years) <output id="tauOut">0.60</output></label>
+    <input type="range" id="tau" min="0.05" max="3" step="0.05" value="0.6">
+  </div>
+  <div class="ctl">
+    <label>Pressure rate β (/year) <output id="btOut">0.7</output></label>
+    <input type="range" id="bt" min="0.1" max="20" step="0.1" value="0.7">
+    <div class="hint"><span>← slow build-up, may linger</span><span>fast build-up, ships early →</span></div>
+  </div>
+  <div class="ctl">
+    <label>Trigger threshold Θ <output id="thOut">0.1000</output></label>
+    <input type="range" id="th" min="0.0002" max="0.2" step="0.0002" value="0.1">
+    <div class="hint"><span>← many small events</span><span>few large events →</span></div>
+  </div>
+  <div class="ctl">
+    <label>Warm-up trim A (years) <output id="waOut">1.00</output></label>
+    <input type="range" id="wa" min="0" max="6" step="0.25" value="1">
+  </div>
+  <div class="ctl">
+    <label>Tail trim B (years) <output id="wbOut">0.50</output></label>
+    <input type="range" id="wb" min="0" max="6" step="0.25" value="0.5">
+  </div>
+  <div class="ctl">
+    <label>Cost sharpness ε <output id="epsOut">0.08</output></label>
+    <input type="range" id="eps" min="0.01" max="1" step="0.01" value="0.08">
+    <div class="hint"><span>← semantic neighbours only</span><span>allow far jumps →</span></div>
+  </div>
+  <div class="ctl">
+    <label>Anchor interval (years) <output id="mkOut">2</output></label>
+    <input type="range" id="mk" min="1" max="4" step="1" value="2">
+  </div>
+  <div class="ctl">
+    <label>Anchor font px <output id="fsOut">8.5</output></label>
+    <input type="range" id="fs" min="6" max="18" step="0.5" value="8.5">
+  </div>
+  <div class="ctl">
+    <label>Anchor dot px <output id="dsOut">2.4</output></label>
+    <input type="range" id="ds" min="0" max="6" step="0.2" value="2.4">
+  </div>
+  <div class="ctl">
+    <label>Lane label font px <output id="lsOut">10</output></label>
+    <input type="range" id="ls" min="6" max="20" step="0.5" value="10">
+  </div>
+  <div class="ctl">
+    <label>Ribbon min width px <output id="mwOut">1.0</output></label>
+    <input type="range" id="mw" min="0.5" max="8" step="0.5" value="1">
+  </div>
+  <div class="ctl">
+    <label style="flex-direction:row;justify-content:space-between;align-items:center">
+      Edit labels (drag game titles)
+      <input type="checkbox" id="edit" style="accent-color:var(--accent);width:auto">
+    </label>
+    <div class="hint"><span>Offsets persist in the browser and survive export</span></div>
+  </div>
+  <div class="ctl">
+    <button id="save">Export PNG (canvas only)</button>
+  </div>
+  <div class="ctl">
+    <label>Prune flows below share <output id="prOut">0.002</output></label>
+    <input type="range" id="prune" min="0" max="0.05" step="0.0005" value="0.002">
+  </div>
+  <div class="ctl">
+    <label style="flex-direction:row;justify-content:space-between;align-items:center">
+      Paper mode PAPER FIT
+      <input type="checkbox" id="paper" style="accent-color:var(--accent);width:auto">
+    </label>
+  </div>
+</div>
+
+<script src="games_raw.js"></script>
+<script>
+let K=8;
+let GAMES=[], CLUSTER_LABELS=[], CLUSTER_DIST=[];
+let LANE_OF=null, CENT_LANE=null, LANE_USTD=[], LANE_UMEAN=[], ANCHORS=[];
+let MARK=2;
+const T_END=8, YEAR0=2017;
+
+let TAU=0.6, EPS=0.08, PRUNE=0.002, PAPER=false;
+let WARM_A=1.0, WARM_B=0.5;
+let BETA=0.7;                  // exponential pressure rate (/year)
+let THR=0.100;                 // event trigger threshold (= cost per event)
+let FONTA=8.5, FONTL=10, DOTR=2.4, MINW=1.0, EDITMODE=false;
+let LABEL_OFF={};
+try{ LABEL_OFF=JSON.parse(localStorage.getItem('hf_label_off')||'{}'); }catch(e){}
+let ANCHOR_HITS=[];            // label hit boxes for edit-mode dragging
+const DENS=24;                 // internal integration grid, steps/year
+
+/* ---- in-browser spherical k-means (seeded, deterministic per K) ---- */
+function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;
+  let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;
+  return((t^t>>>14)>>>0)/4294967296}}
+function recluster(){
+  const N=RAW_N, D=RAW_D, V=RAW_VEC, rnd=mulberry(42);
+  const cent=new Float32Array(K*D);
+  cent.set(V.subarray(0,D),0);
+  const d2=new Float32Array(N).fill(Infinity);
+  for(let c=1;c<K;c++){
+    let sum=0;
+    for(let i=0;i<N;i++){
+      let dot=0; const pc=(c-1)*D, pi=i*D;
+      for(let d=0;d<D;d++) dot+=V[pi+d]*cent[pc+d];
+      const dd=Math.max(2-2*dot,0);
+      if(dd<d2[i]) d2[i]=dd;
+      sum+=d2[i];
+    }
+    let r=rnd()*sum, pick=N-1;
+    for(let i=0;i<N;i++){ r-=d2[i]; if(r<=0){pick=i;break;} }
+    cent.set(V.subarray(pick*D,(pick+1)*D), c*D);
+  }
+  const asn=new Int32Array(N);
+  for(let it=0;it<40;it++){
+    let moved=0;
+    for(let i=0;i<N;i++){
+      let best=0,bd=-Infinity; const pi=i*D;
+      for(let c=0;c<K;c++){
+        let dot=0; const pc=c*D;
+        for(let d=0;d<D;d++) dot+=V[pi+d]*cent[pc+d];
+        if(dot>bd){bd=dot;best=c;}
+      }
+      if(asn[i]!==best){asn[i]=best;moved++;}
+    }
+    cent.fill(0);
+    const cc=new Int32Array(K);
+    for(let i=0;i<N;i++){
+      const pc=asn[i]*D, pi=i*D; cc[asn[i]]++;
+      for(let d=0;d<D;d++) cent[pc+d]+=V[pi+d];
+    }
+    for(let c=0;c<K;c++){
+      let nrm=0; const pc=c*D;
+      for(let d=0;d<D;d++) nrm+=cent[pc+d]*cent[pc+d];
+      nrm=Math.sqrt(nrm)||1;
+      for(let d=0;d<D;d++) cent[pc+d]/=nrm;
+    }
+    if(moved===0 && it>2) break;
+  }
+  const sumU=new Float64Array(K), cnt=new Int32Array(K);
+  for(let i=0;i<N;i++){ sumU[asn[i]]+=RAW_U[i]; cnt[asn[i]]++; }
+  const order=[...Array(K).keys()]
+    .sort((a,b)=>(sumU[a]/(cnt[a]||1))-(sumU[b]/(cnt[b]||1)));
+  const lane=new Int32Array(K);
+  order.forEach((c,i)=>lane[c]=i);
+  GAMES=[];
+  for(let i=0;i<N;i++) GAMES.push({tau:RAW_TAU[i], b:lane[asn[i]]});
+  const T=TAG_NAMES.length, glob=new Float64Array(T);
+  for(let i=0;i<N;i++) for(let t=0;t<T;t++) if(RAW_TAGS[i]>>t&1) glob[t]++;
+  for(let t=0;t<T;t++) glob[t]/=N;
+  CLUSTER_LABELS=[];
+  for(let li=0;li<K;li++){
+    const c=order[li], m=cnt[c]||1, share=new Float64Array(T);
+    for(let i=0;i<N;i++) if(asn[i]===c)
+      for(let t=0;t<T;t++) if(RAW_TAGS[i]>>t&1) share[t]++;
+    const lifts=[];
+    for(let t=0;t<T;t++){
+      const s=share[t]/m;
+      lifts.push([s>=0.12 ? s/Math.max(glob[t],1e-9) : 0, t]);
+    }
+    lifts.sort((a,b)=>b[0]-a[0]);
+    CLUSTER_LABELS.push({label:TAG_NAMES[lifts[0][1]]+" / "+TAG_NAMES[lifts[1][1]], n:m});
+  }
+  CLUSTER_DIST=[];
+  let dmax=1e-9;
+  for(let a=0;a<K;a++){CLUSTER_DIST[a]=[];
+    for(let b=0;b<K;b++){
+      let dot=0; const pa=order[a]*D, pb=order[b]*D;
+      for(let d=0;d<D;d++) dot+=cent[pa+d]*cent[pb+d];
+      const dd=1-dot;
+      CLUSTER_DIST[a][b]=dd;
+      if(dd>dmax) dmax=dd;
+    }}
+  for(let a=0;a<K;a++)for(let b=0;b<K;b++) CLUSTER_DIST[a][b]/=dmax;
+  LANE_OF=new Int32Array(N);
+  for(let i=0;i<N;i++) LANE_OF[i]=lane[asn[i]];
+  CENT_LANE=new Float32Array(K*D);
+  for(let li=0;li<K;li++)
+    CENT_LANE.set(cent.subarray(order[li]*D,(order[li]+1)*D), li*D);
+  LANE_UMEAN=new Array(K).fill(0); LANE_USTD=new Array(K).fill(1);
+  const lc=new Array(K).fill(0);
+  for(let i=0;i<N;i++){ LANE_UMEAN[LANE_OF[i]]+=RAW_U[i]; lc[LANE_OF[i]]++; }
+  for(let k=0;k<K;k++) LANE_UMEAN[k]/=lc[k]||1;
+  const lv=new Array(K).fill(0);
+  for(let i=0;i<N;i++){ const d=RAW_U[i]-LANE_UMEAN[LANE_OF[i]]; lv[LANE_OF[i]]+=d*d; }
+  for(let k=0;k<K;k++) LANE_USTD[k]=Math.sqrt(lv[k]/(lc[k]||1))||1;
+}
+
+/* ---- shares (kernel-smoothed, each instant sums to 1) ---- */
+function kernel(dt){
+  if(dt<=0) return 0;
+  const s=Math.min(dt/0.15,1);
+  return s*s*(3-2*s)*Math.exp(-dt/TAU);
+}
+let TS=[], SH=[];
+function computeShares(){
+  const n=Math.round(T_END*DENS)+1;
+  TS=[]; SH=Array.from({length:K},()=>new Array(n).fill(0));
+  const tot=new Array(n).fill(0);
+  for(let s=0;s<n;s++){
+    const t=s/DENS; TS.push(t);
+    GAMES.forEach(g=>{
+      const k=kernel(t-g.tau); if(k<1e-5) return;
+      SH[g.b][s]+=k; tot[s]+=k;
+    });
+  }
+  const totMax=Math.max(...tot);
+  for(let s=0;s<n;s++){
+    if(tot[s]>0.02*totMax) for(let k=0;k<K;k++) SH[k][s]/=tot[s];
+    else                   for(let k=0;k<K;k++) SH[k][s]=NaN;
+  }
+}
+function shareWin(s){
+  const n=TS.length, h=Math.max(1,Math.round(0.15*DENS));
+  const lo=Math.max(0,s-h), hi=Math.min(n-1,s+h);
+  const out=new Array(K).fill(0);
+  let cnt=0;
+  for(let t=lo;t<=hi;t++){
+    if(Number.isNaN(SH[0][t])) continue;
+    for(let k=0;k<K;k++) out[k]+=SH[k][t]||0;
+    cnt++;
+  }
+  if(cnt>0) for(let k=0;k<K;k++) out[k]/=cnt;
+  return out;
+}
+const aW=t=>shareWin(Math.max(0,Math.min(TS.length-1,Math.round(t*DENS))));
+
+/* ---- PRESSURE-DRIVEN EVENT MODEL ----
+   Share changes deposit pending parcels {m, t0} per cluster (surplus if the
+   lane shrank, deficit if it grew). New deposits first CANCEL against the
+   cluster's own opposite parcels (LIFO) -- wiggles annihilate locally and are
+   never transported. Un-cancelled parcels build exponential pressure
+   m*(e^{beta*age}-1); when total pressure crosses THR, ONE transport event
+   fires: a small semantic-cost OT couples all pending surplus to all pending
+   deficit and the buffers flush. Event times are chosen by the data. */
+let EVENTS=[];   // {t, flows:[{i,j,w,ts}]}  ts = mass-weighted deposit time
+function computeFlows(){
+  EVENTS=[];
+  const t0=WARM_A, t1=T_END-WARM_B;
+  if(t1-t0<0.5){ computeAnchors(); return; }
+  const dt=1/DENS;
+  const sur=Array.from({length:K},()=>[]);
+  const def=Array.from({length:K},()=>[]);
+  const deposit=(list,opp,m,t)=>{
+    while(m>1e-9 && opp.length){                 // LIFO cancellation
+      const p=opp[opp.length-1];
+      const c=Math.min(m,p.m);
+      p.m-=c; m-=c;
+      if(p.m<=1e-9) opp.pop();
+    }
+    if(m>1e-9) list.push({m,t});
+  };
+  const press=(list,t)=>list.reduce((a,p)=>a+p.m*(Math.exp(BETA*(t-p.t))-1),0);
+  const consume=(list,amt)=>{        // FIFO (oldest first); mean deposit time
+    let need=amt, wt=0;
+    while(need>1e-12 && list.length){
+      const p=list[0];
+      const c=Math.min(need,p.m);
+      wt+=c*p.t; p.m-=c; need-=c;
+      if(p.m<=1e-9) list.shift();
+    }
+    return wt/Math.max(amt-need,1e-12);
+  };
+  /* PAIRWISE trigger: a pair (i,j) fires when SOURCE surplus pressure plus
+     TARGET deficit pressure beats a semantically scaled threshold. Different
+     targets therefore receive at DIFFERENT times -- close pairs early, far
+     pairs only under heavy mutual pressure. Firing transfers min(S_i, D_j). */
+  const firePair=(i,j,t)=>{
+    const Si=sur[i].reduce((a,p)=>a+p.m,0);
+    const Dj=def[j].reduce((a,p)=>a+p.m,0);
+    const w=Math.min(Si,Dj);
+    if(w<=1e-6) return false;
+    const ts=consume(sur[i],w);
+    consume(def[j],w);
+    EVENTS.push({t, flows:[{i,j,w,ts}]});
+    return true;
+  };
+  const settle=(t)=>{
+    let guard=0;
+    while(guard++<K*K){
+      let bi=-1,bj=-1,best=1;
+      for(let i=0;i<K;i++){
+        if(!sur[i].length) continue;
+        const Pi=press(sur[i],t);
+        for(let j=0;j<K;j++){
+          if(j===i||!def[j].length) continue;
+          const Qj=press(def[j],t);
+          const d=CLUSTER_DIST[i][j];
+          const r=(Pi+Qj)/(THR*(1+d*d/EPS));
+          if(r>best){best=r;bi=i;bj=j;}
+        }
+      }
+      if(bi<0 || !firePair(bi,bj,t)) break;
+    }
+  };
+  let prev=aW(t0);
+  for(let t=t0+dt;t<=t1+1e-9;t+=dt){
+    const cur=aW(t);
+    if(!cur.every(x=>x<1e-6) && !prev.every(x=>x<1e-6))
+      for(let k=0;k<K;k++){
+        const d=cur[k]-prev[k];
+        if(d<-1e-7)      deposit(sur[k], def[k], -d, t);
+        else if(d>1e-7)  deposit(def[k], sur[k],  d, t);
+      }
+    prev=cur;
+    settle(t);
+  }
+  // final flush: whatever is still pending pairs off by semantic proximity
+  const left=[];
+  for(let i=0;i<K;i++)for(let j=0;j<K;j++)
+    if(i!==j) left.push({i,j,d:CLUSTER_DIST[i][j]});
+  left.sort((a,b)=>a.d-b.d);
+  let changed=true, guard=0;
+  while(changed && guard++<K*K){
+    changed=false;
+    for(const q of left) if(firePair(q.i,q.j,t1)) changed=true;
+  }
+  computeAnchors();
+}
+
+/* ---- anchor games ---- */
+function computeAnchors(){
+  ANCHORS=[];
+  if(!LANE_OF) return;
+  const N=RAW_N, D=RAW_D, t0=WARM_A, t1=T_END-WARM_B;
+  for(let tm=Math.ceil(t0/MARK)*MARK; tm<=t1+1e-9; tm+=MARK){
+    const lo=tm-MARK/2, hi=tm+MARK/2;
+    for(let k=0;k<K;k++){
+      let best=-1, bd=-Infinity;
+      for(let i=0;i<N;i++){
+        if(LANE_OF[i]!==k) continue;
+        const tau=RAW_TAU[i];
+        if(tau<lo||tau>=hi||tau<t0||tau>t1) continue;
+        let dot=0; const pi=i*D, pc=k*D;
+        for(let d=0;d<D;d++) dot+=RAW_VEC[pi+d]*CENT_LANE[pc+d];
+        if(dot>bd){bd=dot;best=i;}
+      }
+      if(best<0) continue;
+      const du=(RAW_U[best]-LANE_UMEAN[k])/(2*LANE_USTD[k]);
+      // strip CJK characters (keep the latin part of bilingual titles)
+      const clean=RAW_TITLES[best]
+        .replace(/[　-鿿豈-﫿＀-￯]/g,'')
+        .replace(/\s+/g,' ').trim();
+      ANCHORS.push({tau:RAW_TAU[best], lane:k,
+                    title:clean||RAW_TITLES[best],
+                    du:Math.max(-1,Math.min(1,du))});
+    }
+  }
+}
+
+/* ---- render ---- */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+const PAD={l:86,r:262,t:96,b:64};
+const sx=t=>PAD.l+(W-PAD.l-PAD.r)
+  *((t-WARM_A)/Math.max(T_END-WARM_A-WARM_B,1e-6));
+
+const HUES=[205,166,45,344,275,20,120,215];
+function col(k,alpha,paper){
+  const h=HUES[k%HUES.length];
+  return paper ? `hsla(${h},46%,${52+((k%2)?6:0)}%,${alpha})`
+               : `hsla(${h},78%,${60+((k%2)?6:0)}%,${alpha})`;
+}
+function hueLerp(h0,h1,t){
+  const d=((h1-h0+540)%360)-180;
+  return (h0+d*t+360)%360;
+}
+function colMix(i,j,t,alpha,paper){
+  const h=hueLerp(HUES[i%HUES.length],HUES[j%HUES.length],t);
+  return paper ? `hsla(${h},44%,55%,${alpha})` : `hsla(${h},72%,62%,${alpha})`;
+}
+/* Catmull-Rom through control points -> one smooth bezier chain */
+function crTo(p,a){
+  for(let i=0;i<a.length-1;i++){
+    const p0=a[Math.max(i-1,0)], p1=a[i], p2=a[i+1], p3=a[Math.min(i+2,a.length-1)];
+    p.bezierCurveTo(p1.x+(p2.x-p0.x)/6, p1.y+(p2.y-p0.y)/6,
+                    p2.x-(p3.x-p1.x)/6, p2.y-(p3.y-p1.y)/6, p2.x, p2.y);
+  }
+}
+
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=PAPER?'#ffffff':'#06060e';
+  ctx.fillRect(0,0,W,H);
+
+  const t0=WARM_A, t1=T_END-WARM_B;
+  if(t1-t0<0.5) return;
+  const plotH=H-PAD.t-PAD.b;
+  const laneY=k=>H-PAD.b-(k+0.5)*plotH/K;
+
+  /* ---- piecewise-constant WIDTH ACCOUNT: the main stream changes width ONLY
+     at events (vertical steps = fork / merge junctions); between events the
+     width is frozen -- exactly the model's bookkeeping */
+  const chg=Array.from({length:K},()=>[]);
+  const usable=[];
+  EVENTS.forEach(ev=>ev.flows.forEach(f=>{
+    if(f.w<PRUNE) return;
+    f._ts=Math.max(f.ts,t0); f._te=ev.t;
+    usable.push(f);
+    chg[f.i].push({t:f._ts, f, role:0});     // fork out of source
+    chg[f.j].push({t:f._te, f, role:1});     // merge into target
+  }));
+  /* scale factor from the width account */
+  let maxW=1e-6;
+  for(let k=0;k<K;k++){
+    let Wk=aW(t0)[k];
+    if(Wk>maxW) maxW=Wk;
+    [...chg[k]].sort((a,b)=>a.t-b.t||a.role-b.role).forEach(c=>{
+      Wk+=(c.role? c.f.w : -c.f.w);
+      if(Wk>maxW) maxW=Wk;
+    });
+  }
+  const F=0.92*(plotH/K)/maxW;
+
+  /* EDGE-anchored account: top and bottom edges move INDEPENDENTLY.
+     A fork toward a lane above takes the full w strip off the TOP edge; a
+     merge from below grows the BOTTOM edge -- every ribbon occupies exactly
+     the strip its step vacates/creates, so the seams are pixel-tight.
+     (The band may drift slightly off its lane centre; that is the standard
+     alluvial trade-off for exact junctions.) */
+  const SEG=[];
+  for(let k=0;k<K;k++){
+    chg[k].sort((a,b)=>a.t-b.t||a.role-b.role);
+    const W0=aW(t0)[k]*F;
+    let yT=laneY(k)-W0/2, yB=laneY(k)+W0/2, tPrev=t0;
+    const segs=[];
+    chg[k].forEach(c=>{
+      if(c.t>tPrev+1e-9){ segs.push({ta:tPrev, tb:c.t, yT, yB}); tPrev=c.t; }
+      const wf=c.f.w*F;
+      const otherAbove=(c.role===0) ? (laneY(c.f.j)<laneY(k))
+                                    : (laneY(c.f.i)<laneY(k));
+      if(c.role===0){                            // fork out of this lane
+        if(otherAbove){ c.f._sy0=yT; c.f._sy1=yT+wf; yT+=wf; }
+        else          { c.f._sy1=yB; c.f._sy0=yB-wf; yB-=wf; }
+      }else{                                     // merge into this lane
+        if(otherAbove){ yT-=wf; c.f._dy0=yT; c.f._dy1=yT+wf; }
+        else          { yB+=wf; c.f._dy1=yB; c.f._dy0=yB-wf; }
+      }
+    });
+    segs.push({ta:tPrev, tb:t1, yT, yB});
+    SEG.push(segs);
+  }
+
+  /* main streams: constant-height rects with crisp vertical steps.
+     Segments overlap by ~1px so no anti-aliasing hairline shows between them;
+     no outlines anywhere (the step itself is the junction mark). */
+  for(let k=0;k<K;k++){
+    ctx.fillStyle=col(k, PAPER?0.92:0.8, PAPER);
+    SEG[k].forEach(s=>{
+      const hpx=s.yB-s.yT;
+      if(hpx<0.3) return;
+      const x=sx(s.ta), wpx=Math.max(sx(s.tb)-x,0.5)+1;
+      ctx.fillRect(x-0.5, s.yT, wpx, hpx);
+    });
+  }
+
+  /* branch ribbons: strip-to-strip beziers, seams flush with the steps.
+     MINW constrains the PERPENDICULAR width at the MID-SPAN (the waist):
+     endpoints stay exactly on their strips (seams intact); if the waist,
+     corrected for the crossing slope, would be thinner than MINW the control
+     points bulge outward. Extra mid width = 1.5*delta per control shift. */
+  usable.forEach(f=>{
+    const sy0=f._sy0, sy1=f._sy1, dy0=f._dy0, dy1=f._dy1;
+    const x0=sx(f._ts)-0.8, x1=sx(f._te)+0.8, mx=(x0+x1)/2;
+    const wMid=((sy1-sy0)+(dy1-dy0))/2;
+    const slope=2*(((dy0+dy1)-(sy0+sy1))/2)/Math.max(x1-x0,1e-6);
+    const wNeed=MINW*Math.sqrt(1+slope*slope);
+    const delta=Math.max(0,(wNeed-wMid))/1.5;
+    const p=new Path2D();
+    p.moveTo(x0,sy0);
+    p.bezierCurveTo(mx,sy0-delta,mx,dy0-delta,x1,dy0);
+    p.lineTo(x1,dy1);
+    p.bezierCurveTo(mx,dy1+delta,mx,sy1+delta,x0,sy1);
+    p.closePath();
+    const grad=ctx.createLinearGradient(x0,0,x1,0);
+    for(let s=0;s<=1.001;s+=0.2)
+      grad.addColorStop(Math.min(s,1), colMix(f.i,f.j,s, PAPER?0.9:0.85, PAPER));
+    ctx.fillStyle=grad;
+    ctx.fill(p);
+  });
+
+  /* anchor games (edit mode: labels draggable, offsets persisted) */
+  const inkA=PAPER?'rgba(25,28,40,.95)':'rgba(225,231,245,.92)';
+  ctx.font=FONTA+'px "SF Mono",Consolas,monospace';
+  ANCHOR_HITS=[];
+  ANCHORS.forEach(an=>{
+    const x=sx(an.tau), yc=laneY(an.lane);
+    const dy=an.du*(plotH/K)*0.34;
+    if(DOTR>0.05){
+      ctx.strokeStyle=PAPER?'rgba(30,34,50,.6)':'rgba(220,228,245,.5)';
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x,yc); ctx.lineTo(x,yc+dy); ctx.stroke();
+      ctx.fillStyle=inkA;
+      ctx.beginPath(); ctx.arc(x,yc+dy,DOTR,0,6.2832); ctx.fill();
+      ctx.strokeStyle=col(an.lane,1,PAPER); ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.arc(x,yc+dy,DOTR,0,6.2832); ctx.stroke();
+    }
+    const off=LABEL_OFF[an.title]||[0,0];
+    const lx=x+off[0];
+    const ly=yc+dy+(an.du>=0?FONTA*1.4:-FONTA*0.82)+off[1];
+    ctx.textAlign='center'; ctx.fillStyle=inkA;
+    ctx.fillText(an.title, lx, ly);
+    const tw=ctx.measureText(an.title).width;
+    ANCHOR_HITS.push({x:lx-tw/2-3, y:ly-FONTA-2, w:tw+6, h:FONTA+6, title:an.title});
+    if(EDITMODE){
+      ctx.strokeStyle='rgba(126,200,255,.45)'; ctx.lineWidth=0.8;
+      ctx.strokeRect(lx-tw/2-3, ly-FONTA-2, tw+6, FONTA+6);
+    }
+  });
+
+  /* lane labels + final share */
+  const ink=PAPER?'rgba(25,28,40,.95)':'rgba(200,208,230,.9)';
+  ctx.font=FONTL+'px "SF Mono",Consolas,monospace'; ctx.textAlign='left';
+  for(let k=0;k<K;k++){
+    const sEnd=SEG[k][SEG[k].length-1];
+    const Wend=(sEnd.yB-sEnd.yT)/F;              // account width, matches the band
+    ctx.fillStyle=ink;
+    ctx.fillText(`${CLUSTER_LABELS[k].label}  ${(100*Wend).toFixed(0)}%`,
+                 W-PAD.r+12, laneY(k)+3);
+    ctx.strokeStyle=col(k,0.9,PAPER); ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(W-PAD.r, laneY(k)); ctx.lineTo(W-PAD.r+8, laneY(k));
+    ctx.stroke();
+  }
+
+  /* time axis + scale bar */
+  ctx.fillStyle=PAPER?'rgba(60,66,90,.9)':'rgba(90,96,120,.9)';
+  ctx.strokeStyle=PAPER?'rgba(60,66,90,.3)':'rgba(96,110,160,.3)';
+  ctx.textAlign='center';
+  for(let q=0;q<=T_END;q++){
+    if(q<WARM_A-1e-9 || q>T_END-WARM_B+1e-9) continue;
+    const x=sx(q);
+    ctx.beginPath(); ctx.moveTo(x,PAD.t-10); ctx.lineTo(x,H-PAD.b+8); ctx.stroke();
+    ctx.fillText(String(YEAR0+q), x, H-PAD.b+26);
+  }
+  const sb=0.10*F;
+  ctx.strokeStyle=ink; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(PAD.l-26, PAD.t+8); ctx.lineTo(PAD.l-26, PAD.t+8+sb);
+  ctx.stroke();
+  ctx.textAlign='right'; ctx.fillStyle=ink;
+  ctx.fillText('10%', PAD.l-32, PAD.t+12+sb/2);
+  ctx.save();
+  ctx.translate(24,(PAD.t+H-PAD.b)/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.fillText('S E M A N T I C   C L U S T E R   L A N E S · thickness = release share',0,0);
+  ctx.restore();
+}
+
+function fit(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  W=innerWidth; H=innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  draw();
+}
+
+const $=id=>document.getElementById(id);
+$('k').addEventListener('input',e=>{
+  K=+e.target.value; $('kOut').textContent=K;
+  recluster(); computeShares(); computeFlows(); draw();});
+$('tau').addEventListener('input',e=>{
+  TAU=+e.target.value; $('tauOut').textContent=TAU.toFixed(2);
+  computeShares(); computeFlows(); draw();});
+$('bt').addEventListener('input',e=>{
+  BETA=+e.target.value; $('btOut').textContent=BETA.toFixed(1);
+  computeFlows(); draw();});
+$('th').addEventListener('input',e=>{
+  THR=+e.target.value; $('thOut').textContent=THR.toFixed(4);
+  computeFlows(); draw();});
+$('wa').addEventListener('input',e=>{
+  WARM_A=+e.target.value; $('waOut').textContent=WARM_A.toFixed(2);
+  computeFlows(); draw();});
+$('wb').addEventListener('input',e=>{
+  WARM_B=+e.target.value; $('wbOut').textContent=WARM_B.toFixed(2);
+  computeFlows(); draw();});
+$('eps').addEventListener('input',e=>{
+  EPS=+e.target.value; $('epsOut').textContent=EPS.toFixed(2);
+  computeFlows(); draw();});
+$('mk').addEventListener('input',e=>{
+  MARK=+e.target.value; $('mkOut').textContent=MARK;
+  computeAnchors(); draw();});
+$('fs').addEventListener('input',e=>{
+  FONTA=+e.target.value; $('fsOut').textContent=FONTA.toFixed(1); draw();});
+$('ds').addEventListener('input',e=>{
+  DOTR=+e.target.value; $('dsOut').textContent=DOTR.toFixed(1); draw();});
+$('ls').addEventListener('input',e=>{
+  FONTL=+e.target.value; $('lsOut').textContent=FONTL.toFixed(1); draw();});
+$('mw').addEventListener('input',e=>{
+  MINW=+e.target.value; $('mwOut').textContent=MINW.toFixed(1); draw();});
+$('edit').addEventListener('change',e=>{
+  EDITMODE=e.target.checked;
+  cv.style.cursor=EDITMODE?'move':'default';
+  draw();});
+$('save').addEventListener('click',()=>{
+  cv.toBlob(b=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download='heat_flow_'+K+'clusters.png';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  },'image/png');
+});
+
+/* edit mode: drag anchor labels; offsets persist in localStorage */
+let dragT=null, dragX0=0, dragY0=0, dragOff=[0,0];
+cv.addEventListener('mousedown',e=>{
+  if(!EDITMODE) return;
+  for(let i=ANCHOR_HITS.length-1;i>=0;i--){
+    const h=ANCHOR_HITS[i];
+    if(e.clientX>=h.x&&e.clientX<=h.x+h.w&&e.clientY>=h.y&&e.clientY<=h.y+h.h){
+      dragT=h.title; dragX0=e.clientX; dragY0=e.clientY;
+      dragOff=(LABEL_OFF[dragT]||[0,0]).slice();
+      e.preventDefault();
+      return;
+    }
+  }
+});
+window.addEventListener('mousemove',e=>{
+  if(dragT===null) return;
+  LABEL_OFF[dragT]=[dragOff[0]+e.clientX-dragX0, dragOff[1]+e.clientY-dragY0];
+  draw();
+});
+window.addEventListener('mouseup',()=>{
+  if(dragT===null) return;
+  dragT=null;
+  try{ localStorage.setItem('hf_label_off', JSON.stringify(LABEL_OFF)); }catch(e){}
+});
+$('prune').addEventListener('input',e=>{
+  PRUNE=+e.target.value; $('prOut').textContent=PRUNE.toFixed(3); draw();});
+$('paper').addEventListener('change',e=>{ PAPER=e.target.checked; draw();});
+
+recluster(); computeShares(); computeFlows();
+window.addEventListener('resize',fit);
+fit();
+</script>
+</body>
+</html>
