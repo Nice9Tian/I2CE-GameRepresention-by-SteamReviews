@@ -216,7 +216,7 @@ The practical reading is that memory, the usual constraint, ceases to be one: a 
 
 All four query registers come from one chat-completions model (temperature 0.7) that reads a held-out game’s full wiki article and writes an English description of it. The instructions below were issued in Chinese and are translated faithfully here; the verbatim strings, the retry policy and the model identifier are in the released code. An output shorter than 300 characters is re-requested with the elaboration instruction, up to three attempts, and the article is truncated to 12,000 characters before it is sent.
 
-*ALGORITHM 1: The rewrite instructions behind the four query registers*
+ALGORITHM 1: The rewrite instructions behind the four query registers
 
 user message  —  "Game: {title}" then the article text
 neutral (Name hit@k)  —  Read the full game page text the user provides and summarize it into a descriptive article about the game. Preserve the real information about the game’s content, gameplay and mechanics in full; do not invent anything that is not on the page. Register: neutral. Write in English and output the article body directly.
@@ -231,7 +231,7 @@ A single mapping file is the source of truth for every tag number in this paper:
 
 The listing below is the whole definition: a class is present on a game if any of the Steam tags on its right-hand side is, and the vote weights Steam attaches are used only to resolve which source is strongest, never as a target — the probe predicts presence, so a game either carries a class or does not. On our 2,020 games this yields a 2,020 × 23 binary matrix of density 0.202 — 4.6 classes per game at the mean, 5 at the median, and between 35 and 1,395 games per class.
 
-*ALGORITHM 2: The 23 TAG classes, each written as the original Steam tags it absorbs*
+ALGORITHM 2: The 23 TAG classes, each written as the original Steam tags it absorbs
 
 Action/Adventure = [Action, Action-Adventure, Adventure, Combat, Hack and Slash, Souls-like]
 Bullet Hell = [Bullet Hell]
