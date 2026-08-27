@@ -34,9 +34,9 @@ Table A1 gives the per-fold results behind Table A2's largest-budget row: I-CE a
 | **I-CE @4096** | **0.954 ± 0.013** | **0.997 ± 0.004** | **0.741 ± 0.018** | **0.928 ± 0.020** | **0.685 ± 0.019** |
 | swin-I-CE @4096 (windowed) | 0.934 ± 0.014 | 0.994 ± 0.004 | 0.709 ± 0.027 | 0.922 ± 0.010 | 0.691 ± 0.014 |
 
-Two observations hold at fold level. First, the invariance gain is not a split artifact: I-CE wins Stripped hit@1 in every fold at this budget, while the tag reading rises alongside. Second, the fold-to-fold spread is large — up to ±0.03 on Stripped hit@1 — which is why this paper quotes no single-split difference smaller than that anywhere. The EMA + memory-bank run has since landed and is tabulated in Table A6. Table A3 gives the full five-fold account of every objective family, the numbers the body's Figure 3 plots.
+Two observations hold at fold level. First, the invariance gain is not a split artifact: I-CE wins Stripped hit@1 in every fold at this budget, while the tag reading rises alongside. Second, the fold-to-fold spread is large — up to ±0.03 on Stripped hit@1 — which is why this paper quotes no single-split difference smaller than that anywhere. The EMA + memory-bank run has since landed and is tabulated in Table A6. Table A3 gives the full five-fold account of every objective family, the numbers the body's Figure 4 plots.
 
-*Table A3: The self-supervision families in full — the five-fold account behind the body's Figure 3 (testset queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget; “epd” marks VICReg wired on the expander outputs, v/i/c = 20/10/20; zero-shot cosine retrieval among all 2,020 games; test-set tag micro-F1 under the held-out protocol of Section 5). Rows are sorted by Stripped hit@1, worst first; the first row is the no-tower baseline, the frozen embedder's mean-pooled sentence vectors under the identical protocol. The two capabilities factorize: every negative-light objective lands in the same narrow tag band while conceding name-stripped retrieval, and I-CE is the only row that concedes neither reading.*
+*Table A3: The self-supervision families in full — the five-fold account behind the body's Figure 4 (testset queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget; “epd” marks VICReg wired on the expander outputs, v/i/c = 20/10/20; zero-shot cosine retrieval among all 2,020 games; test-set tag micro-F1 under the held-out protocol of Section 5). Rows are sorted by Stripped hit@1, worst first; the first row is the no-tower baseline, the frozen embedder's mean-pooled sentence vectors under the identical protocol. The two capabilities factorize: every negative-light objective lands in the same narrow tag band while conceding name-stripped retrieval, and I-CE is the only row that concedes neither reading.*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set TAG F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -47,7 +47,7 @@ Two observations hold at fold level. First, the invariance gain is not a split a
 | CE (contrast only) | 0.938 ± 0.013 | 0.988 ± 0.010 | 0.673 ± 0.014 | 0.889 ± 0.011 | 0.664 ± 0.016 |
 | **I-CE (ours)** | **0.954 ± 0.013** | **0.997 ± 0.004** | **0.741 ± 0.018** | **0.928 ± 0.020** | **0.685 ± 0.019** |
 
-## APPENDIX B: THE BASELINE RECIPES OF FIGURE 3
+## APPENDIX B: THE BASELINE RECIPES OF FIGURE 4
 
 Every trained baseline shares the full scaffolding of Section 4 — the same 4-query cross-attention tower, the same four views per game per step (three review views and one document view), the same corpus, batch (192 games), optimizer (AdamW, lr 5e-4, weight decay 1e-4), 2,000-epoch budget, temperature τ = 0.02 where a softmax exists, and the validation-only selection of Section 5. They differ only in the loss, exactly as follows.
 
@@ -77,12 +77,14 @@ Equating the two envelopes gives the precise handover point where the contrastiv
 
 All four query registers come from one chat-completions model (temperature 0.7) that reads a held-out game’s full wiki article and writes an English description of it. The instructions below were issued in Chinese and are translated faithfully here; the verbatim strings, the retry policy and the model identifier are in the released code. An output shorter than 300 characters is re-requested with the elaboration instruction, up to three attempts, and the article is truncated to 12,000 characters before it is sent.
 
-ALGORITHM 1: The rewrite instructions behind the four query registers
+*ALGORITHM 1: The rewrite instructions behind the four query registers*
 
+```
 user message  —  "Game: {title}" then the article text
 neutral (Name hit@k)  —  Read the full game page text the user provides and summarize it into a descriptive article about the game. Preserve the real information about the game’s content, gameplay and mechanics in full; do not invent anything that is not on the page. Register: neutral. Write in English and output the article body directly.
 name-stripped (Stripped hit@k)  —  Read the full game page text the user provides and summarize it into a descriptive article about the game, in a neutral register. Preserve the real information about the game’s content, gameplay and mechanics in full; do not invent anything that is not on the page. But do not reveal the game’s name, the characters’ names, the items’ names or anything like them — replace them all with imagined, invented words. Write in English and output the article body directly.
 elaboration retry (any register)  —  Your previous answer was too short. Please write a considerably MORE DETAILED article (at least 300 words) in the requested style, covering the game’s content, story, world and mechanics from the page text above.
+```
 
 ## APPENDIX E: REDUCING THE STEAM TAG VOCABULARY
 
@@ -90,8 +92,9 @@ A single mapping file is the source of truth for every tag number in this paper:
 
 The listing below is the whole definition: a class is present on a game if any of the Steam tags on its right-hand side is, and the vote weights Steam attaches are used only to resolve which source is strongest, never as a target — the probe predicts presence, so a game either carries a class or does not. On our 2,020 games this yields a 2,020 × 23 binary matrix of density 0.202 — 4.6 classes per game at the mean, 5 at the median, and between 35 and 1,395 games per class.
 
-ALGORITHM 2: The 23 TAG classes, each written as the original Steam tags it absorbs
+*ALGORITHM 2: The 23 TAG classes, each written as the original Steam tags it absorbs*
 
+```
 Action/Adventure = [Action, Action-Adventure, Adventure, Combat, Hack and Slash, Souls-like]
 Bullet Hell = [Bullet Hell]
 Card Game = [Card Game, Card Battler, Deckbuilding, Roguelike Deckbuilder]
@@ -116,6 +119,7 @@ Stealth/Immersive = [Immersive Sim, Stealth]
 Strategy/Tactics = [4X, Grand Strategy, RTS, Real Time Tactics, Strategy, Tactical, Tower Defense, Wargame]
 Turn-Based = [Turn-Based, Turn-Based Combat, Turn-Based Strategy, Turn-Based Tactics]
 discarded = [2D, 3D, Anime, Arcade, Atmospheric, Beautiful, Cartoony, Casual, Character Customization, Cinematic, Classic, Colorful, Comedy, Controller, Cute, Dark, Dark Humor, Dating Sim, Destruction, Difficult, Drama, Early Access, Economy, Emotional, Family Friendly, Fast-Paced, Female Protagonist, First-Person, Free to Play, Funny, Gore, Great Soundtrack, Gun Customization, Hand-drawn, Indie, Inventory Management, Isometric, LGBTQ+, Loot, Mature, Memes, Music, Nudity, Old School, Physics, Pixel Graphics, Psychedelic, Psychological, Realistic, Relaxing, Replay Value, Retro, Romance, Sexual Content, Singleplayer, Soundtrack, Stylized, Surreal, Third Person, Thriller, Violent]
+```
 
 ## APPENDIX F: COST AT SCALE
 
@@ -154,7 +158,7 @@ The third variant closes that last term by giving up residency, and it is the pi
 
 The practical reading is that memory, the usual constraint, ceases to be one: a million-entity catalog trains inside a single 80 GiB accelerator at constant step cost, with the anchor store on disk and paged. What replaces it is a coverage question — how rarely an anchor may take its turn before the objective stops learning. Our evidence spans 21% to 100% per-step coverage, the range in which the windowed teacher gives up 0.032 Stripped hit@1 against full coupling (Table A6); it does not reach the 0.04% regime and we do not claim it. The architecture makes million-scale training affordable; whether it stays effective there is the open question the third limitation should be read as posing.
 
-For inference and deployment, the resource footprint drops to negligible levels. Encoding a user query requires a single forward pass through the 0.6B parameter frozen text model, which comfortably fits in under 3 GiB of VRAM on standard commodity hardware. The subsequent retrieval over the pre-computed anchors is a simple inner-product search that executes in milliseconds, entirely decoupling the heavy training-time graph from downstream use.
+At inference time the resource requirements are modest. Encoding a user query requires a single forward pass through the 0.6B parameter frozen text model (under 3 GiB of VRAM). Retrieval over the pre-computed anchors is an inner-product search that runs in milliseconds, so the heavy training-time graph does not affect deployment.
 
 *Table A6: The cost of the anchor-supply economies, moved here from the body in the phase-3 revision (testset queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget). The sliding fresh-window variant (swin, Appendix H) re-encodes ~27% of the gallery with gradient per step; the two-stage row hands a BYOL warm start to the windowed teacher for the last 600 epochs; the EMA + memory-bank variant replaces the coupled teacher with an EMA shadow encoder feeding a 3,072-key bank (Appendix B). Full coupling is the ceiling: the windowed teacher and the two-stage recipe each give up 0.032 Stripped hit@1, the memory-bank economy 0.105.*
 
@@ -203,7 +207,7 @@ swin-I-CE bounds the fully coupled teacher’s memory ceiling. The catalog is la
 
 The VICReg grid below is older than the rest of the protocol: it predates validation selection and its towers were logged only at trajectory peaks, so Table A10 reports each arm's peak stripped hit@1 and omits tag readings, which cannot be re-scored under the test-set protocol of Section 5.
 
-*Table A10: The VICReg weight sweep (fixed split, testset queries (ts) of that split, 512-sentence anchors at evaluation, a single anchor draw; trajectory peaks). All rows use the canonical wiring — variance, invariance, and covariance all on the expander-output pair; the earlier centroid wiring (invariance as an MSE between unit-norm view centroids) collapsed retrieval outright at every view width (hit@1 ≤ 0.03) and is omitted. V/I/C = 20/10/20 is the best cell and the image-domain 25/25/1 trails it. Drawing views for the whole training pool per step (batch = all) provides true population moments in the variance term at roughly eight times the step cost; its one completed fold scored within fold noise of the batch-192 recipe (stripped hit@1 0.387 under the single-draw protocol, against that recipe’s 0.440 ± 0.021 five-fold mean under the averaged-anchor protocol), so the body's five-fold VICReg run (Figure 3) trains at batch 192. I-CE and CE peaks under the same readout anchor the scale.*
+*Table A10: The VICReg weight sweep (fixed split, testset queries (ts) of that split, 512-sentence anchors at evaluation, a single anchor draw; trajectory peaks). All rows use the canonical wiring — variance, invariance, and covariance all on the expander-output pair; the earlier centroid wiring (invariance as an MSE between unit-norm view centroids) collapsed retrieval outright at every view width (hit@1 ≤ 0.03) and is omitted. V/I/C = 20/10/20 is the best cell and the image-domain 25/25/1 trails it. Drawing views for the whole training pool per step (batch = all) provides true population moments in the variance term at roughly eight times the step cost; its one completed fold scored within fold noise of the batch-192 recipe (stripped hit@1 0.387 under the single-draw protocol, against that recipe’s 0.440 ± 0.021 five-fold mean under the averaged-anchor protocol), so the body's five-fold VICReg run (Figure 4) trains at batch 192. I-CE and CE peaks under the same readout anchor the scale.*
 
 | Objective | Name hit@1 | Stripped hit@1 |
 | --- | --- | --- |
@@ -290,4 +294,4 @@ Every headline number in this paper is measured on testset queries (ts) — game
 | BYOL | 0.732 | 0.441 | +0.291 | 0.355 | 0.284 | +0.072 |
 | Frozen embedder (mean pool) | 0.425 | 0.425 | +0.000 | 0.209 | 0.209 | -0.000 |
 
-Two readings stand out. On name-intact queries every trained tower gives something back when the game is new — from 0.037 for I-CE to 0.291 for BYOL — and the ordering of that gap tracks how much of a tower's identity resolution is anchored rather than remembered. On name-stripped queries the contrast is sharper still: plain CE scores 0.735 on games it trained on but only 0.673 on held-out ones, a 0.062 gap, while I-CE reads 0.740 and 0.741 — no gap at all. The invariance term does not merely raise the name-stripped score; it removes the part of that score which was memorization. This is the same conclusion Section 6.1 draws from the factorization, measured from the other side.
+Two readings stand out. On name-intact queries every trained tower gives something back when the game is new — from 0.037 for I-CE to 0.291 for BYOL — and the ordering of that gap tracks how much of a tower's identity resolution is anchored rather than remembered. On name-stripped queries the contrast is sharper still: plain CE scores 0.735 on games it trained on but only 0.673 on held-out ones, a 0.062 gap, while I-CE reads 0.740 and 0.741 — no gap at all. The invariance term raises the name-stripped score and simultaneously removes the memorization component from it.
