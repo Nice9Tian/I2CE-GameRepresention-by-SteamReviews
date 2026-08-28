@@ -163,7 +163,7 @@ def build_pool_and_anchors():
                 rid[gi, row:row + L] = k
                 row += L
             plen[gi] = row
-            # anchor: sp doc first, whole reviews after, to the 512 budget
+            # anchor: sp doc first, whole reviews after, to the GCAP budget
             g_row = 0
             if gi in sp_row:
                 dl = int(SPV_len[sp_row[gi]])
