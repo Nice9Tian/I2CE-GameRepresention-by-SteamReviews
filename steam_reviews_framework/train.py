@@ -30,15 +30,18 @@ from .sampler import pad_flat, sample_views
 class ArmSpec:
     """One experiment arm = tower recipe + gate + head grid."""
     name: str
-    tower: str = "cegate"        # cegate | igate | rgate | plain | arc | byol
+    # "plain" is the manuscript's objective: CE on every game in the step.
+    # cegate | igate | rgate are ABLATION towers that restrict which games
+    # contribute a CE (resp. I) positive term; see gate_set() below.
+    tower: str = "plain"         # plain | cegate | igate | rgate | arc | byol
     inv_weight: float = 2.0      # I dose (0 = pure CE)
-    gate_scope: str = "doc"      # gated towers: "doc" (any doc) | "wiki"
+    gate_scope: str = "doc"      # gated towers only: "doc" (any doc) | "wiki"
     wiki_src: str = "clean"      # doc family: wiki_clean | wiki_llm
     use_sp_view: bool = True     # sp_raw tier under the wiki tier
     use_doc_view: bool = True    # False = nodoc (pure review views)
     tau: float = 0.02            # frozen tower temperature
     num_views: int = 4           # NV (last view = doc view when available)
-    epochs: int = 1000
+    epochs: int = 2000
     ckpt_every: int = 50
     # head grid rows: (suffix, phase1, phase2, label_smoothing)
     head_cfgs: tuple = (("", "ice", "ice", 0.0),)
@@ -49,7 +52,20 @@ class ArmSpec:
         return self.head_iw if self.head_iw is not None else max(self.inv_weight, 1.0)
 
 
-CHAMPION = ArmSpec(name="champion_cegate2", tower="cegate", inv_weight=2.0)
+# The manuscript's headline objective (the w9 campaign calls this arm
+# `wcle_i2ce_icetf`): ungated CE over every game in the step, plus I x2 over
+# the strong views. This is what path 1 reproduces.
+CHAMPION = ArmSpec(name="champion_i2ce", tower="plain", inv_weight=2.0)
+
+# CE-gated ablation: CE fires only on games that carry a document view, so
+# the ~198 of 2,020 games with neither a wiki article nor a store page never
+# supply a CE positive (they stay gallery negatives throughout). NOT the
+# published objective — it is one rung of the cegate1/2/3/4 dose ladder in
+# contrast_experiment/contrast_models/roster.py. Kept here because path 1
+# shipped it as the default before this was made explicit.
+CEGATE2 = ArmSpec(name="cegate2", tower="cegate", inv_weight=2.0)
+
+ARM_CHOICES = {"i2ce": CHAMPION, "cegate2": CEGATE2}
 
 
 # ------------------------- doc-view machinery ------------------------------
@@ -75,7 +91,11 @@ def make_doc_tiers(B, spec: ArmSpec):
 
 
 def gate_set(B, spec: ArmSpec, g2wiki, doc_games):
-    """Games on which the gated loss term fires."""
+    """Games on which the gated loss term fires (ABLATION towers only).
+
+    Never consulted by the published objective (tower="plain"), where CE
+    and I both run over every game in the step.
+    """
     if spec.tower == "rgate":       # random coverage-matched control gate
         n = sum(1 for g in B.train_pool_games if int(g) in doc_games)
         rngG = np.random.default_rng(SPLIT_SEED + 7)
@@ -115,8 +135,9 @@ def train_tower(B, spec: ArmSpec, seed=0, W=16, bs=192, per_epoch=3072,
                 loss_hook=None, log_cb=print):
     """Full-budget tower training; returns (model, checkpoints dict).
 
-    loss_hook(Zs, Zg, tgt, gate_idx) -> loss overrides the default champion
-    objective (used by contrast arms like ArcFace)."""
+    loss_hook(Zs, Zg, tgt, gate_idx) -> loss overrides the default I-CE
+    objective (used by contrast arms like ArcFace). gate_idx is None unless
+    the arm is one of the gated ablations."""
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     cfg = LariceConfig(readout="pool", num_views=spec.num_views, tau=spec.tau,
@@ -148,6 +169,10 @@ def train_tower(B, spec: ArmSpec, seed=0, W=16, bs=192, per_epoch=3072,
                           if gated else None)
                     loss = loss_hook(Zs, Zg, tgt, hd)
                 elif spec.tower == "cegate" or spec.tower == "rgate":
+                    # ABLATION branch, not the manuscript's objective: only
+                    # gate_games rows contribute a CE positive. Zg is still
+                    # the full training gallery, so every game keeps taking
+                    # negative gradient. The published arm is the else below.
                     hd = torch.tensor(np.array([g in gate_games for g in gids])
                                       ).to(B.dev).nonzero(as_tuple=True)[0]
                     loss = (sum(F.cross_entropy(
@@ -155,6 +180,7 @@ def train_tower(B, spec: ArmSpec, seed=0, W=16, bs=192, per_epoch=3072,
                         for Z in Zs)
                         if len(hd) else torch.zeros((), device=B.dev))
                 else:
+                    # Published CE: every game in the step is classified.
                     loss = sum(F.cross_entropy(Z.float() @ Zg.T.float() * inv_t,
                                                tgt) for Z in Zs)
                 if spec.inv_weight > 0:

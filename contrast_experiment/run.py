@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""ONE-CLICK full contrast suite (the OTHER run.py trains only the champion —
-steam_reviews_framework/run.py; this one trains everything else).
+"""ONE-CLICK full contrast suite (the OTHER run.py trains only the
+manuscript's own I-CE arm — steam_reviews_framework/run.py; this one trains
+everything else, baselines and ablations).
 
     python contrast_experiment/run.py                    # 18 arms, fixed split
     python contrast_experiment/run.py --arms ce byol     # a subset
@@ -8,7 +9,7 @@ steam_reviews_framework/run.py; this one trains everything else).
     python contrast_experiment/run.py --cv --folds 0 1   # some folds only
 
 Data preparation (bundled corpora -> reviews h5 -> assets) is shared with
-the champion entry and runs automatically. Everything is resume-safe:
+the path-1 entry and runs automatically. Everything is resume-safe:
 finished towers/heads/folds are skipped on relaunch. Ends by writing the
 comparison table (report.py).
 
@@ -28,7 +29,7 @@ import torch
 
 from steam_reviews_framework.run import ensure_data
 from steam_reviews_framework.data import load_bundle
-from steam_reviews_framework.train import CHAMPION, run_arm, train_tower
+from steam_reviews_framework.train import run_arm, train_tower
 from contrast_experiment.contrast_models.roster import ARMS, CV_RECIPES
 from contrast_experiment.contrast_models.arcface import arc_loss_hook
 from contrast_experiment.contrast_models.byol import train_byol
@@ -40,7 +41,7 @@ def train_fn_for(spec):
     if spec.tower == "arc":
         return lambda B, s, log_cb=print: train_tower(
             B, s, loss_hook=arc_loss_hook, log_cb=log_cb)
-    return None                      # default champion-family objective
+    return None                      # default I-CE-family objective
 
 
 def main():
@@ -52,7 +53,7 @@ def main():
     ap.add_argument("--recipes", nargs="*", default=None,
                     help=f"CV subset of: {', '.join(CV_RECIPES)}")
     ap.add_argument("--folds", nargs="*", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--cv-epochs", type=int, default=600)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--device", default="cuda")
@@ -83,8 +84,7 @@ def main():
             log(f"fold {fold}: test {len(Bf.test_g)} val {len(Bf.val_g)} "
                 f"train pool {len(Bf.train_pool_games)}")
             for r in recipes:
-                base = CHAMPION if r == "champion_cegate2" else ARMS[r]
-                spec = copy.copy(base)
+                spec = copy.copy(ARMS[r])
                 spec.name = f"cv_{r}_fold{fold}"
                 spec.epochs = args.cv_epochs
                 spec.ckpt_every = args.ckpt_every

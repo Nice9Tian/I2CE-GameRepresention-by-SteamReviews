@@ -94,11 +94,14 @@ data/                      every heavy artefact (gitignored except READMEs)
 ```bash
 pip install -r requirements.txt
 
-# Path 1 - train one champion tower on the fixed split
+# Path 1 - train one I-CE tower (the manuscript's objective) on the fixed split
 python steam_reviews_framework/run.py
 
 # Path 1 on a cross-validation fold
 python steam_reviews_framework/train_champion.py --cv-fold 0
+
+# Path 1 with the CE-gated ablation instead of the manuscript's objective
+python steam_reviews_framework/train_champion.py --arm cegate2
 
 # Path 2 - the whole contrast roster, then the comparison table
 python contrast_experiment/run.py [--cv]
@@ -172,16 +175,35 @@ configuration:
 
 | | `run.py` default | the manuscript's headline |
 |---|---|---|
-| anchor budget | 512 sentences (`GCAP` in `build_assets.py`) | 4,096, rebuilt on the fly by the w9 workers (`--anchor-cap`) |
-| epochs | 1,000 (600 for the `--cv` recipes) | 2,000 |
+| epochs | 2,000 — matched. `--cv` recipes still default to 600 (`--cv-epochs`) | 2,000 |
 | split | the fixed 204/203/407 partition | five-fold over the same 814 games |
-| CE scope | gated: CE fires only on games carrying a document view (`champion_cegate2`) | ungated, every batch game (`wcle_i2ce_icetf`) |
 | readout | zero-shot cosine **and** the two-phase name head | zero-shot cosine only |
 
 None of these are hard-coded: `--epochs`, `--cv-fold`, the arm roster in
 `contrast_experiment/contrast_models/roster.py`, and `GCAP` each move one
 of them. The manuscript's exact combinations are already wired up as the
 w9 notebooks.
+
+**CE scope is not on that list.** Both paths classify every game in the
+step, which is Equation (1) of the manuscript. The CE *gate* — CE firing
+only on the games that carry a document view, so that the ~198 of 2,020
+games with neither a wiki article nor a store page never supply a CE
+positive — is an ablation, one rung of the `cegate1/2/3/4` dose ladder
+alongside its `igate` mirror and its `rgate2` coverage-matched random
+control. Run it explicitly with `--arm cegate2`. Path 1 shipped the gated
+arm as its unlabelled default until this was split out, which read as if
+the manuscript's objective were gated; it never was, and no reported
+number came from that arm.
+
+**The anchor budget now costs what the manuscript's does.** `GCAP` is
+4,096, so the packaged path builds the same anchor packs the headline
+numbers were trained on — and inherits their footprint. The asset build
+allocates `2,020 x 4,096 x 1,024` fp16 in host RAM and writes it out,
+about 17 GB where the old 512-sentence default needed 2 GB, and training
+at that budget wants the 80 GB card the Hardware section describes. If
+you are reproducing on a desktop GPU, set `GCAP = 1024` in
+`dataset_builder/build_assets.py`: retrieval has already saturated there,
+within 0.02 of the full configuration on every reading.
 
 ## Hardware
 

@@ -1,9 +1,9 @@
 # data/results/ — training artefacts
 
 Written by the trainers (`steam_reviews_framework/run.py` for the
-champion, `contrast_experiment/run.py` for the contrast suite); aggregated
-by `contrast_experiment/report.py`. Naming conventions (`{arm}` = arm
-name, e.g. `champion_cegate2`; CV arms = `cv_{recipe}_fold{k}`):
+manuscript's I-CE arm, `contrast_experiment/run.py` for the contrast
+suite); aggregated by `contrast_experiment/report.py`. Naming conventions
+(`{arm}` = arm name, e.g. `champion_i2ce`; CV arms = `cv_{recipe}_fold{k}`):
 
 | File | Structure | Meaning |
 |---|---|---|
