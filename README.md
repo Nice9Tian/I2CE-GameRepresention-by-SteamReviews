@@ -15,7 +15,9 @@ Qwen3-Embedding-0.6B (1024-d, last-token pooling, no instruction prefix).
 Every review is sentence-split and embedded once; training thereafter
 reads only the cached vectors.
 
-## Paper appendices (supplementary material)
+---
+
+## 1. The paper and its appendices
 
 Appendices A to L and Tables A1 to A15: the separation-gradient
 derivation behind Section 4.3, the per-fold cross-validation detail, the
@@ -29,32 +31,6 @@ query-rewrite prompts, and the tag-vocabulary mapping.
 [`APPENDIX.docx`](APPENDIX.docx) is the same document in Word. Appendix
 letters and table numbers match the citations in the paper.
 
-## Interactive Figure 6 (trend river)
-
-[`figures/trend_river/`](figures/trend_river/) holds the interactive
-generator of the paper's content-trend river plus its bundled dataset
-(1,919 games: tower centroids, release times, coarse tags, titles). Open
-`cluster_share_stack.html` in any browser, no build step. Its README has
-the data schema and the pressure-driven event model behind the stream
-junctions.
-
-## Where the paper's numbers come from
-
-**[`contrast_experiment/w9/`](contrast_experiment/w9/README.md) is the
-campaign behind the manuscript's tables**, and it is the right entry
-point for reproducing a published figure. It is self-contained (workers,
-notebooks, and the minimal model package they import), and its arm names
-are the keys in the released result JSONs: `wcle_i2ce_icetf`,
-`wcle_ce_cetf`, `wcle_bce_cetf` (SimCLR-style), `wcle_byol_bytf`,
-`wcle_vic_cetf` (VICReg), `wcle_swin*` (the sliding fresh-window
-teacher), `wcle_vfai2ce_icetf` (the views-first-anchor control). Its
-README maps each notebook to the experiment it runs.
-
-The two `run.py` entry points below are the packaged reproduction paths.
-They train the same tower under an older default protocol, and the table
-in [Protocol](#protocol-what-the-code-actually-runs) states exactly where
-those defaults differ from the manuscript's headline setting.
-
 Every number the manuscript prints is **zero-shot cosine retrieval**: no
 retrieval head is trained anywhere, a query is the tower's encoding of
 text it has never seen, and the candidates are all 2,020 games ranked by
@@ -63,7 +39,22 @@ cosine against the anchor gallery. In the result files that is the `zs_*`
 name-recall head in `steam_reviews_framework/backhead_name.py`, a
 separate line of work the manuscript does not report.
 
-## Layers
+`contrast_experiment/w9/Pod/w9_profiles.py` states, cell by cell, which
+training run backs which figure or table. Start there when you want to
+reproduce one specific published number.
+
+### Interactive Figure 6 (trend river)
+
+[`figures/trend_river/`](figures/trend_river/) holds the interactive
+generator of the paper's content-trend river plus its bundled dataset
+(1,919 games: tower centroids, release times, coarse tags, titles). Open
+`cluster_share_stack.html` in any browser, no build step. Its README has
+the data schema and the pressure-driven event model behind the stream
+junctions.
+
+---
+
+## 2. Using the I2CE model
 
 Dependencies run strictly one way: experiment → framework → main_model.
 
@@ -89,53 +80,45 @@ figures/                   the interactive trend-river source
 data/                      every heavy artefact (gitignored except READMEs)
 ```
 
-## Quick start
+### The tower on its own
+
+`main_model/` is task-agnostic and depends on nothing in this repository.
+Any task whose samples lay out as `[data, view]` can use it unchanged:
+
+```python
+from main_model import LariceConfig, LariceTower, ice_loss
+
+cfg = LariceConfig(num_queries=4, dim_model=128, input_dim=1024,
+                   num_views=4, tau=0.02, inv_weight=2.0, readout="pool")
+tower = LariceTower(cfg)
+
+z = tower(x, mask)                          # [B, V, out_dim], L2-normalised
+loss = ice_loss(z, gallery, targets, cfg)   # CE (data axis) + I (view axis)
+```
+
+`gallery` is the tower's own encoding of every item's anchor set,
+recomputed with gradient each step. See [`main_model/README.md`](main_model/README.md).
+
+### Training on the Steam corpus
 
 ```bash
 pip install -r requirements.txt
 
-# Path 1 - train one I-CE tower (the manuscript's objective) on the fixed split
+# One I-CE tower (the manuscript's objective) on the fixed split
 python steam_reviews_framework/run.py
 
-# Path 1 on a cross-validation fold
+# ... on a cross-validation fold
 python steam_reviews_framework/train_champion.py --cv-fold 0
 
-# Path 1 with the CE-gated ablation instead of the manuscript's objective
+# ... with the CE-gated ablation instead of the manuscript's objective
 python steam_reviews_framework/train_champion.py --arm cegate2
 
-# Path 2 - the whole contrast roster, then the comparison table
+# The whole contrast roster, then the comparison table
 python contrast_experiment/run.py [--cv]
-
-# Data only, no training
-python steam_reviews_framework/run.py --data-only
 ```
 
-Both entries share one data-preparation pipeline, and every step is
-resume-safe: rerunning skips whatever already exists, so an interrupted
-run continues where it stopped.
-
-1. **Corpora (bundled, reproducibility first).** `wikipage.zip`
-   (wiki_clean / variants / llm, 814 games) and `storepage.zip` (six
-   store-page corpora, 1,811 games) ship in
-   `steam_reviews_framework/corpora_bundles/` and unpack into
-   `data/corpora/`. The bundled texts always win: Wikipedia is never
-   re-scraped and the LLM is never re-run, so results cannot drift with
-   live wiki edits or non-deterministic rewrites.
-2. **Review files.** The 73-million-sentence embedding h5 and the
-   text/tag h5 are downloaded when `LARICE_EMBED_H5_URL` /
-   `LARICE_TEXT_H5_URL` are set, or rebuilt once from the Kaggle dump via
-   `dataset_builder/reviews/`.
-3. **Tensor assets.** `dataset_builder/build_assets.py` fills in whatever
-   is missing. `dataset_builder/rebuild_data.py --check` reports layer by
-   layer what is absent and which command produces it.
-
-Credentials live in `dataset_builder/llmAPI.txt` (corpus rewriting) and
-`dataset_builder/embeddingAPI.txt` (cloud embedding endpoint), both
-gitignored, both with a `*.template.txt` next to them. They can also be
-typed into the settings block at the top of
-`steam_reviews_framework/run.py`.
-
-## Protocol (what the code actually runs)
+Every step is resume-safe: rerunning skips whatever already exists, so an
+interrupted run continues where it stopped.
 
 Fixed throughout, and identical to the manuscript:
 
@@ -160,6 +143,10 @@ Fixed throughout, and identical to the manuscript:
 - **Optimizer.** AdamW, lr 5e-4, weight decay 1e-4, batch 192 games,
   16 steps per epoch, gradient clipping at 5.0, AMP. Frozen `tau = 0.02`,
   invariance weight 2.0.
+- **CE scope.** Every game in the step is classified, which is Equation
+  (1) of the manuscript. The CE *gate* — CE firing only on the games that
+  carry a document view — is an ablation, reachable with `--arm cegate2`,
+  never the published objective.
 - **Selection.** Checkpoints every 50 epochs, no online early stopping.
   The deployed checkpoint is picked post-hoc on validation-fold queries,
   never on test.
@@ -170,42 +157,55 @@ Fixed throughout, and identical to the manuscript:
   the same 814 games into five folds (fold k = test, fold k+1 = val, the
   other three = train), which leaves 1,694 per fold.
 
-Where the packaged defaults differ from the manuscript's headline
-configuration:
+---
 
-| | `run.py` default | the manuscript's headline |
-|---|---|---|
-| epochs | 2,000 — matched. `--cv` recipes still default to 600 (`--cv-epochs`) | 2,000 |
-| split | the fixed 204/203/407 partition | five-fold over the same 814 games |
-| readout | zero-shot cosine **and** the two-phase name head | zero-shot cosine only |
+## 3. The three reproduction profiles
 
-None of these are hard-coded: `--epochs`, `--cv-fold`, the arm roster in
-`contrast_experiment/contrast_models/roster.py`, and `GCAP` each move one
-of them. The manuscript's exact combinations are already wired up as the
-w9 notebooks.
+The campaign behind the manuscript is
+[`contrast_experiment/w9/`](contrast_experiment/w9/README.md): workers,
+notebooks, and the minimal model package they import, self-contained so
+the folder can be copied to a GPU host on its own.
 
-**CE scope is not on that list.** Both paths classify every game in the
-step, which is Equation (1) of the manuscript. The CE *gate* — CE firing
-only on the games that carry a document view, so that the ~198 of 2,020
-games with neither a wiki article nor a store page never supply a CE
-positive — is an ablation, one rung of the `cegate1/2/3/4` dose ladder
-alongside its `igate` mirror and its `rgate2` coverage-matched random
-control. Run it explicitly with `--arm cegate2`. Path 1 shipped the gated
-arm as its unlabelled default until this was split out, which read as if
-the manuscript's objective were gated; it never was, and no reported
-number came from that arm.
+Which of its runs backs which published number is declared in
+[`contrast_experiment/w9/Pod/w9_profiles.py`](contrast_experiment/w9/Pod/w9_profiles.py).
+Each cell there carries the figures and tables it feeds, and three
+profiles select from it:
 
-**The anchor budget now costs what the manuscript's does.** `GCAP` is
-4,096, so the packaged path builds the same anchor packs the headline
-numbers were trained on — and inherits their footprint. The asset build
-allocates `2,020 x 4,096 x 1,024` fp16 in host RAM and writes it out,
-about 17 GB where the old 512-sentence default needed 2 GB, and training
-at that budget wants the 80 GB card the Hardware section describes. If
-you are reproducing on a desktop GPU, set `GCAP = 1024` in
-`dataset_builder/build_assets.py`: retrieval has already saturated there,
-within 0.02 of the full configuration on every reading.
+| Profile | Scope | Cells | Towers | Anchor budgets |
+|---|---|---|---|---|
+| `fullTest` | every experiment the paper **or** the appendix reports | 14 | 150 | 512 – 4,096 |
+| `paperTest` | every experiment the paper body reports, at its own budget | 5 | 52 | 512, 4,096 |
+| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 5 | 52 | 512, 1,024 |
 
-## Hardware
+```bash
+python contrast_experiment/w9/Pod/w9_profiles.py     # print the three plans
+```
+
+Three things worth knowing before you pick one.
+
+**The clamp is a ceiling, not a setting.** `litePaperTest` lowers only the
+cells the paper ran above 1,024. A cell the paper ran at 512 stays at 512,
+because rerunning it at 1,024 would not reproduce the published row. What
+moves is the 4,096 five-fold block, to a budget the paper itself measures
+as within 0.02 of the full configuration on every reading (Section 4.2,
+Table A2) and which fits a 24 GB desktop GPU.
+
+**`paperTest` and `litePaperTest` train the same number of towers.** They
+differ only in what those towers cost. `fullTest` roughly triples the
+count, mostly through two cells: the anchor ladder (30 towers) and the
+temperature sweep (30 towers).
+
+**Fifteen appendix tables are not fifteen campaigns.** Tables A6, A13,
+A14 and A15 are four different readouts of one shared five-fold @4,096
+tower set. The grid is much smaller than the table count suggests.
+
+Not listed in any profile, because neither the paper nor the appendix
+mentions them: the twin-pack `pk*` family, the slot/readout capacity
+grid, multi-anchor `ma2*`, the async simulation, and hard-negative
+`nemesis`. They remain reachable through `w9_jobs.FS_JOBS` and the
+notebooks.
+
+### Hardware
 
 The anchor budget sets the requirement, because the gallery is re-encoded
 with gradient at every step. A 24 GB desktop GPU covers budgets up to
@@ -218,7 +218,58 @@ At inference the cost is ordinary: one forward pass through the frozen
 0.6B embedder (under 3 GiB) plus a millisecond-level inner-product search
 against the pre-computed anchors.
 
-## Data and code separation
+---
+
+## 4. Building the data
+
+Both entry points share one data-preparation pipeline, and every step is
+resume-safe.
+
+```bash
+python steam_reviews_framework/run.py --data-only    # prepare, do not train
+python dataset_builder/rebuild_data.py --check       # what is missing, and why
+```
+
+1. **Corpora (bundled, reproducibility first).** `wikipage.zip`
+   (wiki_clean / variants / llm, 814 games) and `storepage.zip` (six
+   store-page corpora, 1,811 games) ship in
+   `steam_reviews_framework/corpora_bundles/` and unpack into
+   `data/corpora/`. The bundled texts always win: Wikipedia is never
+   re-scraped and the LLM is never re-run, so results cannot drift with
+   live wiki edits or non-deterministic rewrites.
+2. **Review files.** The 73-million-sentence embedding h5 and the
+   text/tag h5 are downloaded when `LARICE_EMBED_H5_URL` /
+   `LARICE_TEXT_H5_URL` are set, or rebuilt once from the Kaggle dump via
+   `dataset_builder/reviews/`.
+3. **Tensor assets.** `dataset_builder/build_assets.py` fills in whatever
+   is missing.
+
+### The parameters that matter
+
+Set at the top of `dataset_builder/build_assets.py`:
+
+| Constant | Default | Meaning |
+|---|---|---|
+| `GCAP` | 4096 | anchor budget: sentences per pack (doc prefix, then whole reviews) |
+| `CAP`, `TOPK` | 2048, 3 | review pool budget per game / gold-guarantee count |
+| `QCAP`, `QPG` | 512, 4 | pseudo-queries: anchor-shaped, 4 per game |
+| `SEED` | 20260711 | the split and sampling seed; also `wiki_eval_split.json` |
+
+**`GCAP` is the one to think about.** It sizes the anchor gallery the
+whole campaign trains against, and it costs: the build allocates
+`2,020 x GCAP x 1,024` fp16 in host RAM and writes it out, so 4,096 needs
+about 17 GB against 2 GB at 512. Match it to the profile you intend to
+run — `GCAP = 1024` for `litePaperTest` on a desktop GPU, 4,096 for
+`paperTest` and `fullTest`. The w9 workers override it per job with
+`--anchor-cap`, so this constant governs only the packaged path.
+
+Credentials live in `dataset_builder/llmAPI.txt` (corpus rewriting) and
+`dataset_builder/embeddingAPI.txt` (cloud embedding endpoint), both
+gitignored, both with a `*.template.txt` next to them. They can also be
+typed into the settings block at the top of
+`steam_reviews_framework/run.py`.
+
+### Where the artefacts live
 
 Every heavy artefact lives under `data/`, outside the code tree, and each
 location is overridable so an existing layout can be linked in without
@@ -233,7 +284,7 @@ LARICE_CORPORA     text corpora              LARICE_EMBED_H5 / LARICE_TEXT_H5  r
 See [`data/README.md`](data/README.md) for what each sub-directory holds
 and which stage writes it.
 
-## Requirements
+### Requirements
 
 Python 3.11+, `numpy`, `torch`, `h5py`, `scikit-learn`, `scipy`,
 `requests`. The data pipeline additionally needs `wtpsplit` (the SaT
