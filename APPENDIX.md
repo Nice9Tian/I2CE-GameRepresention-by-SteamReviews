@@ -1,6 +1,6 @@
 # Invariant Game Representation Learning from Steam Reviews
 
-Appendices A-K
+Appendices A-L
 
 *Supplementary material to the AICCC 2026 submission (PA0049)*
 
@@ -20,7 +20,7 @@ Table A1 gives the per-fold results behind Table A2's largest-budget row: I-CE a
 | **I-CE mean ± std** | **0.954 ± 0.013** | **0.997 ± 0.004** | **0.741 ± 0.018** | **0.928 ± 0.020** | **0.685 ± 0.019** |
 | **CE mean ± std** | **0.938 ± 0.013** | **0.988 ± 0.010** | **0.673 ± 0.014** | **0.889 ± 0.011** | **0.664 ± 0.016** |
 
-*Table A2: Ablation 1 in full — CE vs I-CE at anchor budgets of 512–4,096 sentences (testset queries (ts), five-fold mean ± std, the two objectives seed-paired per fold on identical splits). Increasing the budget yields one significant step — 512 to 1,024 sentences (p = 0.003) — followed by a plateau in which the three larger budgets are indistinguishable (p ≥ 0.20); I-CE leads CE at every budget (20 of 20 paired folds on Stripped hit@1), so the invariance constraint remains beneficial at all four scales. The windowed teacher (Appendix H) appears at its trained budget.*
+*Table A2: Ablation 1 in full — CE vs I-CE at anchor budgets of 512–4,096 sentences (testset queries (ts), five-fold mean ± std, the two objectives seed-paired per fold on identical splits). Increasing the budget yields one significant step — 512 to 1,024 sentences (p = 0.003) — followed by a plateau in which the three larger budgets are indistinguishable (p ≥ 0.20); I-CE leads CE at every budget (20 of 20 paired folds on Stripped hit@1), so the invariance constraint remains beneficial at all four scales. The windowed teacher (Appendix I) appears at its trained budget.*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set TAG F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -61,9 +61,23 @@ VICReg (epd 20/10/20). No negatives and no gallery. Each view encoding passes th
 
 BYOL. An online tower plus a two-layer predictor head, and a target tower that is an exponential moving average of the online weights (momentum 0.996) behind a stop-gradient. The loss is 1 − cos between the predictor's output for one view and the target tower's encoding of another, averaged over ordered view pairs; the document view participates like any other. Collapse is prevented by the predictor/EMA asymmetry rather than by negatives.
 
-CE + anchor-in-I (Table 2). Equation (2) unchanged, but the invariance term of Equation (1) ranges over the ten pairs among the four student views and the game’s own teacher anchor, instead of the six pairs among views alone. It is the control of Section 6.2: the same constant-weight attraction on the anchor that the decomposed objectives use, with the softmax left in place. Two-stage: BYOL warm start → windowed (Table A6). Stage one is the BYOL recipe above, run to its own selection point; stage two re-initializes the tower from those weights and trains the windowed teacher of Appendix H for 600 epochs, 30% of the from-scratch discriminative budget. Selection happens inside stage two. I-CE (EMA + memory bank; Table A6). The fully coupled teacher is replaced by an EMA shadow tower (momentum 0.99) that encodes the current batch's anchors into a 3,072-key memory bank; each view runs a cross-entropy against the ring (its freshly written key is the positive, stale same-game keys are masked), and the invariance term is unchanged. Gradient reaches the student side only — the property whose price Table A6 measures.
+CE + anchor-in-I (Table 2). Equation (2) unchanged, but the invariance term of Equation (1) ranges over the ten pairs among the four student views and the game’s own teacher anchor, instead of the six pairs among views alone. It is the control of Section 6.2: the same constant-weight attraction on the anchor that the decomposed objectives use, with the softmax left in place. Two-stage: BYOL warm start → windowed (Table A6). Stage one is the BYOL recipe above, run to its own selection point; stage two re-initializes the tower from those weights and trains the windowed teacher of Appendix I for 600 epochs, 30% of the from-scratch discriminative budget. Selection happens inside stage two. I-CE (EMA + memory bank; Table A6). The fully coupled teacher is replaced by an EMA shadow tower (momentum 0.99) that encodes the current batch's anchors into a 3,072-key memory bank; each view runs a cross-entropy against the ring (its freshly written key is the positive, stale same-game keys are masked), and the invariance term is unchanged. Gradient reaches the student side only — the property whose price Table A6 measures.
 
-## APPENDIX C: GRADIENT BOUNDS AND THE HANDOVER POINT
+## APPENDIX C: THE SEPARATION GRADIENTS OF SECTION 4.3
+
+This is the worked derivation behind Equations (4)-(6) of the body: why repelling one sample against another aims along noise near a hard pair, why repelling against an anchor does not, and why adding the invariance term leaves only the semantic difference. The analysis is first-order and treats encodings as free variables, in the reading of [5]; it claims directions and dominance relations, not rates.
+
+**The noise model.** Write the pooled embedding of an m-sentence pack drawn from game g as x = c_g + ε_m, where c_g is the draw-invariant component (the game's content together with whatever static bias its reviewers share) and ε_m is the sampling fluctuation of that particular draw, with E[ε_m] = 0. Packs enter at two scales: a strong view holds m_v = 16 sentences and an anchor pack holds m_a = 512 to 4,096, so m_a ≫ m_v. Averaging shrinks the fluctuation with pack size, hence Var(ε_v) ≫ Var(ε_a): the anchor is the low-variance observation of the same game the strong view observes noisily. The shared tower f encodes both, f(x_v) = z and f(x_a) = a, and transmits the asymmetry, so encoded views scatter while encoded anchors hold still.
+
+**Why sample-to-sample repulsion aims along noise.** For two encoded views z_1 = f(x_v1) and z_2 = f(x_v2) of different games, a repulsion term that acts between samples pushes along their difference, −∇_{z_1}ℓ_rep ∝ z_1 − z_2 = (c_1 − c_2) + (ε_v1 − ε_v2), which is Equation (5). Retrieval rank is decided by hard pairs, and a hard pair is by definition one whose semantics nearly coincide: c_1 ≈ c_2. There the first half of that difference is small while the second half carries the full high-variance draw noise of two independent views, ‖ε_v1 − ε_v2‖ ≫ ‖c_1 − c_2‖, so the repulsion aims predominantly along noise. It still disperses the gallery in the large, where the semantic term dominates, which is why sample-repelled towers spread widely yet carve narrow nearest-neighbour margins. This is prediction (i).
+
+**Why anchor-mediated repulsion does not.** Under the softmax of Equation (2) a view is not pushed against another view but against the anchor gallery, and one gradient step separates the pair along Δ(z_1 − z_2) ∝ ((1 − p_g)/τ + p_h/τ)(a_1 − a_2), which is Equation (6), where p_g is the weight on the view's own anchor and p_h the weight on the competing one. The direction it aims along is a_1 − a_2 = (c_1 − c_2) + (ε_a1 − ε_a2), and by the variance asymmetry the second half is a small static residual rather than a fresh draw: the repulsion tracks the semantic difference even where that difference is small. The softmax also concentrates the whole repulsion budget on whichever anchors currently compete, through p_h. This is prediction (ii).
+
+**Why the invariance term removes the residual noise.** Expand the tower to first order about the invariant component, f(c + ε) ≈ f(c) + Jε with J the Jacobian at c. A strong view then encodes to z ≈ f(c) + Jε_v, in which f(c) is a constant vector and every fluctuation of z is carried by Jε_v, so Cov(z) ≈ J Cov(ε_v) Jᵀ. The invariance term I is the expected disagreement between two independent views of one game, which is proportional to the total variance of that distribution: E[I] ≈ tr(J Cov(ε_v) Jᵀ). Minimizing I therefore drives tr(J Cov(ε_v) Jᵀ) → 0, that is, Jε_v → 0: the tower's response to draw noise is suppressed, not the noise itself. Two views of the same game then differ only by their invariant parts, ε_v1 − ε_v2 → 0.
+
+**What the two terms leave.** Writing the pair difference with the noise model, x_v1 − x_v2 = (c_1 − c_2) + (ε_v1 − ε_v2). The invariance term sends the second half to zero while the anchor-mediated repulsion of Equation (6) keeps the first half separated, since a term that suppressed both would leave the gallery unable to classify and would be forbidden by the cross-entropy. What survives at the optimum is the semantic difference alone, x_v1 − x_v2 = c_1 − c_2. This is prediction (iii): the invariance term contracts a query's displacement while the margin, an anchor-side quantity made by repulsion, stays roughly in place, so the displacement-to-margin ratio that retrieval depends on falls. Appendix D bounds the two forces against each other and fixes the point at which the contrastive term hands over to the invariance term; prediction (iv), the indivisibility of the softmax brake, follows from that same pairing of the (1 − p_g)/τ pull with the p_h/τ push and is tested in Section 6.2.
+
+## APPENDIX D: GRADIENT BOUNDS AND THE HANDOVER POINT
 
 The handover point between the contrastive push-pull and the invariance term, where the two forces intersect, follows from their maximum gradient magnitudes.
 
@@ -73,7 +87,7 @@ The invariance (I) term across V views computes the average cosine disagreement.
 
 Equating the two envelopes gives the precise handover point where the contrastive force drops below the invariance force: 2(1 − p_g)/τ = 2λ/V, which simplifies to 1 − p_g = λτ/V. In our architecture, V = 4. Setting λ = 2 naturally normalizes the invariance force envelope to a unit force (1.0). Coupled with our empirically optimal temperature τ = 0.02, this formula yields 1 − p_g = 0.01. Therefore, the parameters calibrate the gradients to gracefully hand over dominance exactly when the model reaches 99% classification confidence.
 
-## APPENDIX D: THE QUERY-REWRITE PROMPTS
+## APPENDIX E: THE QUERY-REWRITE PROMPTS
 
 All four query registers come from one chat-completions model (temperature 0.7) that reads a held-out game’s full wiki article and writes an English description of it. The instructions below were issued in Chinese and are translated faithfully here; the verbatim strings, the retry policy and the model identifier are in the released code. An output shorter than 300 characters is re-requested with the elaboration instruction, up to three attempts, and the article is truncated to 12,000 characters before it is sent.
 
@@ -86,7 +100,7 @@ name-stripped (Stripped hit@k)  —  Read the full game page text the user provi
 elaboration retry (any register)  —  Your previous answer was too short. Please write a considerably MORE DETAILED article (at least 300 words) in the requested style, covering the game’s content, story, world and mechanics from the page text above.
 ```
 
-## APPENDIX E: REDUCING THE STEAM TAG VOCABULARY
+## APPENDIX F: REDUCING THE STEAM TAG VOCABULARY
 
 A single mapping file is the source of truth for every tag number in this paper: each of the 202 fine tags is assigned either to one coarse class or to the sentinel "del".
 
@@ -121,9 +135,9 @@ Turn-Based = [Turn-Based, Turn-Based Combat, Turn-Based Strategy, Turn-Based Tac
 discarded = [2D, 3D, Anime, Arcade, Atmospheric, Beautiful, Cartoony, Casual, Character Customization, Cinematic, Classic, Colorful, Comedy, Controller, Cute, Dark, Dark Humor, Dating Sim, Destruction, Difficult, Drama, Early Access, Economy, Emotional, Family Friendly, Fast-Paced, Female Protagonist, First-Person, Free to Play, Funny, Gore, Great Soundtrack, Gun Customization, Hand-drawn, Indie, Inventory Management, Isometric, LGBTQ+, Loot, Mature, Memes, Music, Nudity, Old School, Physics, Pixel Graphics, Psychedelic, Psychological, Realistic, Relaxing, Replay Value, Retro, Romance, Sexual Content, Singleplayer, Soundtrack, Stylized, Surreal, Third Person, Thriller, Violent]
 ```
 
-## APPENDIX F: COST AT SCALE
+## APPENDIX G: COST AT SCALE
 
-Write N for the catalog size, P for the anchor-pack cap in sentences, d = 1,024 for the embedding width, B = 192 for the games in a step, and W = 168, S = 84, L = 2 for the window, stride and micro-passes of the teacher in Appendix H. The tower reads one pack with Q = 4 latent queries, so encoding a pack costs Θ(P·Q·d) work and holds Θ(P·d) activation. Everything below follows from those two facts.
+Write N for the catalog size, P for the anchor-pack cap in sentences, d = 1,024 for the embedding width, B = 192 for the games in a step, and W = 168, S = 84, L = 2 for the window, stride and micro-passes of the teacher in Appendix I. The tower reads one pack with Q = 4 latent queries, so encoding a pack costs Θ(P·Q·d) work and holds Θ(P·d) activation. Everything below follows from those two facts.
 
 The fully coupled teacher re-encodes every pack with gradient at every step. Its cost is Θ(N·P·Q·d) in time and Θ(N·P·d) in memory — both linear in the catalog. At our scale the backward graph holds 6.9 M sentence slots — 13 GiB of fp16 input before any activation is stored (cf. Table A9, whose 6.6 M counts the fixed split’s 1,613 packs) (Table A9); the same expression at N = 10⁶ asks for 7.6 TiB, which no accelerator holds. This is the wall the third limitation of Section 7 names.
 
@@ -160,7 +174,7 @@ The practical reading is that memory, the usual constraint, ceases to be one: a 
 
 At inference time the resource requirements are modest. Encoding a user query requires a single forward pass through the 0.6B parameter frozen text model (under 3 GiB of VRAM). Retrieval over the pre-computed anchors is an inner-product search that runs in milliseconds, so the heavy training-time graph does not affect deployment.
 
-*Table A6: The cost of the anchor-supply economies, moved here from the body in the phase-3 revision (testset queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget). The sliding fresh-window variant (swin, Appendix H) re-encodes ~27% of the gallery with gradient per step; the two-stage row hands a BYOL warm start to the windowed teacher for the last 600 epochs; the EMA + memory-bank variant replaces the coupled teacher with an EMA shadow encoder feeding a 3,072-key bank (Appendix B). Full coupling is the ceiling: the windowed teacher and the two-stage recipe each give up 0.032 Stripped hit@1, the memory-bank economy 0.105.*
+*Table A6: The cost of the anchor-supply economies, moved here from the body in the phase-3 revision (testset queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget). The sliding fresh-window variant (swin, Appendix I) re-encodes ~27% of the gallery with gradient per step; the two-stage row hands a BYOL warm start to the windowed teacher for the last 600 epochs; the EMA + memory-bank variant replaces the coupled teacher with an EMA shadow encoder feeding a 3,072-key bank (Appendix B). Full coupling is the ceiling: the windowed teacher and the two-stage recipe each give up 0.032 Stripped hit@1, the memory-bank economy 0.105.*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set TAG F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -169,7 +183,7 @@ At inference time the resource requirements are modest. Encoding a user query re
 | Two-stage: BYOL warm start → windowed, 600 ep | 0.930 ± 0.011 | 0.991 ± 0.008 | 0.709 ± 0.019 | 0.917 ± 0.005 | 0.705 ± 0.022 |
 | I-CE (EMA + memory bank) | 0.936 ± 0.010 | 0.991 ± 0.007 | 0.636 ± 0.016 | 0.881 ± 0.016 | 0.711 ± 0.016 |
 
-## APPENDIX G: THE DOCUMENT VIEW — PRESENT, ABSENT, REWRITTEN
+## APPENDIX H: THE DOCUMENT VIEW — PRESENT, ABSENT, REWRITTEN
 
 The document view is one of the four student views, and this ablation isolates it at the 512-sentence anchor budget — five folds per cell, seed-paired with the raw-document tower (Table A7). Two verdicts. First, the document view helps, modestly: removing it costs 0.008 Stripped hit@1 and 0.032 Name hit@1, with tag readings flat — the document supplies a cross-register bridge for name-free retrieval, not semantic breadth. Second, and less obviously, rewriting the document is better than keeping it: the LLM-rewritten tower leads the raw-document tower on the stripped columns (+0.008 Stripped hit@1, +0.011 Stripped hit@5) and ties it on the name columns, while reading tags -0.002 higher. This is the contamination of Section 2.2 showing up as a measurable effect rather than a worry. Wikipedia-derived text is exactly the material a public sentence embedder is likely to have memorized, and a memorized document pulls the game’s representation toward a recalled surface instead of the review consensus we want it to summarize; a faithful sentence-wise rewrite preserves the content while breaking the verbatim match, so it acts as a decontaminating filter. The firewall we adopted for safety turns out to pay for itself, and single-split readings of this ablation — which had ranged from apparent parity to an apparent 0.05 collapse depending on the selected checkpoint — are superseded by the fold-level account above.
 
@@ -181,7 +195,7 @@ The document view is one of the four student views, and this ablation isolates i
 | I-CE, no document view | 0.883 ± 0.016 | 0.981 ± 0.007 | 0.636 ± 0.016 | 0.871 ± 0.013 | 0.680 ± 0.024 |
 | I-CE, LLM-rewritten documents | 0.914 ± 0.010 | 0.990 ± 0.002 | 0.652 ± 0.023 | 0.882 ± 0.009 | 0.689 ± 0.016 |
 
-## APPENDIX H: THE WINDOWED TEACHER AND THE WINDOW-SIZE, VICREG, AND TEMPERATURE SWEEPS
+## APPENDIX I: THE WINDOWED TEACHER AND THE WINDOW-SIZE, VICREG, AND TEMPERATURE SWEEPS
 
 The windowed teacher deferred from Section 4 is specified below, followed by the three sweeps behind design choices. The window-size scan and the VICReg grid are single-split and should be read at the ±0.03 resolution of Section 5; the temperature sweep is five-fold.
 
@@ -196,7 +210,7 @@ swin-I-CE bounds the fully coupled teacher’s memory ceiling. The catalog is la
 | swin, W = 336 (step 168, 43.1% coverage) | 0.941 | 1.000 | 0.686 | 0.897 | 0.668 |
 | **I-CE, fully coupled (100% coverage)** | **0.951** | **1.000** | **0.706** | **0.917** | **0.679** |
 
-*Table A9: What the sliding window bounds. The teacher gallery is the activation ceiling of the fully coupled objective — it re-encodes every training anchor pack with gradient at once — whereas swin holds only the batch's own anchors plus one W = 168 window per micro-pass and frees it before the next, so the gradient-coupled encoding at its peak is 360 anchors, 22% of the full graph. Both variants keep the whole catalog resident: swin bounds the activation, not the store, which is why the memory saving is bounded by the persistent ring rather than reaching the full 4.5×. Anchor packs are capped at 4,096 sentences and realized packs are shorter, so the sentence-slot counts are ceilings. Counts are quoted on the fixed split of Appendix H (1,613 training games); a five-fold gallery is 1,694 and scales the same way.*
+*Table A9: What the sliding window bounds. The teacher gallery is the activation ceiling of the fully coupled objective — it re-encodes every training anchor pack with gradient at once — whereas swin holds only the batch's own anchors plus one W = 168 window per micro-pass and frees it before the next, so the gradient-coupled encoding at its peak is 360 anchors, 22% of the full graph. Both variants keep the whole catalog resident: swin bounds the activation, not the store, which is why the memory saving is bounded by the persistent ring rather than reaching the full 4.5×. Anchor packs are capped at 4,096 sentences and realized packs are shorter, so the sentence-slot counts are ceilings. Counts are quoted on the fixed split of Appendix I (1,613 training games); a five-fold gallery is 1,694 and scales the same way.*
 
 |  | Full-gallery I-CE | swin-I-CE (W = 168) |
 | --- | --- | --- |
@@ -233,7 +247,7 @@ The temperature sweep, unlike the two scans above, is five-fold and carries the 
 | τ = 0.10, 2,048 | 0.883 ± 0.032 | 0.978 ± 0.014 | 0.502 ± 0.012 | 0.785 ± 0.012 | 0.707 ± 0.015 |
 | learnable τ, 2,048 | 0.951 ± 0.008 | 0.995 ± 0.005 | 0.738 ± 0.006 | 0.920 ± 0.015 | 0.693 ± 0.015 |
 
-## APPENDIX I: THE TEACHER MUST EXCLUDE THE STUDENT’S VIEWS
+## APPENDIX J: THE TEACHER MUST EXCLUDE THE STUDENT’S VIEWS
 
 The tag gap of Section 7 invites a softer teacher: if the fixed anchor pack — which never contains the sentences a student view just read — is what forces the student to discard view-specific content, then letting the teacher see those sentences might relax the pressure. We tested exactly this (arm vfa): at every step, each batch game’s teacher pack is opened with the game’s four fresh student views and the fixed pack fills the remainder, so the teacher becomes a superset of the student’s evidence; evaluation anchors stay the fixed packs. The result refutes the hypothesis and then some (Table A12). Both retrieval axes collapse — name hit@1 0.901 → 0.638, stripped 0.657 → 0.398, zero of five paired folds — and the tag reading falls rather than rises (0.705 → 0.670). The diagnosis is unambiguous: every fold selects the epoch-50 checkpoint, the earliest written, so the tower is already past its best at the first write and degrades monotonically thereafter. The mechanism is positive leakage. Once the teacher vector a_g contains the student’s own view sentences, the contrastive positive is trivially matched and the softmax stops pushing the student to recognize the game from anything else; at evaluation the teacher reverts to the fixed pack the student never learned to key on, and identity — with the tag geometry that rides on it — is gone. The teacher must be content the student cannot see: this isolation is what lets contrast manufacture identity, and the tag gap is its intrinsic price, not a free lunch a softer teacher can recover.
 
@@ -244,7 +258,7 @@ The tag gap of Section 7 invites a softer teacher: if the fixed anchor pack — 
 | Views-first anchors (vfa) @512 | 0.638 ± 0.055 | 0.398 ± 0.041 | 0.670 ± 0.021 |
 | I-CE (reference, same split) @512 | 0.901 ± 0.021 | 0.657 ± 0.028 | 0.705 ± 0.015 |
 
-## APPENDIX J: THE TWO ANCHOR-READING REGIMES
+## APPENDIX K: THE TWO ANCHOR-READING REGIMES
 
 Anchor packs are drawn, not given: a game's reviews far exceed the 4,096-sentence cap, so each pack is one sample of the game's material (Section 5). This appendix reports every headline tower under both readings of ten such draws. Table A13 is the single-source reading the body uses; Table A14 pools the ten encodings into one index vector first. The ordering of methods, the sign of every paired comparison, and the size of the identity/semantics trade are identical in the two tables; what pooling changes is at most 0.008 Stripped hit@1, on the tower that gains most from averaging its draws.
 
@@ -276,7 +290,7 @@ Anchor packs are drawn, not given: a game's reviews far exceed the 4,096-sentenc
 | BYOL | 0.447 ± 0.034 | 0.743 ± 0.022 | 0.284 ± 0.014 | 0.554 ± 0.046 | 0.715 ± 0.020 |
 | Frozen embedder (mean pool) | 0.450 ± 0.034 | 0.642 ± 0.015 | 0.215 ± 0.031 | 0.393 ± 0.035 | 0.578 ± 0.015 |
 
-## APPENDIX K: TRAINSET VERSUS TESTSET QUERIES
+## APPENDIX L: TRAINSET VERSUS TESTSET QUERIES
 
 Every headline number in this paper is measured on testset queries (ts) — games held out of the fold the tower trained on. Because the 814-game evaluation universe also contains games inside the training pool, the same measurement can be repeated on trainset queries (tr): about 488 per fold against 163 testset queries, ranked against the same 2,020 candidates by the same finished tower. The difference is a generalization gap, and the frozen embedder anchors its interpretation: having trained on nothing, it scores identically on both populations (0.425 / 0.425), so any gap a trained tower shows is what training memorized rather than what the queries happen to ask. Table A15 gives both populations for every headline tower.
 
