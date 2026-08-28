@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""larice — Latent Represent I-CE: the champion tower + champion loss
+"""larice — Latent Represent I-CE: the tower + the I-CE objective
 (architecture lineage: SetPoolN — N latent queries cross-attending a set).
 
 Tensor protocol (see README): the leading two axes of every input are
@@ -13,8 +13,15 @@ convenience and treated as V = 1 with the view axis squeezed away.
 
 Loss axis semantics: the invariance term I is reduced along the *view*
 axis; the CE term is reduced along the *data* axis (against an anchor
-gallery). The CE gate is a per-item bool mask — CE fires only on gated
-items, I always fires. That factorisation is the champion recipe.
+gallery). That factorisation is the I-CE objective, and in the published
+recipe both terms fire on every item in the step.
+
+The optional `gate` argument of `ce_loss` is an ABLATION knob, not part
+of the published objective: it is a per-item bool mask that restricts
+which items contribute a CE *positive* term (they remain gallery
+negatives either way). It defaults to None = every item, which is what
+the manuscript reports. The gated variants (cegate / igate / rgate in
+contrast_experiment) are the arms that pass it.
 """
 import math
 from itertools import combinations
@@ -54,7 +61,7 @@ class LariceTower(nn.Module):
         a, _ = self.attn(self.q0.expand(x.shape[0], -1, -1),
                          x.float(), x.float(),
                          key_padding_mask=mask, need_weights=False)
-        if self.cfg.readout == "pool":                 # champion / name recall
+        if self.cfg.readout == "pool":                 # paper default / name recall
             return F.normalize(self.head(a.mean(1)), dim=-1)
         z = self.head(a)                               # per-slot readout
         return F.normalize(z.flatten(1), dim=-1)       # concat N slots
@@ -68,7 +75,7 @@ class LariceTower(nn.Module):
         return z.reshape(B, V, -1)
 
 
-# --------------------------- champion loss ---------------------------------
+# --------------------------- the I-CE objective -----------------------------
 
 def invariance_loss(z):
     """I term: mean cosine misalignment over all view pairs.
@@ -84,12 +91,17 @@ def invariance_loss(z):
                for i, j in pairs) / len(pairs)
 
 
-def gated_ce_loss(z, gallery, targets, inv_tau, gate=None):
-    """CE term against an anchor gallery, per view, gate-masked on data axis.
+def ce_loss(z, gallery, targets, inv_tau, gate=None):
+    """CE term against an anchor gallery, per view, reduced on the data axis.
 
     z: [B, V, D] or list of [B, D]; gallery: [G, D] (rows L2-normalised);
-    targets: [B] gallery column of each item; gate: [B] bool or None
-    (None = CE on every item). Returns a scalar (sum over views).
+    targets: [B] gallery column of each item. Returns a scalar (sum over
+    views).
+
+    gate: [B] bool or None. None (the default, and the published recipe)
+    classifies every item in the step. A mask is the ablation path: only
+    masked-in items contribute a positive term, while every item stays a
+    gallery negative for the rest. See the module docstring.
     """
     zs = list(z.unbind(1)) if torch.is_tensor(z) else list(z)
     if gate is not None:
@@ -102,11 +114,22 @@ def gated_ce_loss(z, gallery, targets, inv_tau, gate=None):
                                targets) for zv in zs)
 
 
-def champion_loss(z, gallery, targets, cfg: LariceConfig, gate=None,
-                  inv_tau=None):
-    """Full champion objective: gated CE (data axis) + I (view axis)."""
+def ice_loss(z, gallery, targets, cfg: LariceConfig, gate=None,
+             inv_tau=None):
+    """The I-CE objective: CE (data axis) + inv_weight x I (view axis).
+
+    With gate=None this is the objective the manuscript reports. Pass a
+    gate only to reproduce a gated ablation arm.
+    """
     it = inv_tau if inv_tau is not None else 1.0 / cfg.tau
-    loss = gated_ce_loss(z, gallery, targets, it, gate)
+    loss = ce_loss(z, gallery, targets, it, gate)
     if cfg.inv_weight > 0:
         loss = loss + cfg.inv_weight * invariance_loss(z)
     return loss
+
+
+# Pre-rename aliases. `champion_loss` used to imply the gated recipe was
+# the published one; it is not, and the name is kept only so older call
+# sites keep importing.
+gated_ce_loss = ce_loss
+champion_loss = ice_loss

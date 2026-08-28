@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 """The full contrast roster (CURRENT design only — R60 wiki protocol).
 
-Arm = ArmSpec (tower recipe + gate + head grid). The champion tower lives in
-model/ + steam_reviews_framework; every OTHER philosophy and dose lives here.
+Arm = ArmSpec (tower recipe + gate + head grid). The manuscript's own arm is
+"i2ce" (ungated CE + I x2), which path 1 also trains; every OTHER philosophy
+and dose lives here.
 
 Factorised axes:
   loss family     I-CE (ice/i2ce) | pure CE | ArcFace | BYOL
-  CE gate         cegate1/2/3/4 (I dose), scope doc vs wiki (…w)
+  CE gate         cegate1/2/3/4 (I dose), scope doc vs wiki (…w) — ablation:
+                  CE fires only on games that carry a document view
   I gate          igate1 / igate1w (CE always on, I gated)
   gate control    rgate2 (random coverage-matched CE gate)
   doc ablations   nodoc (no doc views), *_wllm (wiki_llm doc source —
                   the pretraining-leak ablation, applied to CE/ARC/BYOL
-                  single-constraint towers and the champion)
+                  single-constraint towers and the gated arm)
 """
 from steam_reviews_framework.train import ArmSpec
 
@@ -30,8 +32,11 @@ ARMS = {
     "ce": _arm("ce", tower="plain", inv_weight=0.0, head_cfgs=HEAD_CE),
     "arc": _arm("arc", tower="arc", inv_weight=0.0, head_cfgs=HEAD_ARC),
     "byol": _arm("byol", tower="byol", inv_weight=0.0, head_cfgs=HEAD_BYOL),
-    # ---- CE-gated I-dose ladder (champion = cegate2, run via path 1) ----
+    # ---- CE-gated I-dose ladder (ablation: CE fires only on games that
+    #      carry a document view; the manuscript's arm is the ungated
+    #      "i2ce" above) ----
     "cegate1": _arm("cegate1", tower="cegate", inv_weight=1.0),
+    "cegate2": _arm("cegate2", tower="cegate", inv_weight=2.0),
     "cegate3": _arm("cegate3", tower="cegate", inv_weight=3.0),
     "cegate4": _arm("cegate4", tower="cegate", inv_weight=4.0),
     "cegate1w": _arm("cegate1w", tower="cegate", inv_weight=1.0,
@@ -56,5 +61,7 @@ ARMS = {
                       wiki_src="llm", head_cfgs=HEAD_BYOL),
 }
 
-# 5-fold CV recipes (fixed-split winners re-adjudicated out-of-fold)
-CV_RECIPES = ["champion_cegate2", "ice", "i2ce", "ce", "arc", "byol"]
+# 5-fold CV recipes (fixed-split winners re-adjudicated out-of-fold).
+# "i2ce" is the manuscript's objective; "cegate2" is the CE-gated ablation
+# that path 1 used to run as its default.
+CV_RECIPES = ["cegate2", "ice", "i2ce", "ce", "arc", "byol"]

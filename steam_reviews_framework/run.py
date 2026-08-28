@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""ONE-CLICK champion reproduction.
+"""ONE-CLICK reproduction of the manuscript's I-CE tower.
 
     python steam_reviews_framework/run.py [--epochs 1000] [--device cuda]
 
@@ -13,7 +13,10 @@ What it does, in order:
                  (LARICE_EMBED_H5_URL / LARICE_TEXT_H5_URL), or you build
                  them once from the Kaggle dump via dataset_builder/reviews/.
   3. assets    — training/eval tensors built by dataset_builder/build_assets.
-  4. train     — the champion tower (cegate2) + BackHeads + vsel selection.
+  4. train     — the I-CE tower (ungated CE + I x2, the manuscript's
+                 objective) + BackHeads + vsel selection. Pass
+                 `--arm cegate2` through to train_champion.py for the
+                 CE-gated ablation instead.
 
 Every step is resume-safe; rerunning skips whatever already exists.
 contrast_experiment/run.py (the full contrast suite) reuses steps 1-3.
@@ -189,6 +192,9 @@ def ensure_data():
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--arm", choices=["i2ce", "cegate2"], default="i2ce",
+                    help="i2ce = the manuscript's objective (default); "
+                         "cegate2 = the CE-gated ablation")
     ap.add_argument("--epochs", type=int, default=1000)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--device", default="cuda")
@@ -201,6 +207,7 @@ def main():
         return
     subprocess.check_call([sys.executable,
                            str(FRAMEWORK / "train_champion.py"),
+                           "--arm", args.arm,
                            "--epochs", str(args.epochs),
                            "--ckpt-every", str(args.ckpt_every),
                            "--device", args.device])

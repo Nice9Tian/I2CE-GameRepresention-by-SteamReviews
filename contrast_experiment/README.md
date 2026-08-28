@@ -1,14 +1,14 @@
 # contrast_experiment — the full contrast suite
 
-Trains **every tower except the champion** and produces the comparison
-(the champion is path 1: `steam_reviews_framework/run.py`). The
-declarative arm roster lives in `contrast_models/roster.py` (18 arms:
+Trains **the baselines and ablations** and produces the comparison (the
+manuscript's own I-CE arm is path 1: `steam_reviews_framework/run.py`).
+The declarative arm roster lives in `contrast_models/roster.py` (19 arms:
 I-CE family / pure CE / ArcFace / BYOL / the CE-gate I-dose ladder / the
 I-gate mirror / random-gate and nodoc controls / wiki_llm leak ablations);
 matching head grids are in `contrast_heads/configs.py`.
 
 ```bash
-python contrast_experiment/run.py                 # one-click: data prep + 18 arms + table
+python contrast_experiment/run.py                 # one-click: data prep + 19 arms + table
 python contrast_experiment/run.py --arms ce byol  # a subset
 python contrast_experiment/run.py --cv            # + 6 recipes × 5 folds CV
 python contrast_experiment/report.py              # regenerate the summary table
@@ -20,7 +20,7 @@ relaunch, so the run can be interrupted at any point.
 ## pod/ — the multi-machine parallel route (this layer's accelerator)
 
 **The full contrast suite is a large set of mutually independent jobs
-(18 arms + 30 CV fold-runs) — a natural fit for multi-machine
+(19 arms + 30 CV fold-runs) — a natural fit for multi-machine
 parallelism.** `pod/` is a complete recipe for spraying the whole roster
 across N machines on RunPod (or any GPU cloud with a shared network
 volume):
@@ -56,7 +56,7 @@ reuse the main model's tower skeleton and swap the loss
 (`contrast_models/byol.py`, `arcface.py`); contrast heads reuse the
 framework's two-phase head machinery and swap only the loss philosophy
 (`contrast_heads/configs.py`). The framework never sees this layer —
-deleting the whole of contrast_experiment does not affect champion
+deleting the whole of contrast_experiment does not affect path-1
 reproduction.
 
 ## w9/ — the full experiment suite

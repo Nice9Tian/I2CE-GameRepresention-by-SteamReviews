@@ -16,18 +16,18 @@ class LariceConfig:
     num_heads: int = 4         # attention heads
     input_dim: int = 1024      # D_in: dimensionality of upstream embeddings
     hidden: int = 256          # readout MLP hidden width
-    readout: str = "concat"    # "concat" (default, general representation)
-    #                          # | "pool" (mean over slots; better for
-    #                          #   name-recall-style retrieval, see README)
+    readout: str = "pool"      # "pool" (default, mean over slots; better for name-recall)
+    #                          # | "concat" (general representation)
 
-    # ---- champion loss (I-CE with CE gating) ----
+    # ---- the I-CE objective ----
     num_views: int = 4         # NV: views per data item fed to the loss
     tau_mode: str = "frozen"   # "frozen" | "learnable"
     tau: float = 0.02          # CE temperature (init value when learnable)
     inv_weight: float = 2.0    # I: invariance weight across the view axis
-    #                          # CE gate: a per-item bool mask passed at loss
-    #                          # call time — CE fires only where gate is True,
-    #                          # I always fires (champion recipe).
+    #                          # Both terms fire on every item in the step.
+    #                          # The CE gate is NOT configured here: it is an
+    #                          # ablation-only per-item mask passed at loss
+    #                          # call time and defaults to off. See model.py.
 
     @property
     def out_dim(self) -> int:
