@@ -15,7 +15,8 @@ import torch.nn.functional as F
 
 from main_model import LariceConfig, LariceTower
 from steam_reviews_framework.sampler import sample_views
-from steam_reviews_framework.train import ArmSpec, make_doc_tiers, _amp_scaler
+from steam_reviews_framework.train import (ArmSpec, assemble_doc_view,
+                                           make_doc_tiers, _amp_scaler)
 
 TAU_EMA = 0.996
 
@@ -39,22 +40,6 @@ def train_byol(B, spec: ArmSpec, seed=0, W=16, bs=192, per_epoch=3072,
     tiers, _, _ = make_doc_tiers(B, spec)
     NV = spec.num_views
 
-    def doc_view(net, gids):
-        Z = torch.empty(bs, cfg.out_dim, device=B.dev, dtype=torch.float16)
-        assigned = np.zeros(bs, bool)
-        for g2x, Sx, mx in tiers:
-            msk = np.array([(not a) and (g in g2x)
-                            for a, g in zip(assigned, gids)])
-            if msk.any():
-                rows = [g2x[g] for g in gids[msk]]
-                Z[torch.tensor(msk).to(B.dev)] = net(Sx[rows], mx[rows]).half()
-                assigned |= msk
-        rest = ~assigned
-        if rest.any():
-            S, m = sample_views(B.pool, B.rev_tab, gids[rest], W, rng, B.dev)
-            Z[torch.tensor(rest).to(B.dev)] = net(S, m).half()
-        return Z
-
     ckpts = {}
     t0 = time.time()
     for ep in range(spec.epochs):
@@ -68,9 +53,9 @@ def train_byol(B, spec: ArmSpec, seed=0, W=16, bs=192, per_epoch=3072,
                 Zo = [model(S, m) for S, m in views]
                 with torch.no_grad():
                     Zt = [target(S, m) for S, m in views]
-                Zo.append(doc_view(model, gids))
+                Zo.append(assemble_doc_view(model, B, tiers, gids, W, rng, bs, cfg.out_dim))
                 with torch.no_grad():
-                    Zt.append(doc_view(target, gids))
+                    Zt.append(assemble_doc_view(target, B, tiers, gids, W, rng, bs, cfg.out_dim))
                 loss, npairs = 0.0, 0
                 for i in range(NV):
                     for j in range(NV):
