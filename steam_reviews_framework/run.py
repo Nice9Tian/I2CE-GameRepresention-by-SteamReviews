@@ -50,6 +50,7 @@ RELEASE = FRAMEWORK.parent
 sys.path.insert(0, str(RELEASE))
 
 from dataset_builder.paths import ASSETS, CORPORA, EMBED_H5, TEXT_H5
+from dataset_builder import profiles
 
 
 def _read_kv(path: Path) -> dict:
@@ -172,26 +173,34 @@ def ensure_reviews():
         sys.exit(1)
 
 
-def ensure_assets():
+def ensure_assets(profile=profiles.DEFAULT_PROFILE):
     missing = [f for f in ASSET_FILES if not (ASSETS / f).exists()]
     if not missing:
         print("assets: all present — skip", flush=True)
         return
-    print(f"assets: building {len(missing)} missing ...", flush=True)
+    print(f"assets: building {len(missing)} missing at the {profile} anchor "
+          f"budget ({profiles.anchor_cap(profile)} sentences) ...", flush=True)
     subprocess.check_call([sys.executable,
-                           str(RELEASE / "dataset_builder" / "build_assets.py")])
+                           str(RELEASE / "dataset_builder" / "build_assets.py"),
+                           "--profile", profile])
 
 
-def ensure_data():
+def ensure_data(profile=profiles.DEFAULT_PROFILE):
     """Steps 1-3 (shared with contrast_experiment/run.py)."""
     apply_api_settings()
     ensure_corpora()
     ensure_reviews()
-    ensure_assets()
+    ensure_assets(profile)
 
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--profile", choices=profiles.PROFILES,
+                    default=profiles.DEFAULT_PROFILE,
+                    help="sets the anchor budget the assets are built at "
+                         "and therefore trained at: litePaperTest = "
+                         f"{profiles.LITE_CAP} sentences (24 GB GPU), "
+                         f"paperTest/fullTest = {profiles.FULL_CAP} (80 GB)")
     ap.add_argument("--arm", choices=["i2ce", "cegate2"], default="i2ce",
                     help="i2ce = the manuscript's objective (default); "
                          "cegate2 = the CE-gated ablation")
@@ -201,7 +210,7 @@ def main():
     ap.add_argument("--data-only", action="store_true",
                     help="prepare corpora/reviews/assets, skip training")
     args = ap.parse_args()
-    ensure_data()
+    ensure_data(args.profile)
     if args.data_only:
         print("data ready — stopping before training (--data-only)")
         return

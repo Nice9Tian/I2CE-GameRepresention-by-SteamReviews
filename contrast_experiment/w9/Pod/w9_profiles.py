@@ -228,7 +228,21 @@ CELLS = [
 CELLS_BY_KEY = {c.key: c for c in CELLS}
 
 # ------------------------------------------------------------ profiles --
-LITE_CAP = 1024
+# dataset_builder/profiles.py is the single source of truth: it is what
+# the packaged path reads to decide the budget it BUILDS the anchor packs
+# at, and the two must agree or a litePaperTest run would train against
+# 4,096-sentence packs. When w9/ has been copied to a pod on its own the
+# repository is not importable, so fall back to the same literals; the
+# self-check below fires whenever both are present.
+try:
+    import os as _os
+    import sys as _sys
+    _sys.path.insert(0, _os.path.abspath(
+        _os.path.join(_os.path.dirname(__file__), "..", "..", "..")))
+    from dataset_builder.profiles import LITE_CAP, PROFILES as _P
+    assert _P == ("fullTest", "paperTest", "litePaperTest"), _P
+except Exception:                       # standalone w9/ copy
+    LITE_CAP = 1024
 
 
 def cells_for(profile):
