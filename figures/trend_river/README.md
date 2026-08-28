@@ -1,6 +1,6 @@
-# Trend river — interactive source of the paper's Figure 4
+# Trend river — interactive source of the paper's Figure 6
 
-`cluster_share_stack.html` is the model that produced the paper's Figure 4
+`cluster_share_stack.html` is the model that produced the paper's Figure 6
 (release share by semantic cluster, 2019–2024, no genre labels): the figure
 is this tool's canvas, exported via **Paper mode** + **Export PNG**. Open it
 directly in a browser — no server, no build step.
