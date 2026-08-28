@@ -27,7 +27,7 @@ from dataset_builder.paths import ASSETS, CORPORA, EMBED_H5, SPLIT_JSON
 
 SEED = 20260711
 CAP, TOPK = 2048, 3          # review pool budget / gold-guarantee count
-GCAP = 512                   # anchor budget (doc prefix + whole reviews)
+GCAP = 4096                  # anchor budget (doc prefix + whole reviews)
 QCAP, QPG = 512, 4           # pseudo-queries: anchor-shaped, 4 per game
 VARIANTS = ("neutral", "noname", "positive", "negative")
 

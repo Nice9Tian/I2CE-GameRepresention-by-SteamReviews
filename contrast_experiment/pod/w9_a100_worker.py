@@ -78,7 +78,7 @@ def parse_args():
     ap.add_argument("--full-pool", action="store_true",
                     help="draw training views from the FULL review corpus "
                          "(host-RAM flat npy) instead of the 2048-sent pool")
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--ckpt-seeds", type=int, default=3)
     ap.add_argument("--topup-seeds", type=int, default=10)

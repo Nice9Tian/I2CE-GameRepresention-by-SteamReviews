@@ -53,7 +53,7 @@ def main():
     ap.add_argument("--recipes", nargs="*", default=None,
                     help=f"CV subset of: {', '.join(CV_RECIPES)}")
     ap.add_argument("--folds", nargs="*", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--cv-epochs", type=int, default=600)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--device", default="cuda")

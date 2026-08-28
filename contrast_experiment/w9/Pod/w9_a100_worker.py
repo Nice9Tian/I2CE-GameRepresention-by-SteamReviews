@@ -382,7 +382,7 @@ def parse_args():
     ap.add_argument("--view-w", type=int, default=16,
                     help="sentence budget per training review view (whole "
                          "reviews accumulated until >= W); 16 = historical")
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--ckpt-seeds", type=int, default=3)
     ap.add_argument("--topup-seeds", type=int, default=10)

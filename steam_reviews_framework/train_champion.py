@@ -3,7 +3,7 @@
 over every game in the step, I x2, frozen tau 0.02, wiki_clean > sp_raw
 doc views, I-CE head). This is the w9 campaign's `wcle_i2ce_icetf` arm.
 
-    python steam_reviews_framework/train_champion.py [--epochs 1000] [--cv-fold K]
+    python steam_reviews_framework/train_champion.py [--epochs 2000] [--cv-fold K]
 
 `--arm cegate2` switches to the CE-gated ablation instead, where CE fires
 only on games carrying a document view. That arm was this script's default
@@ -31,7 +31,7 @@ def main():
     ap.add_argument("--arm", choices=sorted(ARM_CHOICES), default="i2ce",
                     help="i2ce = the manuscript's objective (default); "
                          "cegate2 = the CE-gated ablation")
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--cv-fold", type=int, default=None,
                     help="0..4: run on a CV fold instead of the fixed split")

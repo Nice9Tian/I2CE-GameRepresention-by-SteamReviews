@@ -175,8 +175,7 @@ configuration:
 
 | | `run.py` default | the manuscript's headline |
 |---|---|---|
-| anchor budget | 512 sentences (`GCAP` in `build_assets.py`) | 4,096, rebuilt on the fly by the w9 workers (`--anchor-cap`) |
-| epochs | 1,000 (600 for the `--cv` recipes) | 2,000 |
+| epochs | 2,000 — matched. `--cv` recipes still default to 600 (`--cv-epochs`) | 2,000 |
 | split | the fixed 204/203/407 partition | five-fold over the same 814 games |
 | readout | zero-shot cosine **and** the two-phase name head | zero-shot cosine only |
 
@@ -195,6 +194,16 @@ control. Run it explicitly with `--arm cegate2`. Path 1 shipped the gated
 arm as its unlabelled default until this was split out, which read as if
 the manuscript's objective were gated; it never was, and no reported
 number came from that arm.
+
+**The anchor budget now costs what the manuscript's does.** `GCAP` is
+4,096, so the packaged path builds the same anchor packs the headline
+numbers were trained on — and inherits their footprint. The asset build
+allocates `2,020 x 4,096 x 1,024` fp16 in host RAM and writes it out,
+about 17 GB where the old 512-sentence default needed 2 GB, and training
+at that budget wants the 80 GB card the Hardware section describes. If
+you are reproducing on a desktop GPU, set `GCAP = 1024` in
+`dataset_builder/build_assets.py`: retrieval has already saturated there,
+within 0.02 of the full configuration on every reading.
 
 ## Hardware
 

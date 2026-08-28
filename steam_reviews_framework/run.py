@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ONE-CLICK reproduction of the manuscript's I-CE tower.
 
-    python steam_reviews_framework/run.py [--epochs 1000] [--device cuda]
+    python steam_reviews_framework/run.py [--epochs 2000] [--device cuda]
 
 What it does, in order:
   1. corpora   — unpack the BUNDLED wikipage.zip / storepage.zip into the
@@ -195,7 +195,7 @@ def main():
     ap.add_argument("--arm", choices=["i2ce", "cegate2"], default="i2ce",
                     help="i2ce = the manuscript's objective (default); "
                          "cegate2 = the CE-gated ablation")
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--ckpt-every", type=int, default=50)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--data-only", action="store_true",

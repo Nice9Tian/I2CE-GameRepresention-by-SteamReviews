@@ -41,7 +41,7 @@ class ArmSpec:
     use_doc_view: bool = True    # False = nodoc (pure review views)
     tau: float = 0.02            # frozen tower temperature
     num_views: int = 4           # NV (last view = doc view when available)
-    epochs: int = 1000
+    epochs: int = 2000
     ckpt_every: int = 50
     # head grid rows: (suffix, phase1, phase2, label_smoothing)
     head_cfgs: tuple = (("", "ice", "ice", 0.0),)
