@@ -390,6 +390,9 @@ def parse_args():
                     help="claim file on the shared volume; when set, a 30s "
                          "heartbeat thread keeps it fresh (silent >2 min = "
                          "host presumed dead, job claimable by other hosts)")
+    ap.add_argument("--init-ckpt", default="",
+                    help="warm-start tower weights from this ckpt (state dict "
+                         "or dict with a model key); name suffix _bw")
     ap.add_argument("--measure-vram", default="",
                     help="VRAM calibration: run 3 real training steps at this "
                          "cap (incl. the 4x-view backward loss matrices), write "
@@ -1125,6 +1128,13 @@ def main():
         if BANK_POLICY and bank is None:
             with torch.no_grad():                       # fresh full init (age 0)
                 bank = gallery_train(model).float().clone()
+        if start_ep == 0 and args.init_ckpt:
+            # STAGE-1 handover: warm-start the tower (e.g. from the BYOL
+            # tower). Only the tower weights; opt/amp start fresh.
+            st0 = torch.load(args.init_ckpt, map_location="cpu")
+            sd0 = st0["model"] if isinstance(st0, dict) and "model" in st0 else st0
+            model.load_state_dict({k: v.to(dev) for k, v in sd0.items()})
+            print(f"WARM INIT from {args.init_ckpt}", flush=True)
         if MQ_LEN and mqueue is None:
             # prefill the FIFO ring with shadow(=main at t0) keys of random
             # entities so the first steps see a full negative set.
