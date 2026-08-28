@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import torch
 
 from steam_reviews_framework.run import ensure_data
+from dataset_builder import profiles
 from steam_reviews_framework.data import load_bundle
 from steam_reviews_framework.train import run_arm, train_tower
 from contrast_experiment.contrast_models.roster import ARMS, CV_RECIPES
@@ -46,6 +47,10 @@ def train_fn_for(spec):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--profile", choices=profiles.PROFILES,
+                    default=profiles.DEFAULT_PROFILE,
+                    help="anchor budget the assets are built at: "
+                         "litePaperTest fits a 24 GB GPU")
     ap.add_argument("--arms", nargs="*", default=None,
                     help=f"subset of: {', '.join(ARMS)}")
     ap.add_argument("--cv", action="store_true",
@@ -60,7 +65,7 @@ def main():
     args = ap.parse_args()
     log = lambda *a: print(*a, flush=True)
 
-    ensure_data()
+    ensure_data(args.profile)
 
     # ---- fixed split: the contrast roster ----
     todo = args.arms or list(ARMS)

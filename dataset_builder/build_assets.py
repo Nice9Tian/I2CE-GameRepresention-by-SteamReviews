@@ -13,8 +13,11 @@ Steps (each resume-safe — existing outputs are skipped):
   4. wiki_eval.npz        eval queries: wiki 4-variant docs, COMPLETE text
 
 Usage:  python dataset_builder/build_assets.py [--step 1 2 3 4]
+                                              [--profile litePaperTest]
+                                              [--anchor-cap 1024]
 """
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -24,12 +27,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "reviews"))
 
 from dataset_builder.paths import ASSETS, CORPORA, EMBED_H5, SPLIT_JSON
+from dataset_builder import profiles
 
 SEED = 20260711
 CAP, TOPK = 2048, 3          # review pool budget / gold-guarantee count
-GCAP = 4096                  # anchor budget (doc prefix + whole reviews)
 QCAP, QPG = 512, 4           # pseudo-queries: anchor-shaped, 4 per game
 VARIANTS = ("neutral", "noname", "positive", "negative")
+
+# Anchor budget: sentences per pack (doc prefix, then whole reviews).
+# Resolution order is --anchor-cap, then --profile, then LARICE_ANCHOR_CAP,
+# then the default profile. It is a parameter rather than a constant
+# because it decides whether the run fits the machine at all: at 4,096
+# this build allocates ~17 GB of host RAM and training peaks near 61 GiB,
+# where 1,024 needs 4.2 GB and 22.3 GiB. See dataset_builder/profiles.py.
+GCAP = int(os.environ.get("LARICE_ANCHOR_CAP") or profiles.anchor_cap())
 
 
 # ---------------------------------------------------------------- step 1 --
@@ -112,8 +123,31 @@ def build_views(jobs=(("wiki_clean", "wiki_clean_views.npz"),
 
 
 # ---------------------------------------------------------------- step 3 --
+def built_anchor_cap():
+    """The budget the on-disk anchors were built at, or None if absent.
+
+    The gallery's own second axis IS the budget, so no side-car marker is
+    needed and an asset directory cannot lie about what it holds.
+    """
+    gal = ASSETS / "wscan_gal_rev.npz"
+    if not gal.exists():
+        return None
+    with np.load(gal, mmap_mode="r") as z:
+        return int(z["gal"].shape[1])
+
+
 def build_pool_and_anchors():
     if (ASSETS / "ss_queries_rev.npz").exists():
+        have = built_anchor_cap()
+        if have is not None and have != GCAP:
+            raise SystemExit(
+                f"anchor budget mismatch: the assets in {ASSETS} were built "
+                f"at {have} sentences, this run wants {GCAP}.\n"
+                f"Training reads the built packs, so it would silently run "
+                f"at {have}, not {GCAP}.\n"
+                f"Either rerun with --anchor-cap {have} (or the profile that "
+                f"means it), or delete wscan_gal_rev.npz, wscan_pool_rev*.npy "
+                f"and ss_queries_rev* to rebuild at {GCAP}.")
         print("pool/anchors/queries exist — skip", flush=True)
         return
     import h5py
@@ -295,7 +329,18 @@ STEPS = {1: build_games, 2: build_views, 3: build_pool_and_anchors,
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--step", nargs="*", type=int, default=[1, 2, 3, 4])
+    ap.add_argument("--profile", choices=profiles.PROFILES, default=None,
+                    help="build the anchor packs at this profile's budget "
+                         f"(default: {profiles.DEFAULT_PROFILE})")
+    ap.add_argument("--anchor-cap", type=int, default=None,
+                    help="anchor budget in sentences; overrides --profile")
     a = ap.parse_args()
+    if a.anchor_cap is not None:
+        GCAP = a.anchor_cap
+    elif a.profile is not None:
+        GCAP = profiles.anchor_cap(a.profile)
+    print(f"anchor budget: {GCAP} sentences/pack "
+          f"(~{2020 * GCAP * 1024 * 2 / 2**30:.1f} GB gallery)", flush=True)
     for s in a.step:
         STEPS[s]()
     print("build_assets done", flush=True)

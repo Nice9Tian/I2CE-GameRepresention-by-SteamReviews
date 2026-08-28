@@ -244,24 +244,54 @@ python dataset_builder/rebuild_data.py --check       # what is missing, and why
 3. **Tensor assets.** `dataset_builder/build_assets.py` fills in whatever
    is missing.
 
-### The parameters that matter
+### The anchor budget follows the profile
 
-Set at the top of `dataset_builder/build_assets.py`:
+The anchor budget — sentences per pack, `GCAP` — is the number that
+decides whether a run fits the machine, because the gallery is re-encoded
+with gradient at every step:
+
+| budget | build array (2,020 × cap × 1,024 fp16) | training peak | fits |
+|---|---|---|---|
+| 512 | 2.1 GB | — | anything |
+| 1,024 | 4.2 GB | 22.3 GiB | 24 GB desktop GPU |
+| 2,048 | 8.5 GB | — | 24 GB desktop GPU |
+| 4,096 | 16.9 GB | ~61 GiB | 80 GB A100 only |
+
+**You do not set it by hand.** `--profile` reaches the data build, so the
+packs are built at the budget the profile trains at:
+
+```bash
+python steam_reviews_framework/run.py --profile litePaperTest   # 1,024
+python steam_reviews_framework/run.py --profile paperTest       # 4,096
+python contrast_experiment/run.py --profile litePaperTest --cv
+```
+
+`dataset_builder/profiles.py` holds that mapping and is the single source
+of truth; `w9_profiles.py` reads `LITE_CAP` from it. To build at a budget
+no profile names, pass `--anchor-cap N` to `build_assets.py` directly, or
+set `LARICE_ANCHOR_CAP`.
+
+Assets already on disk are not silently reused at the wrong size. The
+gallery's own second axis *is* the budget it was built at, so the build
+compares and stops rather than letting training run at a budget you did
+not ask for:
+
+```
+anchor budget mismatch: the assets in <dir> were built at 4096 sentences,
+this run wants 1024. Training reads the built packs, so it would silently
+run at 4096, not 1024.
+```
+
+The w9 workers take `--anchor-cap` per job, which is how one campaign
+spans 512–4,096; `GCAP` governs only the packaged path.
+
+The other build constants, at the top of `dataset_builder/build_assets.py`:
 
 | Constant | Default | Meaning |
 |---|---|---|
-| `GCAP` | 4096 | anchor budget: sentences per pack (doc prefix, then whole reviews) |
 | `CAP`, `TOPK` | 2048, 3 | review pool budget per game / gold-guarantee count |
 | `QCAP`, `QPG` | 512, 4 | pseudo-queries: anchor-shaped, 4 per game |
 | `SEED` | 20260711 | the split and sampling seed; also `wiki_eval_split.json` |
-
-**`GCAP` is the one to think about.** It sizes the anchor gallery the
-whole campaign trains against, and it costs: the build allocates
-`2,020 x GCAP x 1,024` fp16 in host RAM and writes it out, so 4,096 needs
-about 17 GB against 2 GB at 512. Match it to the profile you intend to
-run — `GCAP = 1024` for `litePaperTest` on a desktop GPU, 4,096 for
-`paperTest` and `fullTest`. The w9 workers override it per job with
-`--anchor-cap`, so this constant governs only the packaged path.
 
 Credentials live in `dataset_builder/llmAPI.txt` (corpus rewriting) and
 `dataset_builder/embeddingAPI.txt` (cloud embedding endpoint), both
