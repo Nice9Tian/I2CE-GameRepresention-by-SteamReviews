@@ -17,21 +17,29 @@ reads only the cached vectors.
 
 ---
 
-## 1. The paper and its appendices
+## 1. The paper, its appendices and the supplement
 
-Appendices A to L and Tables A1 to A15: the separation-gradient
-derivation behind Section 4.3, the per-fold cross-validation detail, the
-baseline recipes, the cost model at scale, the document-view study, the
-windowed teacher and its three sweeps, the teacher-exclusion result, the
-two anchor-reading regimes, the trainset/testset comparison, the
-query-rewrite prompts, and the tag-vocabulary mapping.
+Appendices A to L (Tables A1 to A15) hold what the paper body points to:
+the two query registers on one game, the per-fold cross-validation
+detail, the baseline recipes, the separation-gradient derivations behind
+Section 4.3 and the gradient bounds behind its handover point, the
+query-rewrite prompts, the tag-vocabulary mapping, the cost model at
+scale with the sharded sliding window, the document-view study, the
+windowed teacher and its sweeps, the per-fold detail across anchor
+budgets, and the tag deficit read as a register crossing. Supplements A
+to C (Tables S1 to S4) carry the teacher-exclusion result, the two
+anchor-reading regimes and the training-set versus test-set query
+comparison.
 
-[`APPENDIX.pdf`](APPENDIX.pdf) is the reading copy;
+[`document/APPENDIX.pdf`](document/APPENDIX.pdf) is the reading copy;
 [`APPENDIX.md`](APPENDIX.md) renders in the browser and diffs as text;
-[`APPENDIX.docx`](APPENDIX.docx) is the same document in Word. Appendix
-letters and table numbers match the citations in the paper.
+[`document/APPENDIX.docx`](document/APPENDIX.docx) is the same document in Word.
+[`SUPPLEMENT.md`](SUPPLEMENT.md), [`document/SUPPLEMENT.pdf`](document/SUPPLEMENT.pdf) and
+[`document/SUPPLEMENT.docx`](document/SUPPLEMENT.docx) are the supplement in the same three
+forms; the root keeps only the Markdown, the Word and PDF copies live in `document/`. Appendix letters and table numbers match the citations in the
+paper.
 
-Every number the manuscript prints is **zero-shot cosine retrieval**: no
+Every retrieval number the manuscript prints is **zero-shot cosine retrieval**: no
 retrieval head is trained anywhere, a query is the tower's encoding of
 text it has never seen, and the candidates are all 2,020 games ranked by
 cosine against the anchor gallery. In the result files that is the `zs_*`
@@ -47,10 +55,12 @@ reproduce one specific published number.
 
 [`figures/trend_river/`](figures/trend_river/) holds the interactive
 generator of the paper's content-trend river plus its bundled dataset
-(1,919 games: tower centroids, release times, coarse tags, titles). Open
-`cluster_share_stack.html` in any browser, no build step. Its README has
-the data schema and the pressure-driven event model behind the stream
-junctions.
+(1,649 games: the paper's 128-d I-CE game vectors from the fold-0 tower at
+the 4,096-sentence anchor budget, plus release times, coarse tags, titles).
+Open `cluster_share_stack.html` in any browser, no build step, or run
+`river_ice_render.py` there to regenerate the paper's PNG headlessly. Its
+README has the data schema, the pressure-driven event model behind the
+stream junctions, and the parameter set of the published figure.
 
 ---
 
@@ -99,6 +109,22 @@ loss = ice_loss(z, gallery, targets, cfg)   # CE (data axis) + I (view axis)
 `gallery` is the tower's own encoding of every item's anchor set,
 recomputed with gradient each step. See [`main_model/README.md`](main_model/README.md).
 
+### The deployable variant (pfc)
+
+The objective the paper reports re-encodes the full anchor gallery with
+gradient at every step. The variant proposed for deployment keeps the
+tower and the loss and changes only the anchor supply: a sharded sliding
+window over a memory-mapped pack store, whose device memory is constant
+in the catalog size (Section 8 of the paper; Appendix H, equation (H.3)).
+[`main_model/pfc_sample.py`](main_model/pfc_sample.py) is the
+self-contained CPU walk-through and
+[`main_model/README.md`](main_model/README.md) documents it; the research
+implementation is `--pfc-shards K --pfc-window w --full-pool-path <mmap>`
+on a swin arm of
+[`contrast_experiment/w9/Pod/w9_cv_worker.py`](contrast_experiment/w9/Pod/w9_cv_worker.py).
+[`main_model/gallery_sample.py`](main_model/gallery_sample.py) shows how the
+anchor packs of the published recipe are built.
+
 ### Training on the Steam corpus
 
 ```bash
@@ -122,7 +148,7 @@ interrupted run continues where it stopped.
 
 Fixed throughout, and identical to the manuscript:
 
-- **Corpus.** 2,020 games released 2020-2024, 6.6 M reviews, 73 M
+- **Corpus.** 2,020 games, reviews crawled 2020-2024, 6.6 M reviews, 73 M
   sentences. A game enters only if at least 500 of its reviews survive a
   300-character floor.
 - **Fully inductive.** No text of a held-out game reaches any training
@@ -131,10 +157,11 @@ Fixed throughout, and identical to the manuscript:
   only; the full 2,020-game gallery is used with a frozen tower at
   evaluation time.
 - **Strong views.** Whole reviews, never truncated, drawn by rejection
-  sampling with acceptance `a(L) = 0.2 + 0.7*(L-Lmin)/(Lmax-Lmin)`
+  sampling with acceptance `a(r) = 0.2 + 0.7*(r-r_min)/(r_max-r_min)`
   recomputed per game, until the view holds at least 16 sentences. Three
-  review views plus one document view (LLM-rewritten wiki where one
-  exists, else the store page, else a fourth review view).
+  review views plus one document view (raw wiki text where one exists,
+  else the store page, else a fourth review view; the LLM-rewritten
+  document is the Appendix I ablation).
 - **Anchor pack (the weak view).** Store-page prefix, then whole reviews
   to a sentence budget, re-encoded with gradient at every step.
 - **Tower.** 4 latent queries, 128-d, 4 heads, one cross-attention layer
@@ -152,10 +179,10 @@ Fixed throughout, and identical to the manuscript:
   never on test.
 - **Splits.** `dataset_builder/wiki_eval_split.json` (seed 20260711) is
   the authoritative file and ships with the code. The fixed split is
-  204 test / 203 val / 407 excluded of the 814-game wiki universe, which
-  leaves a 1,613-game training gallery. `--cv-fold k` and `--cv` permute
+  204 test / 203 val / 407 train of the 814-game wiki universe; the 204 + 203
+  held-out games leave a 1,613-game training gallery. `--cv-fold k` and `--cv` permute
   the same 814 games into five folds (fold k = test, fold k+1 = val, the
-  other three = train), which leaves 1,694 per fold.
+  other three = train), which leaves 1,694 or 1,695 per fold.
 
 ---
 
@@ -173,7 +200,7 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper **or** the appendix reports | 14 | 150 | 512 – 4,096 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 14 | 151 | 512 – 4,096 |
 | `paperTest` | every experiment the paper body reports, at its own budget | 5 | 52 | 512, 4,096 |
 | `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 5 | 52 | 512, 1,024 |
 
@@ -195,12 +222,14 @@ differ only in what those towers cost. `fullTest` roughly triples the
 count, mostly through two cells: the anchor ladder (30 towers) and the
 temperature sweep (30 towers).
 
-**Fifteen appendix tables are not fifteen campaigns.** Tables A6, A13,
-A14 and A15 are four different readouts of one shared five-fold @4,096
-tower set. The grid is much smaller than the table count suggests.
+**Nineteen tables are not nineteen campaigns.** Tables A1, A3, A14 and
+A15 of the appendix are different readouts of one shared five-fold
+@4,096 tower set, and Tables S2 to S4 of the supplement read those same
+towers plus the swin and two-stage teachers of `apx.swin.5fold` and
+`apx.twostage`. The grid is much smaller than the table count suggests.
 
-Not listed in any profile, because neither the paper nor the appendix
-mentions them: the twin-pack `pk*` family, the slot/readout capacity
+Not listed in any profile, because neither the paper, the appendix nor
+the supplement mentions them: the twin-pack `pk*` family, the slot/readout capacity
 grid, multi-anchor `ma2*`, the async simulation, and hard-negative
 `nemesis`. They remain reachable through `w9_jobs.FS_JOBS` and the
 notebooks.
@@ -209,8 +238,9 @@ notebooks.
 
 The anchor budget sets the requirement, because the gallery is re-encoded
 with gradient at every step. A 24 GB desktop GPU covers budgets up to
-2,048 sentences, and retrieval has already saturated by 1,024 (a 22.3 GiB
-peak, within 0.02 of the full configuration on every reading). The
+1,024 sentences, where retrieval has already saturated (a 22.3 GiB
+peak, within 0.02 of the full configuration on every reading); the
+2,048-sentence budget peaks at 35.0 GiB and needs a 48 GB card. The
 4,096-sentence budget occupies a single 80 GB A100, about 61 GiB peak and
 roughly 6.7 wall-clock hours for a 2,000-epoch run.
 
@@ -252,9 +282,9 @@ with gradient at every step:
 
 | budget | build array (2,020 × cap × 1,024 fp16) | training peak | fits |
 |---|---|---|---|
-| 512 | 2.1 GB | — | anything |
+| 512 | 2.1 GB | 8.4 GiB | anything |
 | 1,024 | 4.2 GB | 22.3 GiB | 24 GB desktop GPU |
-| 2,048 | 8.5 GB | — | 24 GB desktop GPU |
+| 2,048 | 8.5 GB | 35.0 GiB | 48 GB card |
 | 4,096 | 16.9 GB | ~61 GiB | 80 GB A100 only |
 
 **You do not set it by hand.** `--profile` reaches the data build, so the
