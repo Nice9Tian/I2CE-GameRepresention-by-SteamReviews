@@ -28,12 +28,17 @@ What the render does
                   0.198), at 0.0066 only four ribbons clear the trigger, and
                   0.004 (variant v04 of river_variants.py, chosen by the
                   author) gives six.  PRUNE stays 0.023.
-       FONTA=40   the anchor-title font (lane labels stay 45): at 45 the twelve
-                  titles cannot all sit beside their dots;
+       FONTA=32, FONTL=32   anchor titles, lane labels and axis text.  The
+                  submitted PNG was exported with 32 px labels and a plot
+                  spanning 62% of the canvas (measured on the file), not with
+                  the 45 px that bake() writes; 45 px labels with the longer
+                  I-CE lane names squeezed the plot to 43% of the canvas;
        anchor titles lose a trailing ellipsis ("If Found..." reads "If Found");
-       a 200 px left pad and a 1,156 px right pad (the I-CE lane labels are
-                  longer than the old ones) with the rotated y-axis title moved
-                  in from the clipped x = 24 to x = 62;
+       pads l = 165 / r = 700 (the submitted figure's, measured), the rotated
+                  y-axis title moved from the clipped x = 24 to x = 44; a lane
+                  label longer than 34 characters breaks at its " / " into two
+                  lines, the share on the second, so the margin never grows
+                  past 700 px;
        label placement: each anchor title has two vertical starting slots,
                   the page's natural one (below the dot for a game in the
                   lower half of its lane, above it otherwise) and the mirror
@@ -57,17 +62,16 @@ What the render does
 3. Headless Chrome (`--headless=new --dump-dom`) loads the page; on load the
    page sets window.__PNG__ and document.title = 'READY', and a tail script
    mirrors the PNG data URL into a hidden #pngout div so the DOM dump carries
-   it.  The CSS viewport is 2,369 x 1,022 px (2,203 published + 96 px of
-   extra right margin + 70 px of extra left pad); Chrome subtracts window
-   furniture from the requested window size, so the first run measures the
-   difference and the second run corrects for it.  At device scale factor 4
-   the canvas is 9,476 x 4,088 px.
+   it.  The CSS viewport is the submitted 2,203 x 1,022 px; Chrome subtracts
+   window furniture from the requested window size, so the first run measures
+   the difference and the second run corrects for it.  At device scale factor
+   4 the canvas is 8,812 x 4,088 px.
 
 Run with:
     py figures/river_ice_render.py                 # THR=0.004, DSF 4
 Options:
     --thr 0.004 --prune 0.023   event trigger / ribbon pruning
-    --fonta 40                  anchor-title font size (CSS px)
+    --fonta 32 --fontl 32       anchor-title / lane-label font sizes (CSS px)
     --dsf 4                     device scale factor of the capture
     --data games_raw_ice.js     data file (relative to the assets dir)
     --page / --png              output paths (default: the two files above)
@@ -103,28 +107,45 @@ CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 # published parameter set (what build_river_render.bake writes into the page)
 PUB = dict(K=6, TAU=0.45, BETA=0.3, THR=0.0066, WARM_A=2, WARM_B=0.5,
            EPS=0.05, PRUNE=0.023)
-# the I-CE figure's trigger and anchor-title font (the page bakes 45; 40 lets
-# the twelve titles all sit beside their dots)
-ICE_THR, ICE_PRUNE, ICE_FONTA = 0.004, 0.023, 40
+# the I-CE figure's trigger and fonts.  The submitted PNG (8,813 x 4,089) was
+# exported from the interactive page with 32 px labels and a plot spanning 62%
+# of the canvas (measured on the file), not with the 45 px / 1,060 px right
+# margin that build_river_render.bake() writes; these settings reproduce that
+# composition.
+ICE_THR, ICE_PRUNE, ICE_FONTA, ICE_FONTL = 0.004, 0.023, 32, 32
+LANE_WRAP = 34            # lane labels longer than this (with the share) break at " / "
 
-# capture geometry: the published 2,203 x 1,022 CSS viewport, plus 96 px of
-# extra right margin for the longer I-CE lane labels and the 70 px the left
-# pad fix adds.  The plot area keeps the published width.
-EXTRA_R = 96
-PAD_L_OLD, PAD_L_NEW = 130, 200
-WIN_W = 2203 + EXTRA_R + (PAD_L_NEW - PAD_L_OLD)
+# capture geometry: the submitted 2,203 x 1,022 CSS viewport.  Pads measured
+# on the submitted PNG: bands start at x = 165 and end 681 px before the right
+# edge; 700 px holds the longest single-line I-CE label at 32 px.
+PAD_L_OLD, PAD_L_NEW = 130, 165
+PAD_R_OLD, PAD_R_NEW = 1060, 700
+WIN_W = 2203
 WIN_H = 1022
 DSF = 4
 
 # ------------------------------------------------------------------ patches
 # Every patch is asserted against the baked page, so a change upstream in
 # cluster_share_stack.html or build_river_render.py fails loudly.
-FIX_PAD = (f"PAD={{l:{PAD_L_OLD},r:1060,t:160,b:110}}",
-           f"PAD={{l:{PAD_L_NEW},r:{1060 + EXTRA_R},t:160,b:110}}")
+FIX_PAD = (f"PAD={{l:{PAD_L_OLD},r:{PAD_R_OLD},t:160,b:110}}",
+           f"PAD={{l:{PAD_L_NEW},r:{PAD_R_NEW},t:160,b:110}}")
 
-# the rotated y-axis title was drawn at x = 24 and clipped at FONTL = 45
+# the rotated y-axis title was drawn at x = 24, where its ascent is clipped
 FIX_YTITLE = ("ctx.translate(24,(PAD.t+H-PAD.b)/2);",
-              "ctx.translate(62,(PAD.t+H-PAD.b)/2);")
+              "ctx.translate(44,(PAD.t+H-PAD.b)/2);")
+
+# lane labels: a label that would run past the right margin breaks at its
+# " / " into two lines, the share on the second line
+FIX_LANE_TEXT = ("""    ctx.fillText(`${CLUSTER_LABELS[k].label}  ${(100*Wend).toFixed(0)}%`,
+                 W-PAD.r+12, laneY(k)+3);""",
+                 """    { const lab=CLUSTER_LABELS[k].label, pct=`${(100*Wend).toFixed(0)}%`;
+      const one=`${lab}  ${pct}`, cut=lab.indexOf(' / ');
+      if(one.length<=LANE_WRAP || cut<0){
+        ctx.fillText(one, W-PAD.r+12, laneY(k)+3);
+      } else {
+        ctx.fillText(lab.slice(0,cut+2), W-PAD.r+12, laneY(k)-FONTL*0.2);
+        ctx.fillText(`${lab.slice(cut+3)}  ${pct}`, W-PAD.r+12, laneY(k)+FONTL*0.95);
+      } }""".replace("LANE_WRAP", str(LANE_WRAP)))
 
 # export the flows draw() actually paints (w >= PRUNE)
 FIX_FLOWS = ("  /* scale factor from the width account */",
@@ -305,7 +326,7 @@ window.addEventListener('load', function(){
 
 
 def bake_variant(out_path, data_js, thr=ICE_THR, prune=ICE_PRUNE, src=None,
-                 fonta=None):
+                 fonta=ICE_FONTA, fontl=ICE_FONTL):
     """bake() the render page from the interactive source, then apply the
     I-CE settings and the three rendering fixes above.  `src` overrides the
     interactive page (default: river_assets/cluster_share_stack.html next to
@@ -319,6 +340,7 @@ def bake_variant(out_path, data_js, thr=ICE_THR, prune=ICE_PRUNE, src=None,
     patches = [
         FIX_PAD, FIX_YTITLE, FIX_FLOWS,
         (FIX_LANES_OLD, FIX_LANES_NEW),
+        FIX_LANE_TEXT,
         (FIX_ANCHOR_OLD, FIX_ANCHOR_NEW),
         FIX_TITLE,
         FIX_LOOP,
@@ -328,6 +350,8 @@ def bake_variant(out_path, data_js, thr=ICE_THR, prune=ICE_PRUNE, src=None,
     ]
     if fonta is not None:
         patches.append(("FONTA=45;", f"FONTA={fonta};"))
+    if fontl is not None:
+        patches.append(("FONTL=45;", f"FONTL={fontl};"))
     for old, new in patches:
         if old not in h:
             raise SystemExit(f"patch target missing in {out_path.name}:\n  {old[:90]}")
@@ -421,6 +445,8 @@ def main():
     ap.add_argument("--dsf", type=int, default=DSF)
     ap.add_argument("--fonta", type=float, default=ICE_FONTA,
                     help="anchor-title font size in CSS px (page default 45)")
+    ap.add_argument("--fontl", type=float, default=ICE_FONTL,
+                    help="lane-label / axis font size in CSS px (page default 45)")
     a = ap.parse_args()
     assets = Path(a.assets).resolve()
     src = assets / "cluster_share_stack.html"
@@ -431,7 +457,7 @@ def main():
     # the page loads the data file relative to its own directory
     data_rel = Path(os.path.relpath(assets / a.data, page.parent)).as_posix()
     t0 = time.time()
-    bake_variant(page, data_rel, a.thr, a.prune, src=src, fonta=a.fonta)
+    bake_variant(page, data_rel, a.thr, a.prune, src=src, fonta=a.fonta, fontl=a.fontl)
     meta = capture(page, png, a.dsf)
     print(f"wrote {png} ({png.stat().st_size/1e6:.2f} MB) in {time.time()-t0:.0f}s")
     report(meta)
