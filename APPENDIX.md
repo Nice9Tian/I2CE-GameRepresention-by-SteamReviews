@@ -22,7 +22,7 @@ This tactical role-playing game takes place in a ruined future version of the Un
 
 Table A1 gives the per-fold results behind Table A2’s largest-budget row, seed-paired CE and I-CE at the 4,096-sentence budget under the protocol of Section 5 (retrieval among all 2,020 games).
 
-*Table A1: Per-fold detail at the 4,096-sentence anchor budget, test-set queries (ts). I-CE beats CE in five of five paired folds on both query registers at this budget, and on Stripped hit@1 in 20 of 20 across the four budgets of Table A2. Means and standard deviations are computed before rounding.*
+*Table A1: Per-fold detail at the 4,096-sentence anchor budget, test-set queries (ts). I-CE beats CE in five of five paired folds on both query registers at this budget. Means and standard deviations are computed before rounding.*
 
 | Fold | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ Table A1 gives the per-fold results behind Table A2’s largest-budget row, seed
 | CE fold 4 | 0.959 | 0.993 | 0.662 | 0.888 | 0.642 |
 | **CE mean ± std** | **0.938 ± 0.013** | **0.988 ± 0.010** | **0.673 ± 0.014** | **0.889 ± 0.011** | **0.664 ± 0.016** |
 
-*Table A2: Ablation 1 in full: CE vs I-CE at anchor budgets of 512–4,096 sentences (test-set queries (ts), five-fold mean ± std, the two objectives seed-paired per fold on identical splits). Increasing the budget yields one significant step, 512 to 1,024 sentences (p-value 0.003), followed by a plateau in which the three larger budgets are indistinguishable (p-values $\ge 0.19$); I-CE leads CE at every budget (20 of 20 paired folds on Stripped hit@1), so the invariance constraint remains beneficial at all four scales. The windowed teacher (swin, Appendix J) appears at its trained budget.*
+*Table A2: Ablation 1 in full: CE vs I-CE at anchor budgets of 512–4,096 sentences (test-set queries (ts), five-fold mean ± std, the two objectives seed-paired per fold on identical splits). Increasing the budget yields one significant step, 512 to 1,024 sentences (p-value 0.003), followed by a plateau in which the three larger budgets are indistinguishable (p-values $\ge 0.19$); I-CE leads CE at every budget (20 of 20 paired folds on Stripped hit@1). The windowed teacher (swin, Appendix J) appears at its trained budget.*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -53,9 +53,9 @@ Table A1 gives the per-fold results behind Table A2’s largest-budget row, seed
 | **I-CE @4096** | **0.954 ± 0.013** | **0.997 ± 0.004** | **0.741 ± 0.018** | **0.928 ± 0.020** | **0.685 ± 0.019** |
 | swin-I-CE @4096 (windowed) | 0.934 ± 0.014 | 0.994 ± 0.004 | 0.709 ± 0.027 | 0.922 ± 0.010 | 0.691 ± 0.014 |
 
-Two facts hold at fold level. I-CE wins Stripped hit@1 in every fold at this budget and the tag reading rises with it in four folds of five, and the fold-to-fold spread reaches $\pm 0.03$ on Stripped hit@1, the resolution below which this paper quotes no single-split difference anywhere. Table A13 in Appendix K repeats the fold-level detail at every budget, Table A7 tabulates the EMA + memory-bank variant, and Table A3 gives the full five-fold account of every objective family, the numbers the body’s Figure 4 plots.
+Table A13 in Appendix K repeats the fold-level detail at every budget, Table A7 tabulates the EMA + memory-bank variant, and Table A3 gives the full five-fold account of every objective family, the numbers the body’s Figure 4 plots.
 
-*Table A3: The self-supervision families in full: the five-fold account behind the body’s Figure 4 (test-set queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget; “epd” marks VICReg wired on the expander outputs, $v/i/c=20/10/20$; zero-shot cosine retrieval among all 2,020 games; test-set tag micro-F1 under the held-out protocol of Section 5). Rows are sorted by Stripped hit@1, worst first; the first row is the no-tower baseline, the frozen embedder’s mean-pooled sentence vectors under the identical protocol. The two capabilities factorize: every negative-light objective lands in the same narrow tag band while conceding name-stripped retrieval, and I-CE is the only row that keeps name-stripped retrieval while reading tags above CE, at the 0.022–0.028 deficit to that band priced in Section 8.*
+*Table A3: The self-supervision families in full: the five-fold account behind the body’s Figure 4 (test-set queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget; “epd” marks VICReg wired on the expander outputs, $v/i/c=20/10/20$; zero-shot cosine retrieval among all 2,020 games; test-set tag micro-F1 under the held-out protocol of Section 5). Rows are sorted by Stripped hit@1, worst first; the first row is the no-tower baseline, the frozen embedder’s mean-pooled sentence vectors under the identical protocol. The two capabilities factorize: every negative-light objective lands in the same narrow tag band while conceding name-stripped retrieval, and I-CE is the only row that keeps name-stripped retrieval while reading tags above CE.*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -248,7 +248,7 @@ leaving a constant-weight attraction, $\alpha$ against the $(1- {p}_{g})/\tau$ o
 
 ## APPENDIX E: GRADIENT BOUNDS AND THE HANDOVER POINT
 
-This appendix locates the handover between the contrastive push-pull and the invariance term at the crossing of their maximum gradient magnitudes, with the empirically chosen $\tau =0.02$ and $\lambda =2$ placing that crossing at 99% confidence. Both envelopes are gradients with respect to the encodings, read as free variables as in Appendix D’s repulsion steps and taken with the tangential projection of the sphere so that they are commensurable; AdamW’s per-coordinate rescaling is not modeled.
+This appendix locates the handover between the contrastive push-pull and the invariance term, the crossing of their gradient envelopes that the empirically chosen $\tau =0.02$ and $\lambda =2$ place at 99% confidence. Both envelopes are gradients with respect to the encodings, read as free variables as in Appendix D’s repulsion steps and taken with the tangential projection of the sphere so that they are commensurable; AdamW’s per-coordinate rescaling is not modeled.
 
 **Unit force.** One view enters $V- 1$ of Equation (3)’s $V(V- 1)/2$ pairs, each pulling by at most one,
 
@@ -276,7 +276,7 @@ so a view’s envelope hands over once classified at 99% confidence: ceiling tim
 
 ## APPENDIX F: THE QUERY-REWRITE PROMPTS
 
-Both query registers come from one chat-completions model that reads a held-out game’s full wiki article, truncated to 12,000 characters, and writes an English description of it: GPT-5.4-mini at temperature 0.7, called through an OpenAI-compatible gateway, the instructions below issued in Chinese and translated faithfully here, an output shorter than 300 characters re-requested with the elaboration instruction, which asks for at least 300 words and so for well more than the trigger requires, up to three attempts, and the verbatim strings and the retry policy in the released code. The name-stripped instruction asks for invented replacement names, but the model complies literally in only 113 of the 814 queries and generalizes the name away in the other 701, so the register is better read as name-free than as name-substituted.
+Each query is an English description that GPT-5.4-mini at temperature 0.7 writes from the held-out game’s full wiki article, truncated to 12,000 characters, called through an OpenAI-compatible gateway; the instructions below were issued in Chinese and are translated faithfully here, an output shorter than 300 characters re-requested with the elaboration instruction, which asks for at least 300 words and so for well more than the trigger requires, up to three attempts, and the verbatim strings and the retry policy in the released code. The name-stripped instruction asks for invented replacement names, but the model complies literally in only 113 of the 814 queries and generalizes the name away in the other 701, so the register is better read as name-free than as name-substituted.
 
 *ALGORITHM 1: The rewrite instructions behind the two query registers*
 
@@ -343,7 +343,7 @@ The measured cost matches (Table A5). Peak device allocation rises by 7.2× acro
 | 2,048 sentences | 35.0 GiB | — |
 | **4,096 sentences (recipe)** | **60.6 GiB** | **≈ 6.7 h (6.4–7.2, five folds)** |
 
-At 1,024 sentences the tower is already inside the indistinguishable band of Table A2: every retrieval and tag reading stays within 0.02 of the 4,096-sentence recipe at a peak 2.7× smaller. That peak fits the 24 GB of a consumer card, an RTX 3090 or 4090, which puts a reproduction of this paper within reach of a single desktop GPU; the 22.3 GiB leaves little headroom, so such a card should be running headless.
+At 1,024 sentences, the plateau of Table A2, every retrieval and tag reading stays within 0.02 of the 4,096-sentence recipe at a peak 2.7× smaller, which fits the 24 GB of an RTX 3090 or 4090; the 22.3 GiB leaves little headroom, so such a card should be running headless.
 
 The windowed teacher removes $R$ from both expressions. A micro-pass encodes the batch’s own packs plus one window and frees them before the next, so a step costs
 
@@ -380,7 +380,7 @@ in time while device memory stays at one window, $\Theta ((G+w)\cdot {m}_{a}\cdo
 
 Two quantities do still grow with the catalog, and neither is memory. The ring advances 168 packs per step, so an anchor takes a gradient turn once every $R/(T\cdot S)$ steps: ten steps at our $R=1,694$, 139 at 23,373, and 5,952, about 370 epochs of sixteen steps, at a million; equivalently, peak concurrent coverage is $(G+w)/R$, falling from 21% here to 1.5% at full-corpus scale and 0.04% at a million. A million-entity store is 7.6 TiB at ${m}_{a}=4,096$ or 1.9 TiB at ${m}_{a}=1,024$, an ordinary disk array read at about a gigabyte per step. Our evidence spans 21% to 100% peak concurrent coverage, the range in which the windowed teacher gives up 0.032 Stripped hit@1 against full coupling (Table A7); it does not reach the 0.04% regime and we do not claim it.
 
-*Table A7: The cost of the anchor-supply economies (test-set queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget). The sliding fresh-window variant (swin, Appendix J) re-encodes ~26% of the five-fold gallery with gradient per step (27% on the fixed split of Appendix J); the two-stage row hands a BYOL warm start to the windowed teacher for the last 600 epochs; the EMA + memory-bank variant replaces the coupled teacher with an EMA shadow encoder feeding a 3,072-key bank (Appendix C). Full coupling is the ceiling: the windowed teacher and the two-stage recipe each give up 0.032 Stripped hit@1, the memory-bank economy 0.105.*
+*Table A7: The cost of the anchor-supply economies (test-set queries (ts), five-fold mean ± std at the 4,096-sentence anchor budget). The sliding fresh-window variant (swin, Appendix J) re-encodes ~26% of the five-fold gallery with gradient per step (27% on the fixed split of Appendix J); the two-stage row hands a BYOL warm start to the windowed teacher for the last 600 epochs; the EMA + memory-bank variant replaces the coupled teacher with an EMA shadow encoder feeding a 3,072-key bank (Appendix C).*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -439,9 +439,9 @@ The VICReg grid below predates validation selection and its towers were logged o
 | **I-CE (reference, same readout)** | **0.926** | **0.672** |
 | CE (reference, same readout) | 0.922 | 0.618 |
 
-The temperature sweep of Table A12 is five-fold and carries the Section 8 verdict directly.
+The temperature sweep of Table A12 is five-fold and carries the Section 8 verdict directly. The learnable variant (initialized at 0.02, $\tau$ clamped to $[0.005,\; 0.2]$) never settles at an interior optimum: in all five folds it sharpens monotonically to the clamp floor within 250 epochs and trains there, an effective fixed $\tau =0.005$, beating the frozen recipe by 0.010 Stripped hit@1 in five folds of five and by 0.008 on tags (computed before rounding), the sharp-side headroom that the frozen setting of Section 4.2 leaves to deployment.
 
-*Table A12: The temperature sweep behind the Section 8 verdict and the frozen setting of Section 4.2 (test-set queries (ts), five-fold mean ± std at the 512- and 2,048-sentence anchor budgets; the $\tau =0.10$ cell at 512 has four folds; checkpoints selected by the rank criterion of Section 5 on the validation fold, the table reporting their test-set readings). Among fixed settings $\tau =0.02$ is retrieval-optimal at both budgets: softening to 0.05/0.10 costs 0.060–0.226 Stripped hit@1, and what it buys is the tag reading: $\tau =0.05$ lifts it to the edge of the negative-light band of Section 6.1, so on the soft side temperature trades the tag reading against identity. The learnable variant (initialized at 0.02, $\tau$ clamped to $[0.005,\; 0.2]$) never settles at an interior optimum: in all five folds it sharpens monotonically to the clamp floor within 250 epochs and trains there, an effective fixed $\tau =0.005$, beating the frozen recipe by 0.010 Stripped hit@1 in five folds of five and by 0.008 on tags, both computed before rounding, the sharp-side headroom that the frozen setting of Section 4.2 leaves to deployment.*
+*Table A12: The temperature sweep behind the Section 8 verdict and the frozen setting of Section 4.2 (test-set queries (ts), five-fold mean ± std at the 512- and 2,048-sentence anchor budgets; the $\tau =0.10$ cell at 512 has four folds; checkpoints selected by the rank criterion of Section 5 on the validation fold, the table reporting their test-set readings). Among fixed settings $\tau =0.02$ is retrieval-optimal at both budgets: softening to 0.05/0.10 costs 0.060–0.226 Stripped hit@1, and what it buys is the tag reading: $\tau =0.05$ lifts it to the edge of the negative-light band of Section 6.1, so on the soft side temperature trades the tag reading against identity.*
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -469,7 +469,7 @@ with Pearson −0.87 and Spearman −0.70, single-fold tag readings being the no
 
 ## APPENDIX K: PER-FOLD DETAIL ACROSS THE ANCHOR BUDGETS
 
-Table A13 gives, fold by fold, the two numbers the body quotes across budgets: the name-stripped retrieval that I-CE wins in every paired fold (15 of 15 at the three smaller budgets in Section 6.1, 20 of 20 with the 4,096-sentence rows of Table A1 included) and the tag reading, where the pairing is less one-sided. Values at 512 to 2,048 sentences are the ten-draw means behind Table A2; the 4,096-sentence rows are the ten-draw means behind Tables A1 and A3. The two objectives are seed-paired on identical splits, so each column is a paired comparison.
+Table A13 gives, fold by fold, the two numbers the body quotes across budgets. Values at 512 to 2,048 sentences are the ten-draw means behind Table A2, the 4,096-sentence rows those behind Tables A1 and A3; the two objectives are seed-paired on identical splits, so each column is a paired comparison.
 
 *Table A13: CE versus I-CE per fold at every anchor budget (test-set queries, ten anchor draws per fold, mean ± std over the five folds). Upper block: Stripped hit@1, which I-CE wins in 20 of 20 paired folds. Lower block: test-set tag F1, which I-CE wins in 18 of 20, the exceptions being fold 3 at 512 and fold 1 at 4,096 sentences.*
 
