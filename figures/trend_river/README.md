@@ -56,7 +56,8 @@ paper's parameter set (K=6, τ=0.45, β=0.3, Θ=0.004, warm-up 2 / tail 0.5,
 ε=0.05, pruning 0.023, anchor marks every 3 years, 32 px labels on a
 2,203 × 1,022 px viewport with pads 165 / 700, long lane labels on two
 lines), renders it in headless Chrome at device scale factor 4, and writes
-`fig6_content_river_ice.png` (8,812 × 4,088) plus
+`fig6_content_river_ice.png` (the 8,812 × 4,088 canvas with its white margins
+cropped to 8,401 × 3,483, the crop the manuscript uses) plus
 `fig6_content_river_ice.meta.json`, which lists the six ribbons the figure
 paints (source and target lane, share moved, start and arrival year), the six
 lanes with their start / end shares, and where every anchor title landed.

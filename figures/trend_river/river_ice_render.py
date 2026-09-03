@@ -65,7 +65,10 @@ What the render does
    it.  The CSS viewport is the submitted 2,203 x 1,022 px; Chrome subtracts
    window furniture from the requested window size, so the first run measures
    the difference and the second run corrects for it.  At device scale factor
-   4 the canvas is 8,812 x 4,088 px.
+   4 the canvas is 8,812 x 4,088 px; the white margins are then cropped by
+   the author's docx crop fractions (CROP: top 8.352%, right 4.662%, bottom
+   6.466%), leaving 8,401 x 3,483 px, so the manuscript places the PNG
+   uncropped at the width the author chose (5.43 in).
 
 Run with:
     py figures/river_ice_render.py                 # THR=0.004, DSF 4
@@ -73,6 +76,7 @@ Options:
     --thr 0.004 --prune 0.023   event trigger / ribbon pruning
     --fonta 32 --fontl 32       anchor-title / lane-label font sizes (CSS px)
     --dsf 4                     device scale factor of the capture
+    --no-crop                   keep the full 8,812 x 4,088 canvas
     --data games_raw_ice.js     data file (relative to the assets dir)
     --page / --png              output paths (default: the two files above)
     --assets DIR                directory holding cluster_share_stack.html and
@@ -123,6 +127,14 @@ PAD_R_OLD, PAD_R_NEW = 1060, 700
 WIN_W = 2203
 WIN_H = 1022
 DSF = 4
+
+# White-margin crop of the captured canvas, as fractions of its width / height.
+# These are the author's own crop of the picture inside the manuscript docx
+# (2026-09-04, Word srcRect t=8352 r=4662 b=6466, i.e. thousandths of a
+# percent); baking them into the PNG keeps the docx placement a plain
+# uncropped picture.  The ink ends at 95.1% of the width and 91.8% of the
+# height, so nothing is cut.  --no-crop writes the full canvas.
+CROP = dict(l=0.0, t=0.08352, r=0.04662, b=0.06466)
 
 # ------------------------------------------------------------------ patches
 # Every patch is asserted against the baked page, so a change upstream in
@@ -380,10 +392,22 @@ def run_chrome(page, win_w, win_h, dsf):
     return r.stdout
 
 
-def capture(page, png, dsf=DSF):
+def crop_png(png, crop=CROP):
+    """Cut the white margins off a captured PNG in place; return (full, cropped) sizes."""
+    from PIL import Image
+    im = Image.open(png)
+    W, H = im.size
+    box = (round(W * crop["l"]), round(H * crop["t"]),
+           round(W * (1 - crop["r"])), round(H * (1 - crop["b"])))
+    im.crop(box).save(png)
+    return (W, H), (box[2] - box[0], box[3] - box[1])
+
+
+def capture(page, png, dsf=DSF, crop=CROP):
     """Render the page headless and write the PNG; return the meta dict.
     Headless subtracts window furniture from the CSS viewport and the amount
-    differs by Chrome build, so it is measured once and reused."""
+    differs by Chrome build, so it is measured once and reused.  The canvas
+    is then cropped by `crop` (None keeps the full canvas)."""
     key = (WIN_W, WIN_H, dsf)
     win_w, win_h = WIN_W, WIN_H
     if key in _FURNITURE:
@@ -404,13 +428,24 @@ def capture(page, png, dsf=DSF):
     if not m:
         raise SystemExit(f"{page.name} READY but no PNG payload in the DOM")
     png.write_bytes(base64.b64decode(m.group(1)))
+    meta["canvas_full"] = [meta["cw"], meta["ch"]]
+    meta["crop"] = None
+    if crop:
+        full, cut = crop_png(png, crop)
+        meta["crop"] = dict(crop)
+        meta["png_size"] = list(cut)
+    else:
+        meta["png_size"] = [meta["cw"], meta["ch"]]
     return meta
 
 
 # --------------------------------------------------------------- report
 def report(meta):
     lanes = meta["lanes"]
-    print(f"canvas {meta['cw']}x{meta['ch']} @dpr{meta['dpr']}  N={meta['n']} D={meta['d']}")
+    print(f"canvas {meta['cw']}x{meta['ch']} @dpr{meta['dpr']}  N={meta['n']} D={meta['d']}"
+          + (f"  -> cropped to {meta['png_size'][0]}x{meta['png_size'][1]} "
+             f"(l/t/r/b {meta['crop']['l']:.4f}/{meta['crop']['t']:.4f}/"
+             f"{meta['crop']['r']:.4f}/{meta['crop']['b']:.4f})" if meta.get("crop") else ""))
     print(f"params {meta['params']}")
     print(f"events {meta['n_events']}  flows in events {meta['n_flow_total']}  "
           f"ribbons drawn {len(meta['flows'])}")
@@ -443,6 +478,8 @@ def main():
     ap.add_argument("--thr", type=float, default=ICE_THR)
     ap.add_argument("--prune", type=float, default=ICE_PRUNE)
     ap.add_argument("--dsf", type=int, default=DSF)
+    ap.add_argument("--no-crop", action="store_true",
+                    help="keep the full canvas instead of the author's white-margin crop")
     ap.add_argument("--fonta", type=float, default=ICE_FONTA,
                     help="anchor-title font size in CSS px (page default 45)")
     ap.add_argument("--fontl", type=float, default=ICE_FONTL,
@@ -458,7 +495,7 @@ def main():
     data_rel = Path(os.path.relpath(assets / a.data, page.parent)).as_posix()
     t0 = time.time()
     bake_variant(page, data_rel, a.thr, a.prune, src=src, fonta=a.fonta, fontl=a.fontl)
-    meta = capture(page, png, a.dsf)
+    meta = capture(page, png, a.dsf, crop=None if a.no_crop else CROP)
     print(f"wrote {png} ({png.stat().st_size/1e6:.2f} MB) in {time.time()-t0:.0f}s")
     report(meta)
     meta_path = Path(a.meta).resolve() if a.meta else png.with_suffix(".meta.json")
