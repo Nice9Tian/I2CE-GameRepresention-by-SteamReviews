@@ -107,31 +107,31 @@ Two approximations sit here. Different draw laws and the anchor’s store-page p
 **Why sample-to-sample repulsion aims along noise.** In the free-variable convention, with one negative view per competing game in the batch, Equation (6) reads
 
 $$
-{\nabla }_{{z}_{v}}{\ell }_{\mathrm{SimCLR}}=\frac{1}{\tau }\sum_{h\neq g} {q}_{h}({z}_{h}- {z}_{v}' ) \tag{D.3}
+{\nabla }_{{z}_{v}}{\ell }_{\mathrm{SimCLR}}=\frac{1}{\tau }\sum_{h\neq g} {q}_{h}({z}_{h}- {z}_{v' }) \tag{D.3}
 $$
 
 with the in-batch weight
 
 $$
-{q}_{h}=\frac{\exp (\langle {z}_{v},{z}_{h}\rangle /\tau )}{\exp (\langle {z}_{v},{z}_{v}' \rangle /\tau )+\sum_{k\neq g} \exp (\langle {z}_{v},{z}_{k}\rangle /\tau )} \tag{D.4}
+{q}_{h}=\frac{\exp (\langle {z}_{v},{z}_{h}\rangle /\tau )}{\exp (\langle {z}_{v},{z}_{v' }\rangle /\tau )+\sum_{k\neq g} \exp (\langle {z}_{v},{z}_{k}\rangle /\tau )} \tag{D.4}
 $$
 
-putting the rest on the positive partner ${z}_{v}'$, so the full set of weights, positive included, sums to one and the $h=g$ term drops from the gradient sum. The partner is another fresh draw of $g$, so its noise is what enters
+putting the rest on the positive partner ${z}_{v' }$, so the full set of weights, positive included, sums to one and the $h=g$ term drops from the gradient sum. The partner is another fresh draw of $g$, so its noise is what enters
 
 $$
-{z}_{h}- {z}_{v}' =({c}_{h}- {c}_{g})+({\epsilon }_{h}- {\epsilon }_{v}' ) \tag{D.5}
+{z}_{h}- {z}_{v' }=({c}_{h}- {c}_{g})+({\epsilon }_{h}- {\epsilon }_{v' }) \tag{D.5}
 $$
 
 whose second half is unbiased term by term, the two draws being zero-mean by (D.1) and, coming from different games, independent, and has mean square
 
 $$
-E\| {\epsilon }_{h}- {\epsilon }_{v}' {\| }^{2}=\frac{\mathrm{tr}{\Sigma }_{h}+\mathrm{tr}{\Sigma }_{g}}{{m}_{v}} \tag{D.6}
+E\| {\epsilon }_{h}- {\epsilon }_{v' }{\| }^{2}=\frac{\mathrm{tr}{\Sigma }_{h}+\mathrm{tr}{\Sigma }_{g}}{{m}_{v}} \tag{D.6}
 $$
 
 Rank turns on hard pairs, and at a semantic hard pair, defined by $\| {c}_{h}- {c}_{g}\| \ll \sqrt{(\mathrm{tr}{\Sigma }_{h}+\mathrm{tr}{\Sigma }_{g})/{m}_{v}}$ with the noise norm concentrating near its root mean square (the scale carried to the encodings by the linearization of (D.13) below),
 
 $$
-\| {\epsilon }_{h}- {\epsilon }_{v}' \| \gg \| {c}_{h}- {c}_{g}\| \tag{D.7}
+\| {\epsilon }_{h}- {\epsilon }_{v' }\| \gg \| {c}_{h}- {c}_{g}\| \tag{D.7}
 $$
 
 so the push aims predominantly along noise. Hard pairs are selected by encoded similarity, and one hard only because two draws collided is corrected by a noise-aligned push. In the large the semantic term dominates, which is why sample-repelled towers spread widely yet carve narrow nearest-neighbor margins.
@@ -163,7 +163,7 @@ $$
 whose second half is, by the variance asymmetry, a static residual and not a fresh draw,
 
 $$
-\frac{E\| {\epsilon }_{\mathrm{ag}}- {\epsilon }_{\mathrm{ah}}{\| }^{2}}{E\| {\epsilon }_{h}- {\epsilon }_{v}' {\| }^{2}}=\frac{{m}_{v}}{{m}_{a}} \tag{D.12}
+\frac{E\| {\epsilon }_{\mathrm{ag}}- {\epsilon }_{\mathrm{ah}}{\| }^{2}}{E\| {\epsilon }_{h}- {\epsilon }_{v' }{\| }^{2}}=\frac{{m}_{v}}{{m}_{a}} \tag{D.12}
 $$
 
 an amplitude ratio $\sqrt{{m}_{v}/{m}_{a}}$, about $1/5.7$ at the 16-sentence floor against the 512-sentence anchor budget, and larger for longer views. Read in the encodings through the linearization of (D.13) below, one Jacobian and one sentence-level covariance ${\Sigma }_{g}$ serving both packs of a game, the ratio is unchanged; it covers the draw-noise half of the anchor residual, the store-page offset of the kind ${\delta }_{g}$ being static and not shrinking with ${m}_{a}$. The anchored path has a lower noise floor, tracking the semantic difference far below the scale $\sqrt{(\mathrm{tr}{\Sigma }_{h}+\mathrm{tr}{\Sigma }_{g})/{m}_{v}}$ where sample repulsion loses it. The residual is static within a run, replaced by the ten fresh anchor draws of the evaluation protocol (Section 5), whose effect Tables S2 and S3 of the supplementary document bound at 0.008 Stripped hit@1. Through ${p}_{h}$ the softmax also concentrates the whole repulsion budget on whichever anchors currently compete. Equation (8) sits at the opposite extreme: its mean gives every competitor weight $1/B$, $B$ the view encodings in a step (Section 4.3), against a ${p}_{h}$ that is of order one at a hard competitor early in training, so matching one anchored step takes order $B$ mean steps, each carrying an independent draw, and the accumulated noise variance grows by the same factor.
@@ -213,7 +213,7 @@ $$
 a floor of $\| J{\delta }_{g}{\| }^{2}/4$ at $V=4$ that no drawing removes, which is why closing ${\delta }_{g}$ falls here. Being symmetric, the term closes ${\delta }_{g}$ at a compromise, not by moving the document alone: the game-independent part ${b}_{\mathrm{doc}}- {b}_{\mathrm{rev}}$ of ${\delta }_{g}=({b}_{\mathrm{doc}}- {b}_{\mathrm{rev}})+{t}_{g}$ (Section 4.1) leaves inter-game differences untouched, while the drift ${t}_{g}$ does not and is absorbed into $f({c}_{g})$. Minimizing $I$ presses the noise term of (D.19) to zero in expectation,
 
 $$
-E\| J{\epsilon }_{v}{\| }^{2}\to 0,{z}_{v}- {z}_{v}' \approx J({\epsilon }_{v}- {\epsilon }_{v}' )\to 0 \tag{D.20}
+E\| J{\epsilon }_{v}{\| }^{2}\to 0,{z}_{v}- {z}_{v' }\approx J({\epsilon }_{v}- {\epsilon }_{v' })\to 0 \tag{D.20}
 $$
 
 suppressing the tower’s noise response, not the noise. Two assumptions carry this: the linearization holds in the high-noise regime of the strong views, and $\mathrm{Cov}({\epsilon }_{v})$ must span a subspace distinct enough from ${c}_{g}- {c}_{h}$ for one to be suppressed without the other. Cross-entropy forbids total collapse, the constant tower costing $\ln n\approx 7.4$ nats per view, but not the loss of semantic directions inside the noise subspace, which we read as the tag deficit of Section 8.
@@ -497,7 +497,7 @@ Table A13 gives, fold by fold, the two numbers the body quotes across budgets: t
 
 ## APPENDIX L: THE TAG DEFICIT AS A REGISTER CROSSING
 
-The tag probe of Section 5 is fit in one register and read in another, so its ranking of the towers mixes tag content with register transfer. Table A14 separates the two on the shipped rank-selected checkpoints, all five folds at the 4,096-sentence anchor budget, the only budget at which every tower of Table A3 exists (BYOL, the SimCLR-style arm and VICReg have no selected checkpoints at 512). The cross-register column is the shipped protocol unchanged: for each of the ten anchor draws behind Table A3, a ridge readout is fit on the 1,694 training-pool anchors (review register), its threshold is picked on validation-game anchors, and it is scored on the name-intact wiki-rewrite query vectors of the test games (document register), the ten micro-F1 values then averaged; recomputed from the shipped checkpoints, this column returns every tag entry of Table A3 exactly. The in-domain column changes one thing: the same ridge with the same threshold is scored on the test-game anchors of the same draw, so the two readings differ only in the register of the vectors read. Transfer loss is in-domain minus cross-register. The register offset is the norm of the mean anchor-to-query displacement over the training games of the fold that carry a wiki query (about 488 per fold), measured in the tower’s 128-d output space.
+The tag probe of Section 5 is fit in one register and read in another, so its ranking of the towers mixes tag content with register transfer. Table A14 separates the two on the shipped rank-selected checkpoints, all five folds at the 4,096-sentence anchor budget, the only budget at which every tower of Table A3 exists (BYOL, the SimCLR-style arm and VICReg have no selected checkpoints at 512). The cross-register column is the shipped protocol unchanged: for each of the ten anchor draws behind Table A3, a ridge readout is fit on the 1,694 or 1,695 training-pool anchors (review register), its threshold is picked on validation-game anchors, and it is scored on the name-intact wiki-rewrite query vectors of the test games (document register), the ten micro-F1 values then averaged; recomputed from the shipped checkpoints, this column returns every tag entry of Table A3 exactly. The in-domain column changes one thing: the same ridge with the same threshold is scored on the test-game anchors of the same draw, so the two readings differ only in the register of the vectors read. Transfer loss is in-domain minus cross-register. The register offset is the norm of the mean anchor-to-query displacement over the training games of the fold that carry a wiki query (about 488 per fold), measured in the tower’s 128-d output space.
 
 *Table A14: Where the tag deficit lives (five folds at the 4,096-sentence anchor budget, shipped rank-selected checkpoints, ten anchor draws, mean ± std over folds). The cross-register column is the shipped readout of Section 5 and reproduces the tag column of Table A3; the in-domain column reuses that ridge and its threshold on test-game anchors. Rows are ordered by transfer loss. The margin column repeats Table 1 (fold-0, single draw). The frozen embedder is omitted: its readout runs in the 1,024-d input space and is not comparable to the 128-d towers.*
 
@@ -521,6 +521,6 @@ Table A15 gives the paired differences behind the body’s claims: the cross-reg
 | EMA + memory bank | −0.027 | −13.44 | 0 of 5 | not measured | n/a | n/a |
 | CE | +0.021 | 1.68 | 4 of 5 | +0.004 | 0.90 | 4 of 5 |
 
-**Why identity pressure costs transfer.** Every anchor pack is a store-page prefix followed by reviews (Section 4.1), so the gallery an anchored objective repels against is review register in the main, and a game’s document view has to leave its own anchor’s neighborhood far enough to be told apart from the other 1,693 review anchors, most cheaply in a direction no review anchor occupies, orthogonal to the review manifold. The invariance term is the only force pulling that view back onto its anchor and it closes the gap only part of the way: I-CE reads tags in domain level with CE and above the three negative-light towers yet pays the second-largest transfer loss, while CE, with no invariance term, pays the largest loss and carries the largest offset. BYOL and VICReg never push a view away from a review anchor, so their two registers stay close and they lose least in transfer, which is how they win the shipped tag column while reading tags worst in domain; the SimCLR-style arm sits between the families, its in-batch negatives drawn from both registers, so its repulsion does not single out the document direction.
+**Why identity pressure costs transfer.** Every anchor pack is a store-page prefix followed by reviews (Section 4.1), so the gallery an anchored objective repels against is review register in the main, and a game’s document view has to leave its own anchor’s neighborhood far enough to be told apart from the other 1,693 or 1,694 review anchors, most cheaply in a direction no review anchor occupies, orthogonal to the review manifold. The invariance term is the only force pulling that view back onto its anchor and it closes the gap only part of the way: I-CE reads tags in domain level with CE and above the three negative-light towers yet pays the second-largest transfer loss, while CE, with no invariance term, pays the largest loss and carries the largest offset. BYOL and VICReg never push a view away from a review anchor, so their two registers stay close and they lose least in transfer, which is how they win the shipped tag column while reading tags worst in domain; the SimCLR-style arm sits between the families, its in-batch negatives drawn from both registers, so its repulsion does not single out the document direction.
 
 **What this does not license.** Subtracting the training-estimated offset from every test query lifts I-CE’s cross-register reading from 0.685 to 0.700 but costs it retrieval (Stripped hit@1 0.741 to 0.728), and for an affine readout a constant shift only moves each tag’s threshold: a recalibration, not a repair of the geometry. Letting the anchor pack see the strong views’ own sentences does not help either (the vfa arm of Supplement A). If a correction exists it belongs on the repulsive side, admitting document-register negatives into the gallery, which we have not tested.
