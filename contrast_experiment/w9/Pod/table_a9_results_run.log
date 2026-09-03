@@ -1,0 +1,65 @@
+# Table A9 recompute   started 2026-09-04 00:49:41
+  out-dir   C:\runpod_data\w9_out
+  cache     C:\runpod_data\fusion_cache_w9
+  repo      C:\release\I2CE-GameRepresention-by-SteamReviews\contrast_experiment\w9
+  worker    C:\release\I2CE-GameRepresention-by-SteamReviews\contrast_experiment\w9\Pod\w9_a100_worker.py
+  epoch cap 2000 (step 50)   traj-mode verify   select rank
+
+## split / cache gates
+  gate n_games                      2020     (expected 2020) OK
+  gate n_test_games                 204      (expected 204) OK
+  gate n_val_games                  203      (expected 203) OK
+  gate n_wiki_train_games           407      (expected 407) OK
+  gate n_training_gallery           1613     (expected 1613) OK
+  gate n_tag_classes                23       (expected 23) OK
+  gate n_wiki_rows                  3256     (expected 3256) OK
+  gate n_val_neutral_rows           203      (expected 203) OK
+  gate n_val_noname_rows            203      (expected 203) OK
+  gate n_rank_selection_queries     406      (expected 406) OK
+  gate n_pseudo_queries             8080     (expected 8080) OK
+
+## lifted zs_from_arrays from w9_a100_worker.py (lines 1725-1779), worker module import: True
+  gate n_test_neutral_queries       204      (expected 204) OK
+
+## sweep: 40 candidate epochs per arm (50..2000 step 50), selecting on rank
+  wcle_swin84step42loop2i2ce_icetf       ep1900  rank=133.3589 rvsel=3.192277  0.9559 0.9902 0.7255 0.9118  tag=0.7065 (alpha=1000 th=0.3134)  [26s]
+      criterion picks: rank -> ep1900 (score 133.3589)   rvsel -> ep1400 (rvsel 3.215048)   DISAGREE
+      zs_traj cross-check: 40 epochs, max |delta| = 0.000328 at ep2000; retrieval-only max |delta| = 0
+      by key: nm_neutral=0  h5_neutral=0  nm_noname=0  h5_noname=0  v_q1=0  v_q5=0  v_qtag=0.000164  rvsel=0.000328
+  wcle_swin168step84loop2i2ce_icetf      ep1850  rank=132.6118 rvsel=3.064347  0.9363 0.9902 0.6814 0.9069  tag=0.6888 (alpha=3 th=0.3058)  [27s]
+      criterion picks: rank -> ep1850 (score 132.6118)   rvsel -> ep1150 (rvsel 3.220412)   DISAGREE
+      zs_traj cross-check: 40 epochs, max |delta| = 0.000453 at ep1100; retrieval-only max |delta| = 0
+      by key: nm_neutral=0  h5_neutral=0  nm_noname=0  h5_noname=0  v_q1=0  v_q5=0  v_qtag=0.000226  rvsel=0.000453
+  wcle_swin336step168loop2i2ce_icetf     ep1650  rank=133.0384 rvsel=3.029313  0.9461 0.9902 0.7108 0.8971  tag=0.6759 (alpha=30 th=0.3751)  [27s]
+      criterion picks: rank -> ep1650 (score 133.0384)   rvsel -> ep700 (rvsel 3.199298)   DISAGREE
+      zs_traj cross-check: 40 epochs, max |delta| = 0.0389 at ep1900; retrieval-only max |delta| = 0
+      by key: nm_neutral=0  h5_neutral=0  nm_noname=0  h5_noname=0  v_q1=0  v_q5=0  v_qtag=0.0195  rvsel=0.0389
+  wcle_i2ce_icetf                        ep2000  rank=132.7241 rvsel=3.148849  0.9755 1.0000 0.7647 0.8971  tag=0.6778 (alpha=30 th=0.3728)  [27s]
+      criterion picks: rank -> ep2000 (score 132.7241)   rvsel -> ep1650 (rvsel 3.229817)   DISAGREE
+      zs_traj cross-check: none of the 80 entries on disk carries the rvsel key set -- this arm predates the current criterion, so every epoch was recomputed from its tower cache
+
+## deviations from the shipped Table A9
+  wcle_swin84step42loop2i2ce_icetf       dep= +500  dh1=+0.0099 dh5=-0.0098 dS1=+0.0345 dS5=+0.0098 dtag=-0.0075
+  wcle_swin168step84loop2i2ce_icetf      dep= +700  dh1=-0.0047 dh5=-0.0048 dS1=-0.0096 dS5=+0.0149 dtag=-0.0152
+  wcle_swin336step168loop2i2ce_icetf     dep= +950  dh1=+0.0051 dh5=-0.0098 dS1=+0.0248 dS5=+0.0001 dtag=+0.0079
+  wcle_i2ce_icetf                        dep= +850  dh1=+0.0245 dh5=+0.0000 dS1=+0.0587 dS5=-0.0199 dtag=-0.0012
+
+## Table A9 (regenerated, appendix row format)
+
+<!--table grid=1500,1120,1120,1245,1245,2170 bold=0,2,4-->
+| Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
+| --- | --- | --- | --- | --- | --- |
+| swin, w = 84 (step 42, 19.7% coverage) | 0.956 | 0.990 | 0.725 | 0.912 | 0.707 |
+| swin, w = 168 (step 84, 27.5% coverage) | 0.936 | 0.990 | 0.681 | 0.907 | 0.689 |
+| swin, w = 336 (step 168, 43.1% coverage) | 0.946 | 0.990 | 0.711 | 0.897 | 0.676 |
+| I-CE, fully coupled (100% coverage) | 0.975 | 1.000 | 0.765 | 0.897 | 0.678 |
+
+## selected epochs (active criterion: rank)
+  wcle_swin84step42loop2i2ce_icetf       ep1900   rank-pick ep1900   rvsel-pick ep1400   (shipped zsbest pick ep1400, had rvsel: True)
+  wcle_swin168step84loop2i2ce_icetf      ep1850   rank-pick ep1850   rvsel-pick ep1150   (shipped zsbest pick ep1150, had rvsel: True)
+  wcle_swin336step168loop2i2ce_icetf     ep1650   rank-pick ep1650   rvsel-pick ep700    (shipped zsbest pick ep700, had rvsel: True)
+  wcle_i2ce_icetf                        ep2000   rank-pick ep2000   rvsel-pick ep1650   (shipped zsbest pick ep1150, had rvsel: False)
+
+wrote C:\release\I2CE-GameRepresention-by-SteamReviews\contrast_experiment\w9\Pod\table_a9_results.json
+wrote C:\release\I2CE-GameRepresention-by-SteamReviews\contrast_experiment\w9\Pod\table_a9_results_run.log
+total 108.6s

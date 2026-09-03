@@ -9,15 +9,15 @@ number. This module is that missing statement.
 
 Every CELL below carries `cites`: the figures and tables it feeds. A cell
 with a body citation (FIG*, TAB1, TAB2, SEC*) is reported in the paper
-itself; the rest are appendix-only. Nothing is listed here that the paper
-or the appendix does not mention, so the exploratory families -- twin-pack
+itself; the rest are appendix- or supplement-only. Nothing is listed here
+that the paper, the appendix or the supplement does not mention, so the exploratory families -- twin-pack
 `pk*`, the slot/readout capacity grid, multi-anchor `ma2*`, the async
 simulation, hard-negative `nemesis` -- are deliberately absent. They stay
 available through `w9_jobs.FS_JOBS` and the notebooks.
 
 Three profiles select from it:
 
-    fullTest        every cell (paper + appendix)
+    fullTest        every cell (paper + appendix + supplement)
     paperTest       cells with a body citation, at their own budgets
     litePaperTest   paperTest with every anchor budget clamped to 1024
 
@@ -48,6 +48,8 @@ A1 = "Table A1"; A2 = "Table A2"; A3 = "Table A3"; A4 = "Table A4"
 A5 = "Table A5"; A6 = "Table A6"; A7 = "Table A7"; A8 = "Table A8"
 A9 = "Table A9"; A10 = "Table A10"; A11 = "Table A11"; A12 = "Table A12"
 A13 = "Table A13"; A14 = "Table A14"; A15 = "Table A15"
+# Supplementary material (Supplements A-C).
+S1 = "Table S1"; S2 = "Table S2"; S3 = "Table S3"; S4 = "Table S4"
 
 FIXED = 0                  # folds=FIXED means the fixed 204/203/407 split
 
@@ -87,23 +89,30 @@ class Cell:
 CELLS = [
 
     # ---- body: the shared five-fold @4096 tower set -------------------
-    # Trained once, read four ways. A6/A13/A14/A15 are different readouts
-    # of these same towers, NOT four more training runs -- which is why
-    # the appendix has fifteen tables but the grid stays small.
+    # Trained once, read many ways. A1/A3/A14/A15 are different readouts of
+    # these same towers, NOT more training runs, and S2/S3/S4 read them again
+    # next to the swin and two-stage teachers (apx.swin.5fold, apx.twostage)
+    # -- which is why the tables outnumber the campaigns.
     Cell("body.pair.4096",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[4096], folds=5, epochs=2000,
-         cites=[FIG4, FIG5, TAB1, SEC61, A1, A2, A3, A13, A14, A15],
+         cites=[FIG4, FIG5, TAB1, SEC61, A1, A2, A3, A5, A6, A13, A14, A15, S2, S3, S4],
          was_in="w9_final_experiment.ipynb",
-         note="the headline I-CE vs CE pair, paired per fold"),
+         note="the headline I-CE vs CE pair, paired per fold. Table 1 and "
+              "Figure 5 read the fold-0 towers of this cell and of "
+              "body.families.4096 at the Section 5 rank-selected epochs "
+              "(rank_ckpt_plan.json: I-CE ep2000, CE ep650, SimCLR ep1100, "
+              "VICReg ep150, BYOL ep250); Pod/table1_recompute.py regenerates "
+              "both from the checkpoints and the single 4,096-sentence anchor "
+              "draw wscan_gal_rev_g4096.npz"),
 
     Cell("body.families.4096",
          arms=["wcle_bce_cetf",             # SimCLR-style, in-batch views
                "wcle_byol_bytf",            # BYOL
-               "wcle_epdb_v20i10c20_cetf",  # VICReg, expander 20/10/20
+               "wcle_epd_v20i10c20_cetf",  # VICReg, expander 20/10/20
                "wcle_mq3072i2ce_icetf"],    # EMA teacher + 3,072-key bank
          caps=[4096], folds=5, epochs=2000,
-         cites=[FIG4, FIG5, TAB1, SEC32, A3, A13, A14, A15],
+         cites=[FIG4, FIG5, TAB1, SEC32, A3, A7, A14, A15, S2, S3, S4],
          was_in="w9_experiment_5fold_2.ipynb",
          note="the other objective families of Figure 4"),
 
@@ -112,7 +121,7 @@ CELLS = [
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf",
                "wcle_ai2ce_icetf"],         # CE + anchor-in-I
          caps=[512], folds=FIXED, epochs=2000,
-         cites=[TAB2, SEC62],
+         cites=[TAB2, SEC62, A11],
          was_in="w9_jobs.FS_JOBS + w9_flash.ipynb",
          note="the first three rows of Table 2"),
 
@@ -141,13 +150,14 @@ CELLS = [
          caps=[512], folds=FIXED, epochs=2000,
          cites=[SEC62],
          was_in="w9_flash.ipynb",
-         note="'detailed settings in the repository' of Section 6.2"),
+         note="the 'settings in Appendix C' sweep of Section 6.2; the projection grid "
+              "is repository-only detail behind the geometry files of Table A4"),
 
     # ---- appendix: the anchor-budget ladder ---------------------------
     Cell("apx.ladder",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[512, 1024, 2048], folds=5, epochs=2000,
-         cites=[A2],
+         cites=[A2, A5, A13],
          was_in="w9_final_experiment.ipynb",
          note="the 4,096 rung is body.pair.4096"),
 
@@ -155,16 +165,16 @@ CELLS = [
     Cell("apx.swin.5fold",
          arms=["wcle_swin168step84loop2i2ce_icetf"],
          caps=[4096], folds=5, epochs=2000,
-         cites=[A6, A13, A14, A15],
+         cites=[A2, A7, S2, S3, S4],
          was_in="w9_swin_5fold.ipynb",
-         note="the ~27% gradient window"),
+         note="the ~26% gradient window (27% on the fixed split)"),
 
     Cell("apx.twostage",
          # Stage 1 is the BYOL tower of body.families.4096; stage 2 warm-
          # starts from it with --init-ckpt and runs the window for 600 ep.
          arms=["wcle_swin168step84loop2i2ce_icetf"],
          caps=[4096], folds=5, epochs=600,
-         cites=[A6, A13, A15],
+         cites=[A7, S2, S3, S4],
          was_in="(not shipped before; --init-ckpt was stripped)",
          note="two-stage: BYOL warm start -> windowed",
          extra={"init_from": "wcle_byol_bytf", "name_suffix": "_bw"}),
@@ -172,27 +182,34 @@ CELLS = [
     Cell("apx.swin.window",
          arms=["wcle_swin84step42loop2i2ce_icetf",
                "wcle_swin168step84loop2i2ce_icetf",
-               "wcle_swin336step168loop2i2ce_icetf"],
+               "wcle_swin336step168loop2i2ce_icetf",
+               "wcle_i2ce_icetf"],           # the fully coupled reference row
          caps=[4096], folds=FIXED, epochs=2000,
-         cites=[A8, A9],
-         was_in="w9_swin.ipynb",
-         note="the W = 84-336 window-size sweep"),
+         cites=[A9, A10],
+         was_in="w9_swin.ipynb (the three swin arms); the reference arm is the "
+                "anchor-budget ladder tower of w9_jobs.FS_JOBS",
+         note="the W = 84-336 window-size sweep. Table A9 is regenerated from "
+              "the four arms' projection caches by Pod/table_a9_recompute.py "
+              "(rank selection of Section 5 over epochs 50..2000, Section 5 "
+              "test-set tag probe on the fixed split). The shipped reference tower was "
+              "trained 1,000 epochs and extended to 2,000 with a fresh optimizer "
+              "state, so a fresh 2,000-epoch run reproduces the protocol, not "
+              "the extension bit for bit"),
 
-    # ---- appendix: the document view ----------------------------------
     Cell("apx.docview",
          arms=["wcle_i2ce_icetf", "wcle_nodoc_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[A7],
+         cites=[A8, S1],
          was_in="w9_jobs.FS_JOBS (fixed split only; the five-fold cells "
                 "had no job definition)",
          note="document view present vs absent"),
 
-    Cell("apx.docview.raw",
+    Cell("apx.docview.llm",
          arms=["wcle_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[A7],
+         cites=[A8],
          was_in="w9_jobs.FS_JOBS (fixed split only)",
-         note="raw wiki instead of the LLM rewrite",
+         note="the LLM rewrite instead of raw wiki (Table A8, last row)",
          extra={"wiki_src": "llm"}),
 
     # ---- appendix: VICReg weight sweep --------------------------------
@@ -201,7 +218,7 @@ CELLS = [
                "wcle_epd_v20i10c15_cetf", "wcle_epdb_v25i25c1_cetf",
                "wcle_epdb_v20i10c20_cetf"],
          caps=[512], folds=FIXED, epochs=2000,
-         cites=[A10],
+         cites=[A11],
          was_in="w9_jobs.FS_JOBS",
          note="v/i/c weights; epdb = batch-all variant"),
 
@@ -210,17 +227,18 @@ CELLS = [
          arms=["wcle_i2cet05_icetf", "wcle_i2cet10_icetf",
                "wcle_i2ce_icetl"],
          caps=[512, 2048], folds=5, epochs=2000,
-         cites=[A11],
+         cites=[A12],
          was_in="w9_i2ce_t.ipynb",
-         note="tau 0.05 / 0.10 / learnable; 4,096 was shelved on cost"),
+         note="tau 0.05 / 0.10 / learnable; 4,096 was shelved on cost; Table A12 "
+              "tabulates learnable tau at 2,048 only and tau 0.10 at 512 over four folds"),
 
     # ---- appendix: the teacher must exclude the student's views -------
     Cell("apx.vfa",
          arms=["wcle_vfai2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[A12],
-         was_in="w9_vfa.ipynb (the arm itself was stripped from the "
-                "released CV worker)",
+         cites=[S1],
+         was_in="w9_cv_worker.py (arm wcle_vfai2ce_icetf; vfa_packs builds "
+                "the views-first anchors)",
          note="views-first anchors: the teacher becomes a superset of "
               "the student's evidence"),
 ]

@@ -26,6 +26,16 @@ w9/
     └── text_variant_eval.py # ridge tag probe, split helpers, micro-F1
 ```
 
+## Arm naming
+
+Arm labels read `wcle_<tower recipe>_<loss><tau>`. The recipe token is
+`i2ce` for the paper's tower (invariance weight 2 plus CE), `ce` for the
+contrast-only baseline, `swin<w>step<S>loop<T>i2ce` for the windowed
+teacher; the loss token is `ice` (I-CE), `ce`, `by` (BYOL) and so on; the
+final `tf` means the temperature is frozen at 0.02 and `tl` that it is
+learnable (`wcle_i2ce_icetl`). So `wcle_i2ce_icetf` is the published
+recipe itself. Nothing in a suffix denotes a fine-tuning stage.
+
 ## Data prerequisites
 
 The notebooks expect a data directory (default `/workspace/fusion_cache_w9`,
@@ -65,3 +75,43 @@ by the data pipeline in `release/dataset_builder`.
 
 Selection is deployment-faithful throughout: checkpoints are picked on
 validation-fold review pseudo-queries; LLM rewrites are evaluation-only.
+
+### Reproducing Table A9 (the window-size sweep)
+
+`Pod/table_a9_recompute.py` rebuilds every row of appendix Table A9 from
+the projection caches the fixed-split worker writes beside each checkpoint
+(`tower_<label>_ep<N>.npz`), with no GPU: for each of the four arms it
+re-runs the worker's own `zs_from_arrays` on every checkpoint from epoch 50
+to 2,000, selects the checkpoint by the paper's rank criterion (the sum of
+`exp(-rank)` over the validation games' rewrites of both registers, ties
+to the earlier epoch; `W9_SELECT=rvsel` switches to the worker's own
+review-query score), reports the test-set retrieval columns of that
+checkpoint, and scores the Section 5 test-set tag probe (ridge on the
+1,613 training-gallery anchors, threshold on the 203 validation games,
+micro-F1 on the 204 test games' name-intact rewrites). Point it at the
+result directory and the cache with `LARICE_RESULTS` (or `W9_OUT`) and
+`W9_CACHE`; it writes `Pod/table_a9_results.json` and prints the table.
+
+```bash
+python contrast_experiment/w9/Pod/table_a9_recompute.py
+```
+
+### Reproducing Table 1 and Figure 5 (displacement against margin)
+
+`Pod/table1_recompute.py` re-encodes the fold-0 towers of the six-objective
+comparison at the 4,096-sentence budget (`ckpt_w9cv_wcle_<arm>_fold0_g4096_fp_ep<N>.pt`,
+epochs from the paper's rank plan: I-CE 2000, CE 650, SimCLR 1100, VICReg 150,
+BYOL 250) on the single anchor draw `wscan_gal_rev_g4096.npz` and on the
+wiki rewrites, then computes, per encoder, the mean query displacement
+(1 - cos to the own anchor over the 814 name-stripped rewrites), the mean
+nearest-neighbour margin over the 2,020 anchors, their ratio, and the share
+of queries inside their own margin (Figure 5's clearance labels). It writes
+`table1_results.json` and `fig5_encodings.npz`; `--plan cvsel --check`
+scores the older worker-selected checkpoints instead and compares against
+the shipped numbers. Needs a CUDA interpreter and the research caches
+(`W9_FIG3`, `W9_CACHE`); the paper repository's `figures/fig5_umap.py` draws
+Figure 5 from the encodings.
+
+```bash
+python contrast_experiment/w9/Pod/table1_recompute.py --plan rank
+```

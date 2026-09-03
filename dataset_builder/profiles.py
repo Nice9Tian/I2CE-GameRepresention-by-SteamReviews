@@ -10,12 +10,13 @@ The anchor budget is the one number that decides whether a run fits the
 machine, because the gallery is re-encoded with gradient at every step:
 
     budget   build array (2,020 x cap x 1,024 fp16)   training peak
-      512                2.1 GB                            -
+      512                2.1 GB                        8.4 GiB
     1,024                4.2 GB                        22.3 GiB
-    2,048                8.5 GB                            -
+    2,048                8.5 GB                       35.0 GiB
     4,096               16.9 GB                        ~61 GiB
 
-A 24 GB desktop GPU covers budgets to 2,048; 4,096 wants an 80 GB card.
+A 24 GB desktop GPU covers budgets to 1,024; 2,048 wants a 48 GB card
+and 4,096 an 80 GB card.
 That is what `litePaperTest` exists to avoid, so the profile has to reach
 the data build too, not just the trainer -- assets built at 4,096 would
 OOM a desktop card before the first step, and would already have needed

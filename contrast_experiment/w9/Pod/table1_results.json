@@ -1,0 +1,72 @@
+{
+ "meta": {
+  "table": "Table 1 (displacement / margin / ratio) and Figure 5 clearance labels",
+  "selection_mode": "rank",
+  "selection": "rank criterion of Section 5: argmax over epochs 50..2000 of sum_i exp(-rank_i) over the validation fold's wiki rewrites of both registers against all 2,020 anchors; plan = C:\\Users\\admin\\Documents\\Aiccc_paper\\data\\w9\\rank_ckpt_plan.json",
+  "fold": 0,
+  "anchor_budget": 4096,
+  "anchor_draw": "wscan_gal_rev_g4096.npz",
+  "queries": "all name-stripped (noname) wiki rewrites of the 814-game universe, train / validation / test alike",
+  "gallery": "all 2,020 anchors",
+  "generated": "2026-09-04 03:15",
+  "script": "C:\\release\\I2CE-GameRepresention-by-SteamReviews\\contrast_experiment\\w9\\Pod\\table1_recompute.py",
+  "cache": "C:\\runpod_data\\fusion_cache_w9",
+  "fig3_dir": "C:\\runpod_data\\w9_fig3_local"
+ },
+ "t3": {
+  "Frozen": {
+   "displacement": 0.15694014728069305,
+   "margin": 0.012005279771983624,
+   "ratio": 13.072593688964844,
+   "inside_margin": 0.0,
+   "n_queries": 814,
+   "epoch": null,
+   "arm": null
+  },
+  "I-CE": {
+   "displacement": 0.20079241693019867,
+   "margin": 0.17572267353534698,
+   "ratio": 1.1426665782928467,
+   "inside_margin": 0.40540540540540543,
+   "n_queries": 814,
+   "epoch": 2000,
+   "arm": "i2ce_icetf"
+  },
+  "CE": {
+   "displacement": 0.3894611597061157,
+   "margin": 0.19097912311553955,
+   "ratio": 2.0392866134643555,
+   "inside_margin": 0.06756756756756757,
+   "n_queries": 814,
+   "epoch": 650,
+   "arm": "ce_cetf"
+  },
+  "SimCLR": {
+   "displacement": 0.1376376748085022,
+   "margin": 0.10595234483480453,
+   "ratio": 1.2990525960922241,
+   "inside_margin": 0.36117936117936117,
+   "n_queries": 814,
+   "epoch": 1100,
+   "arm": "bce_cetf"
+  },
+  "VICReg": {
+   "displacement": 0.21728496253490448,
+   "margin": 0.10762163251638412,
+   "ratio": 2.0189709663391113,
+   "inside_margin": 0.23464373464373464,
+   "n_queries": 814,
+   "epoch": 150,
+   "arm": "epd_v20i10c20_cetf"
+  },
+  "BYOL": {
+   "displacement": 0.1477615088224411,
+   "margin": 0.04734612628817558,
+   "ratio": 3.1208784580230713,
+   "inside_margin": 0.14127764127764128,
+   "n_queries": 814,
+   "epoch": 250,
+   "arm": "byol_bytf"
+  }
+ }
+}

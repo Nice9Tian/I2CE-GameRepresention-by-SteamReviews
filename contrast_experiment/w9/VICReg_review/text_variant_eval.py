@@ -25,9 +25,23 @@ import h5py
 import numpy as np
 import torch
 
-from VICReg_review import disturbtion_embed
-from VICReg_review.identity_diagnostic import encode_text_centroid, l2_normalize
-from VICReg_review.train_tag_probe import load_labels
+# The release build ships only the probe / split helpers of this module
+# (train_anchor_ridge, micro_prf, threshold_grid, make_or_load_split), which the
+# workers and Pod/table_a9_recompute.py import.  The text-variant cache builders
+# below need three research modules that are not part of the release; import
+# them when present and otherwise leave the corresponding functions unavailable.
+try:  # pragma: no cover - research tree only
+    from VICReg_review import disturbtion_embed
+    from VICReg_review.identity_diagnostic import encode_text_centroid, l2_normalize
+    from VICReg_review.train_tag_probe import load_labels
+except ImportError:  # release build
+    disturbtion_embed = None
+    encode_text_centroid = None
+    load_labels = None
+
+    def l2_normalize(X, eps: float = 1e-8):
+        X = np.asarray(X, dtype=np.float32)
+        return X / (np.linalg.norm(X, axis=-1, keepdims=True) + eps)
 
 
 VARIANTS = ("positive", "neutral", "negative", "noname")
