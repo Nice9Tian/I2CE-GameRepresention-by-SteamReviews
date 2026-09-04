@@ -97,7 +97,7 @@ $$
 with $c_{g}$ the draw-invariant component, content plus the static bias its reviewers share, and $\epsilon_{m}$ that draw’s fluctuation, $\Sigma_{g}$ being the covariance of one sentence embedding of $g$. Packs enter at two scales, $m_{v}$ sentences for a view and $m_{a}$ for an anchor, the document view of Section 4.1 entering not as a third scale, carrying no draw noise of its own, but as the fixed offset $\delta_{g}$ of (D.18),
 
 $$
-m_{v}\ge 16,\; 512\le m_{a}\le 4,096,m_{a}\gg m_{v},\mathrm{tr}\mathrm{Cov}(\epsilon_{v})\gg \mathrm{tr}\mathrm{Cov}(\epsilon_{a}) \qquad (\text{D.2})
+m_{v}\ge 16,\ 512\le m_{a}\le 4,096,m_{a}\gg m_{v},\mathrm{tr}\mathrm{Cov}(\epsilon_{v})\gg \mathrm{tr}\mathrm{Cov}(\epsilon_{a}) \qquad (\text{D.2})
 $$
 
 a strong view at its 16-sentence floor (23 at the median) against an anchor cap realized packs fall short of. The $1/m$ scaling assumes independent pooled draws, which whole-review sampling and attention pooling violate, so only ratios of the two scales are used. Encoding both, $f(x_{v})=z$ and $f(x_{a})=a$, views scatter and anchors hold still.
@@ -125,13 +125,13 @@ $$
 whose second half is unbiased term by term, the two draws being zero-mean by (D.1) and, coming from different games, independent, and has mean square
 
 $$
-E\| \epsilon_{h}- \epsilon_{v' }{\| }^{2}=\frac{\mathrm{tr}\Sigma_{h}+\mathrm{tr}\Sigma_{g}}{m_{v}} \qquad (\text{D.6})
+E\Vert \epsilon_{h}- \epsilon_{v' }{\Vert }^{2}=\frac{\mathrm{tr}\Sigma_{h}+\mathrm{tr}\Sigma_{g}}{m_{v}} \qquad (\text{D.6})
 $$
 
-Rank turns on hard pairs, and at a semantic hard pair, defined by $\| c_{h}- c_{g}\| \ll \sqrt{(\mathrm{tr}\Sigma_{h}+\mathrm{tr}\Sigma_{g})/m_{v}}$ with the noise norm concentrating near its root mean square (the scale carried to the encodings by the linearization of (D.13) below),
+Rank turns on hard pairs, and at a semantic hard pair, defined by $\Vert c_{h}- c_{g}\Vert \ll \sqrt{(\mathrm{tr}\Sigma_{h}+\mathrm{tr}\Sigma_{g})/m_{v}}$ with the noise norm concentrating near its root mean square (the scale carried to the encodings by the linearization of (D.13) below),
 
 $$
-\| \epsilon_{h}- \epsilon_{v' }\| \gg \| c_{h}- c_{g}\| \qquad (\text{D.7})
+\Vert \epsilon_{h}- \epsilon_{v' }\Vert \gg \Vert c_{h}- c_{g}\Vert \qquad (\text{D.7})
 $$
 
 so the push aims predominantly along noise. Hard pairs are selected by encoded similarity, and one hard only because two draws collided is corrected by a noise-aligned push. In the large the semantic term dominates, which is why sample-repelled towers spread widely yet carve narrow nearest-neighbor margins.
@@ -148,13 +148,13 @@ $$
 {}- \nabla_{z_{v}}\ell_{\mathrm{CE}}=\frac{1}{\tau }[(1- p_{g})a_{g}- \sum_{h\neq g} p_{h}a_{h}] \qquad (\text{D.9})
 $$
 
-Write $p_{h|g}$ for the softmax weight of anchor $h$ under a view $z_{g}$ of game $g$. Call $(g,\; h)$ symmetrically confused when $p_{h|g}=p_{g|h}$ and $p_{k|g}=p_{k|h}$ for every other anchor $k$, which by normalization forces $p_{g|g}=p_{h|h}$ ; subtracting the descent steps of the views $z_{g}$ and $z_{h}$, $z_{g}- z_{h}$ moves along
+Write $p_{h|g}$ for the softmax weight of anchor $h$ under a view $z_{g}$ of game $g$. Call $(g,\ h)$ symmetrically confused when $p_{h|g}=p_{g|h}$ and $p_{k|g}=p_{k|h}$ for every other anchor $k$, which by normalization forces $p_{g|g}=p_{h|h}$ ; subtracting the descent steps of the views $z_{g}$ and $z_{h}$, $z_{g}- z_{h}$ moves along
 
 $$
 (\frac{1- p_{g|g}}{\tau }+\frac{p_{h|g}}{\tau })(a_{g}- a_{h}) \qquad (\text{D.10})
 $$
 
-both coefficients read off (D.9), the matched third-party weights cancelling in the subtraction so that only the $(g,\; h)$ terms survive and the step is parallel to $a_{g}- a_{h}$, which decomposes as
+both coefficients read off (D.9), the matched third-party weights cancelling in the subtraction so that only the $(g,\ h)$ terms survive and the step is parallel to $a_{g}- a_{h}$, which decomposes as
 
 $$
 a_{g}- a_{h}=(c_{g}- c_{h})+(\epsilon_{\mathrm{ag}}- \epsilon_{\mathrm{ah}}) \qquad (\text{D.11})
@@ -163,7 +163,7 @@ $$
 whose second half is, by the variance asymmetry, a static residual and not a fresh draw,
 
 $$
-\frac{E\| \epsilon_{\mathrm{ag}}- \epsilon_{\mathrm{ah}}{\| }^{2}}{E\| \epsilon_{h}- \epsilon_{v' }{\| }^{2}}=\frac{m_{v}}{m_{a}} \qquad (\text{D.12})
+\frac{E\Vert \epsilon_{\mathrm{ag}}- \epsilon_{\mathrm{ah}}{\Vert }^{2}}{E\Vert \epsilon_{h}- \epsilon_{v' }{\Vert }^{2}}=\frac{m_{v}}{m_{a}} \qquad (\text{D.12})
 $$
 
 an amplitude ratio $\sqrt{m_{v}/m_{a}}$, about $1/5.7$ at the 16-sentence floor against the 512-sentence anchor budget, and larger for longer views. Read in the encodings through the linearization of (D.13) below, one Jacobian and one sentence-level covariance $\Sigma_{g}$ serving both packs of a game, the ratio is unchanged; it covers the draw-noise half of the anchor residual, the store-page offset of the kind $\delta_{g}$ being static and not shrinking with $m_{a}$. The anchored path has a lower noise floor, tracking the semantic difference far below the scale $\sqrt{(\mathrm{tr}\Sigma_{h}+\mathrm{tr}\Sigma_{g})/m_{v}}$ where sample repulsion loses it. The residual is static within a run, replaced by the ten fresh anchor draws of the evaluation protocol (Section 5), whose effect Tables S2 and S3 of the supplementary document bound at 0.008 Stripped hit@1. Through $p_{h}$ the softmax also concentrates the whole repulsion budget on whichever anchors currently compete. Equation (8) sits at the opposite extreme: its mean gives every competitor weight $1/B$, $B$ the view encodings in a step (Section 4.3), against a $p_{h}$ that is of order one at a hard competitor early in training, so matching one anchored step takes order $B$ mean steps, each carrying an independent draw, and the accumulated noise variance grows by the same factor.
@@ -171,25 +171,25 @@ an amplitude ratio $\sqrt{m_{v}/m_{a}}$, about $1/5.7$ at the 16-sentence floor 
 **Why the invariance term suppresses the noise response.** Switching to the linearization, expand about the invariant component, with $J$ the Jacobian at $c$,
 
 $$
-f(c+\epsilon )\approx f(c)+J\epsilon ,\; J=\frac{\partial f}{\partial x} \qquad (\text{D.13})
+f(c+\epsilon )\approx f(c)+J\epsilon ,\ J=\frac{\partial f}{\partial x} \qquad (\text{D.13})
 $$
 
-and since the tower outputs unit vectors, differentiating $\| f{\| }^{2}=1$ gives
+and since the tower outputs unit vectors, differentiating $\Vert f{\Vert }^{2}=1$ gives
 
 $$
 f(c{)}^{T}J=0 \qquad (\text{D.14})
 $$
 
-which kills the first-order term of the cosine, and the same constraint fixes each output’s radial second-order term at $- \| J\epsilon {\| }^{2}/2$, so that $\| z\| =1$ holds to that order, leaving
+which kills the first-order term of the cosine, and the same constraint fixes each output’s radial second-order term at $- \Vert J\epsilon {\Vert }^{2}/2$, so that $\Vert z\Vert =1$ holds to that order, leaving
 
 $$
-\langle z_{i},z_{j}\rangle =1+\epsilon_{i}^{T}{J}^{T}J\epsilon_{j}- \frac{\| J\epsilon_{i}{\| }^{2}+\| J\epsilon_{j}{\| }^{2}}{2} \qquad (\text{D.15})
+\langle z_{i},z_{j}\rangle =1+\epsilon_{i}^{T}{J}^{T}J\epsilon_{j}- \frac{\Vert J\epsilon_{i}{\Vert }^{2}+\Vert J\epsilon_{j}{\Vert }^{2}}{2} \qquad (\text{D.15})
 $$
 
 and therefore
 
 $$
-1- \cos (z_{i},z_{j})=\frac{\| J(\epsilon_{i}- \epsilon_{j}){\| }^{2}}{2} \qquad (\text{D.16})
+1- \cos (z_{i},z_{j})=\frac{\Vert J(\epsilon_{i}- \epsilon_{j}){\Vert }^{2}}{2} \qquad (\text{D.16})
 $$
 
 For independent draws of equal covariance every pair has expectation $\mathrm{tr}(J\mathrm{Cov}(\epsilon_{v}){J}^{T})$, and the $2/(V(V- 1))$ prefactor of Equation (3) averages the $V(V- 1)/2$ pairs, so
@@ -204,16 +204,16 @@ $$
 z_{\mathrm{doc}}\approx f(c_{g})+J\delta_{g} \qquad (\text{D.18})
 $$
 
-and, for a game with a document view (1,496 of the 1,694 in a fold), each of the $V- 1$ pairs involving it swaps one view’s noise for that offset, contributing $\| J\delta_{g}{\| }^{2}/2$ and half the noise term,
+and, for a game with a document view (1,496 of the 1,694 in a fold), each of the $V- 1$ pairs involving it swaps one view’s noise for that offset, contributing $\Vert J\delta_{g}{\Vert }^{2}/2$ and half the noise term,
 
 $$
-E[I]=\frac{V- 1}{V}\mathrm{tr}(J\mathrm{Cov}(\epsilon_{v}){J}^{T})+\frac{\| J\delta_{g}{\| }^{2}}{V} \qquad (\text{D.19})
+E[I]=\frac{V- 1}{V}\mathrm{tr}(J\mathrm{Cov}(\epsilon_{v}){J}^{T})+\frac{\Vert J\delta_{g}{\Vert }^{2}}{V} \qquad (\text{D.19})
 $$
 
-a floor of $\| J\delta_{g}{\| }^{2}/4$ at $V=4$ that no drawing removes, which is why closing $\delta_{g}$ falls here. Being symmetric, the term closes $\delta_{g}$ at a compromise, not by moving the document alone: the game-independent part $b_{\mathrm{doc}}- b_{\mathrm{rev}}$ of $\delta_{g}=(b_{\mathrm{doc}}- b_{\mathrm{rev}})+t_{g}$ (Section 4.1) leaves inter-game differences untouched, while the drift $t_{g}$ does not and is absorbed into $f(c_{g})$. Minimizing $I$ presses the noise term of (D.19) to zero in expectation,
+a floor of $\Vert J\delta_{g}{\Vert }^{2}/4$ at $V=4$ that no drawing removes, which is why closing $\delta_{g}$ falls here. Being symmetric, the term closes $\delta_{g}$ at a compromise, not by moving the document alone: the game-independent part $b_{\mathrm{doc}}- b_{\mathrm{rev}}$ of $\delta_{g}=(b_{\mathrm{doc}}- b_{\mathrm{rev}})+t_{g}$ (Section 4.1) leaves inter-game differences untouched, while the drift $t_{g}$ does not and is absorbed into $f(c_{g})$. Minimizing $I$ presses the noise term of (D.19) to zero in expectation,
 
 $$
-E\| J\epsilon_{v}{\| }^{2}\to 0,z_{v}- z_{v' }\approx J(\epsilon_{v}- \epsilon_{v' })\to 0 \qquad (\text{D.20})
+E\Vert J\epsilon_{v}{\Vert }^{2}\to 0,z_{v}- z_{v' }\approx J(\epsilon_{v}- \epsilon_{v' })\to 0 \qquad (\text{D.20})
 $$
 
 suppressing the tower’s noise response, not the noise. Two assumptions carry this: the linearization holds in the high-noise regime of the strong views, and $\mathrm{Cov}(\epsilon_{v})$ must span a subspace distinct enough from $c_{g}- c_{h}$ for one to be suppressed without the other. Cross-entropy forbids total collapse, the constant tower costing $\ln n\approx 7.4$ nats per view, but not the loss of semantic directions inside the noise subspace, which we read as the tag deficit of Section 8.
@@ -253,7 +253,7 @@ This appendix locates the handover between the contrastive push-pull and the inv
 **Unit force.** One view enters $V- 1$ of Equation (3)’s $V(V- 1)/2$ pairs, each pulling by at most one,
 
 $$
-\| \nabla_{z_{v}}(\lambda I)\| \le \lambda \frac{2}{V(V- 1)}(V- 1)=\frac{2\lambda }{V}=1 \qquad (\text{E.1})
+\Vert \nabla_{z_{v}}(\lambda I)\Vert \le \lambda \frac{2}{V(V- 1)}(V- 1)=\frac{2\lambda }{V}=1 \qquad (\text{E.1})
 $$
 
 with equality when the other views are aligned with each other and orthogonal to $z_{v}$ ; $\lambda =V/2$ makes the bound exactly one, the recipe’s unit of force, flat in confidence though the realized force is not, falling with the residual disagreement.
@@ -261,7 +261,7 @@ with equality when the other views are aligned with each other and orthogonal to
 **The ceiling.** The descent step of Equation (D.9) is $(1- p_{g})/\tau$ times the difference between $a_{g}$ and the weighted centroid of the competitors, both in the unit ball and so at most 2 apart,
 
 $$
-\| \nabla_{z_{v}}\ell_{\mathrm{CE}}\| \le \frac{2(1- p_{g})}{\tau }\le \frac{2}{\tau }=100 \qquad (\text{E.2})
+\Vert \nabla_{z_{v}}\ell_{\mathrm{CE}}\Vert \le \frac{2(1- p_{g})}{\tau }\le \frac{2}{\tau }=100 \qquad (\text{E.2})
 $$
 
 so $\tau$ sets the ceiling, a bound the tangential projection can only tighten, which the brake of Appendix D spends linearly as $p_{g}\to 1$.
@@ -269,7 +269,7 @@ so $\tau$ sets the ceiling, a bound the tangential projection can only tighten, 
 **The handover.** Writing ${p}^{\ast }$ for the value of $p_{g}$ at which the braked envelope falls to the invariance envelope, the recipe values $V=4$, $\lambda =2$, $\tau =0.02$ give
 
 $$
-\frac{2(1- {p}^{\ast })}{\tau }=\frac{2\lambda }{V},\; 1- {p}^{\ast }=\frac{\lambda \tau }{V}=0.01 \qquad (\text{E.3})
+\frac{2(1- {p}^{\ast })}{\tau }=\frac{2\lambda }{V},\ 1- {p}^{\ast }=\frac{\lambda \tau }{V}=0.01 \qquad (\text{E.3})
 $$
 
 so a view’s envelope hands over once classified at 99% confidence: ceiling times handover margin is unit force, $(2/\tau )(\lambda \tau /V)=2\lambda /V$, and the empirically chosen temperature (Table A12) restates as $\tau =(V/\lambda )(1- {p}^{\ast })=2\times 0.01$, the factor 2 being $V/\lambda$, which equals $\lambda$ here only because $\lambda =\sqrt{V}$. Only the product $\lambda \tau /V$ enters the crossing; $\tau$ was fixed by the sweep of Table A12 and $\lambda$ carries no sweep, so unit force reads the fixed values rather than justifying them. In margin units, $s=\langle z_{v},a_{g}\rangle - \langle z_{v},a_{h}\rangle =\tau \ln (p_{g}/p_{h})$ at any gallery size, and the residual mass $\lambda \tau /V$ placed on one competitor, the worst case, gives the gap Section 4.3 quotes, ${s}^{\ast }=\tau \ln (V/(\lambda \tau )- 1)=0.02\ln 99\approx 0.092$. The crossing compares worst-case envelopes attained at incompatible configurations, so it is a parameter-scale statement rather than a measured handover.
@@ -327,7 +327,7 @@ Write $R$ for the number of resident anchor packs (the fold gallery of Section 4
 The fully coupled teacher re-encodes every pack with gradient at every step, so its step time and its peak activation are
 
 $$
-\Theta (R\cdot m_{a}\cdot Q\cdot d),\; \Theta (R\cdot m_{a}\cdot d) \qquad (\text{H.1})
+\Theta (R\cdot m_{a}\cdot Q\cdot d),\ \Theta (R\cdot m_{a}\cdot d) \qquad (\text{H.1})
 $$
 
 both linear in the catalog. At our scale the backward graph holds 6.9 M sentence slots, 13 GiB of fp16 input before any activation is stored (cf. Table A10, whose 6.6 M counts the fixed split’s 1,613 packs); the same expression at $R={10}^{6}$ asks for 7.6 TiB, which no accelerator holds. This is the wall the scale limitation of Section 8 names.
@@ -348,7 +348,7 @@ At 1,024 sentences, the plateau of Table A2, every retrieval and tag reading sta
 The windowed teacher removes $R$ from both expressions. A micro-pass encodes the batch’s own packs plus one window and frees them before the next, so a step costs
 
 $$
-\Theta (T\cdot (G+w)\cdot m_{a}\cdot Q\cdot d),\; \Theta ((G+w)\cdot m_{a}\cdot d) \qquad (\text{H.2})
+\Theta (T\cdot (G+w)\cdot m_{a}\cdot Q\cdot d),\ \Theta ((G+w)\cdot m_{a}\cdot d) \qquad (\text{H.2})
 $$
 
 in time and in memory (Table A6). At $G=192$ and $w=168$ that is 1.47 M sentence slots, 2.8 GiB of input, whether the catalog holds two thousand entries or ten million. What the window does not bound is the ring itself: the windowed teacher still keeps every anchor pack resident (Table A10), so $\Theta (R\cdot m_{a}\cdot d)$ of store sits on the device even though only $\Theta ((G+w)\cdot m_{a}\cdot d)$ of it is ever differentiated. Measured at our scale the fully coupled teacher peaks at about 61 GiB at $m_{a}=4,096$, and about 13 GiB of either teacher’s footprint is that resident ring; the windowed teacher’s peak was not separately measured.
@@ -405,7 +405,7 @@ The document view is one of the four strong views, and this ablation isolates it
 
 The windowed teacher deferred from Section 4 is specified below, followed by the three sweeps behind design choices. The window-size scan and the VICReg grid are single-split and should be read at the $\pm 0.03$ resolution of Section 5; the temperature sweep is five-fold.
 
-swin-I-CE lays the catalog on a ring with a persistent pointer $u$ and runs two micro-passes per step: micro-pass $l\in \{0,\; 1\}$ freshly encodes the $w=168$ anchors starting at ring position $u+l\cdot S$ (stride $S=84$, so consecutive passes overlap by half a window) together with the current batch’s own anchors, forms its own CE partition (every view’s positive sits in the batch block, the window anchors serve as negatives) and backpropagates immediately, freeing the window’s activations before the next pass. The pointer then advances by $2S$, sweeping the full catalog every ten steps so that every anchor takes a regular, gradient-coupled turn, which per step touches about 27% of the gallery with gradient and bounds the gradient-coupled encoding to 22% of the full backward graph (Table A10); the tower, the views, and the invariance term are unchanged. Table A7 quantifies the cost of this variant five-fold; the window-size sweep ($w=84–336$ ) is Table A9.
+swin-I-CE lays the catalog on a ring with a persistent pointer $u$ and runs two micro-passes per step: micro-pass $l\in \lbrace 0,\ 1\rbrace$ freshly encodes the $w=168$ anchors starting at ring position $u+l\cdot S$ (stride $S=84$, so consecutive passes overlap by half a window) together with the current batch’s own anchors, forms its own CE partition (every view’s positive sits in the batch block, the window anchors serve as negatives) and backpropagates immediately, freeing the window’s activations before the next pass. The pointer then advances by $2S$, sweeping the full catalog every ten steps so that every anchor takes a regular, gradient-coupled turn, which per step touches about 27% of the gallery with gradient and bounds the gradient-coupled encoding to 22% of the full backward graph (Table A10); the tower, the views, and the invariance term are unchanged. Table A7 quantifies the cost of this variant five-fold; the window-size sweep ($w=84–336$ ) is Table A9.
 
 **Table A9:** The window-size sweep behind the windowed teacher (fixed split, test-set queries (ts) of that split, 4,096-sentence anchors; a single anchor draw rather than the ten-draw expectation of the main tables). Every row’s checkpoint is selected by the rank criterion of Section 5, the sum of exp(−rank) over the validation games’ rewrites of both registers, over its first 2,000 epochs, the same rule as the five-fold tables; the cap matters for the reference arm alone, whose run continued to 4,000 epochs. Coverage counts the training-set anchor packs re-encoded with gradient per step (batch plus the union of the two micro-pass windows). Halving or doubling the window moves Stripped hit@1 by at most 0.044 with no monotone trend, at the single-split resolution: the smallest window already holds the plateau, so memory, not coverage, should pick $w$. Tag readings are the test-set probe of Section 5, recomputed on this split so that they sit on the same scale as the rest of the paper; their spread here is single-split noise, and at fold level swin and full coupling read tags at parity (Table A7, which gives the five-fold account of $w=168$ ). The fully coupled row is the anchor-budget ladder’s tower re-selected under the same criterion; it leads the windowed arms by 0.04 to 0.08 Stripped hit@1 on this split, in line with the five-fold 0.032 of Table A7. All four rows are regenerated by one script in the repository.
 
@@ -439,7 +439,7 @@ The VICReg grid below predates validation selection and its towers were logged o
 | **I-CE (reference, same readout)** | **0.926** | **0.672** |
 | CE (reference, same readout) | 0.922 | 0.618 |
 
-The temperature sweep of Table A12 is five-fold and carries the Section 8 verdict directly. The learnable variant (initialized at 0.02, $\tau$ clamped to $[0.005,\; 0.2]$ ) never settles at an interior optimum: in all five folds it sharpens monotonically to the clamp floor within 250 epochs and trains there, an effective fixed $\tau =0.005$, beating the frozen recipe by 0.010 Stripped hit@1 in five folds of five and by 0.008 on tags (computed before rounding), the sharp-side headroom that the frozen setting of Section 4.2 leaves to deployment.
+The temperature sweep of Table A12 is five-fold and carries the Section 8 verdict directly. The learnable variant (initialized at 0.02, $\tau$ clamped to $[0.005,\ 0.2]$ ) never settles at an interior optimum: in all five folds it sharpens monotonically to the clamp floor within 250 epochs and trains there, an effective fixed $\tau =0.005$, beating the frozen recipe by 0.010 Stripped hit@1 in five folds of five and by 0.008 on tags (computed before rounding), the sharp-side headroom that the frozen setting of Section 4.2 leaves to deployment.
 
 **Table A12:** The temperature sweep behind the Section 8 verdict and the frozen setting of Section 4.2 (test-set queries (ts), five-fold mean ± std at the 512- and 2,048-sentence anchor budgets; the $\tau =0.10$ cell at 512 has four folds; checkpoints selected by the rank criterion of Section 5 on the validation fold, the table reporting their test-set readings). Among fixed settings $\tau =0.02$ is retrieval-optimal at both budgets: softening to 0.05/0.10 costs 0.060–0.226 Stripped hit@1, and what it buys is the tag reading: $\tau =0.05$ lifts it to the edge of the negative-light band of Section 6.1, so on the soft side temperature trades the tag reading against identity.
 
