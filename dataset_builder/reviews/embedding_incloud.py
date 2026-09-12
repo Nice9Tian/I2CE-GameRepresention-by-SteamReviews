@@ -43,17 +43,17 @@ from pathlib import Path
 
 import numpy as np
 
-# h5_corpus.py / cloud_embedding.py live alongside / one level up from this file.
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# The release package owns its logging helper; sibling modules stay local.
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from tools.logging_tee import run_with_optional_tee
+from dataset_builder.logging_tee import run_with_optional_tee
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 try:
-    from game_review_data.h5_corpus import (
+    from dataset_builder.reviews.h5_corpus import (
         DEFAULT_EMBEDDING_H5,
         DEFAULT_TEXT_H5,
         EMBEDDING_H5_SCHEMA,

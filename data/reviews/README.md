@@ -3,9 +3,29 @@
 Obtain either way:
 - set `LARICE_EMBED_H5_URL` / `LARICE_TEXT_H5_URL` and let
   `steam_reviews_framework/run.py` download them;
-- rebuild once from the Kaggle dump: `dataset_builder/reviews/`
-  (prepare_kaggle_steam_reviews → build.py clean + sentence split →
-  Build_new.py embed everything → h5_corpus.py assemble).
+- rebuild with the unified entry point (Mendeley first, Kaggle fills missing
+  titles), from the repository root:
+
+  ```bash
+  python dataset_builder/reviews/build.py --data-dir data/reviews
+  ```
+
+  This runs metadata cleaning, SaT sentence splitting, text H5 construction,
+  and embedding H5 construction. `--only metadata split text-h5` selects
+  stages; `--logout-address build.log` also captures child-process output.
+  The logging helper and fixed 23-class tag mapping ship with
+  `dataset_builder/`; no original research checkout is needed. Use
+  `--tag-mapping PATH` for an explicit alternative mapping.
+
+Smoke tests (no corpus download):
+
+```bash
+python -m unittest discover -s tests -p test_review_build_smoke.py -v
+```
+
+To also process two synthetic games through cached SaT and Qwen models,
+set `LARICE_SMOKE_MODELS=1`; all model loading stays offline. The default
+device is CPU; `LARICE_SMOKE_DEVICE=cuda` enables the small GPU smoke run.
 
 ## embedding_h5.h5 (~164 GB)
 

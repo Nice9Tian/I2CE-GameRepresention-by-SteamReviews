@@ -25,15 +25,16 @@ import h5py
 import numpy as np
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
+PROJECT_ROOT = SCRIPT_DIR.parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+from dataset_builder.corpora.tag_mapping import DEFAULT_MAPPING as DEFAULT_TAG_MAPPING
 
 DEFAULT_SENTENCES_DIR = SCRIPT_DIR / "sentences"
 DEFAULT_GAMES_JSON = SCRIPT_DIR / "games.json"
 DEFAULT_TEXT_H5 = SCRIPT_DIR / "text_h5.h5"
 DEFAULT_EMBEDDING_H5 = SCRIPT_DIR / "embedding_h5.h5"
-DEFAULT_TAG_MAPPING = PROJECT_ROOT / "VICReg_review" / "tags" / "tag_mapping.json"
 TEXT_H5_SCHEMA = "game_review_text_h5.v1"
 EMBEDDING_H5_SCHEMA = "game_review_embedding_h5.v1"
 POSITIVE_VALUE = "recommended"
@@ -756,10 +757,7 @@ def write_string_dataset(h5: h5py.File, name: str, values: list[str] | np.ndarra
 
 
 def write_tag_metadata(h5: h5py.File, game_names: list[str], games: dict, mapping_path: Path) -> None:
-    try:
-        from VICReg_review.tag_mapping import load_tag_mapping, map_tag_dict, vectorize_tags
-    except ImportError:  # pragma: no cover - direct script fallback
-        from tag_mapping import load_tag_mapping, map_tag_dict, vectorize_tags
+    from dataset_builder.corpora.tag_mapping import load_tag_mapping, map_tag_dict, vectorize_tags
 
     spec = load_tag_mapping(mapping_path)
     tag_names = spec["tag_names"]

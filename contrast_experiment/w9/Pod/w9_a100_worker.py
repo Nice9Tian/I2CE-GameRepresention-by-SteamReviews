@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""R60 wcle-protocol worker for A100 pods: one ARM = tower (1000ep, ckpt/50)
-+ per-checkpoint heads (3 seeds) + post-hoc vsel pick topped to 10 seeds.
+"""w9 fixed-split worker: one ARM, zero-shot selection by default.
+Select the checkpoint by sum(exp(-rank)) on validation neutral/noname rewrites.
+Tags are diagnostics only. Optional --head retains the legacy head protocol.
 
 A100 adaptations vs the local (RTX3080) cells:
   * EVERYTHING lives in VRAM: the 2048-sentence review pool (8.5 GB), the
@@ -1756,12 +1757,8 @@ def main():
             s = rg.predict(sc.transform(np.stack([Za[i] for i in idx]).astype(np.float32)))
             labs = np.stack([y[n2i[art_games[i]]] for i in idx])
             out["tag_" + var] = micro_prf(labs, s, th)["micro_f1"]
-        # --- REVIEW-based selection (user 2026-07-18): deployment has NO
-        # rewrites, so the checkpoint pick uses the val fold's REVIEW
-        # pseudo-queries (ss_queries): rvsel = q@1 + q@RSEL_K + 2*q_tagF1.
-        # (User once wrote '@2'; the canonical formula was @5 -> RSEL_K=5,
-        # single-constant change if @2 was intended.) Rewrite metrics stay
-        # as REPORT-ONLY columns.
+        # Legacy review-query diagnostic: rvsel = q@1 + q@5 + 2*q_tagF1.
+        # Retained for historical comparisons; final selection uses ranksel.
         RSEL_K = 5
         qz = Zq / (np.linalg.norm(Zq, axis=1, keepdims=True) + 1e-8)
         qg = np.asarray(Qs["gidx"])
@@ -1978,10 +1975,8 @@ def main():
             del m2
         (OUT / f"resume_{name}.pt").unlink(missing_ok=True)
 
-    # ---------------- ZS-primary: refresh traj + val-select (zsbest) ----
-    # Old traj entries (test-only keys) are refreshed from the projection
-    # npz caches -- no GPU re-embedding. Selection = max zvsel, earlier
-    # epoch on ties (matches the head post-hoc convention).
+    # Refresh historical readout columns for notebook compatibility.
+    # These diagnostics do not participate in checkpoint selection.
     traj_p = OUT / f"zs_traj_{name}.json"
     zs_traj = json.loads(traj_p.read_text()) if traj_p.exists() else {}
     for npzp in sorted(OUT.glob(f"tower_{name}_ep*.npz"),
@@ -1994,14 +1989,18 @@ def main():
         print(f"ZS-refresh(ep{ek}) zvsel={zs_traj[f'ep{ek}']['rvsel']:.3f}",
               flush=True)
         json.dump(zs_traj, open(traj_p, "w"), indent=2)
-    cand = {k: v for k, v in zs_traj.items() if "rvsel" in v}
-    if cand:
-        bk = max(cand, key=lambda k: (cand[k]["rvsel"], -int(k[2:])))
-        json.dump(dict(best_ep=int(bk[2:]), **cand[bk]),
-                  open(OUT / f"zsbest_{name}.json", "w"), indent=2)
-        print(f"ZSBEST {name}: ep{bk[2:]} rvsel={cand[bk]['rvsel']:.3f} "
-              + " ".join(f"{v[:3]}:{cand[bk]['nm_' + v]:.3f}" for v in VORDER),
-              flush=True)
+
+    # ---------------- Paper selection: validation neutral + noname ranks ----
+    # Cached cvsel/rvsel and tag metrics remain historical diagnostics only.
+    # Re-score existing SPg/SPa projections; no training or tag probe is needed.
+    try:
+        from .w9_selection import refresh_rank_selection, validation_rows
+    except ImportError:
+        from w9_selection import refresh_rank_selection, validation_rows
+    rank_rows = validation_rows(names, art_games, variants, A["gidx"], sp)
+    best = refresh_rank_selection(OUT, name, A["gidx"], rank_rows)
+    print(f"ZSBEST {name}: ep{best['best_ep']} ranksel={best['ranksel']:.9f}",
+          flush=True)
 
     # ---------------- heads (LEGACY, --head only): 3 seeds -> vsel -> topup --
     if args.head:

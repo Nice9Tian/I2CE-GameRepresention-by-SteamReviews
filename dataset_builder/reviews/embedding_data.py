@@ -18,17 +18,14 @@ import sys
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
-# cloud_embedding.py lives at the project root, one level up from this file.
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Resolve the released package, including when this file is run directly.
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-try:
-    from game_review_data.h5_corpus import DEFAULT_EMBEDDING_H5, DEFAULT_TEXT_H5, embed_text_h5
-except ImportError:  # pragma: no cover - direct script execution
-    from h5_corpus import DEFAULT_EMBEDDING_H5, DEFAULT_TEXT_H5, embed_text_h5
+from dataset_builder.reviews.h5_corpus import DEFAULT_EMBEDDING_H5, DEFAULT_TEXT_H5, embed_text_h5
 
 DEFAULT_INPUT_H5 = DEFAULT_TEXT_H5
 DEFAULT_OUTPUT_H5 = DEFAULT_EMBEDDING_H5
@@ -91,7 +88,7 @@ class CloudEmbedder:
         max_in_flight=None,
         normalize=False,
     ):
-        from cloud_embedding import DEFAULT_TOKEN_FILE, EmbeddingClient, chunked, load_credentials
+        from dataset_builder.reviews.cloud_embedding import DEFAULT_TOKEN_FILE, EmbeddingClient, chunked, load_credentials
 
         self.chunked = chunked
         creds = credentials or load_credentials(token_file or DEFAULT_TOKEN_FILE)
@@ -146,7 +143,7 @@ def make_embedder(backend: str, **kwargs):
         return embedder, model_name, "local"
 
     try:
-        from cloud_embedding import DEFAULT_TOKEN_FILE, load_credentials
+        from dataset_builder.reviews.cloud_embedding import DEFAULT_TOKEN_FILE, load_credentials
 
         creds = load_credentials(kwargs.get("token_file") or DEFAULT_TOKEN_FILE)
     except (FileNotFoundError, ValueError, OSError, UnicodeError) as exc:

@@ -33,11 +33,13 @@ import zipfile
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+PROJECT_ROOT = SCRIPT_DIR.parents[1]
+# Support both direct execution from any cwd and `python -m ...`.
+for import_dir in (PROJECT_ROOT, SCRIPT_DIR):
+    if str(import_dir) not in sys.path:
+        sys.path.insert(0, str(import_dir))
 
-from tools.logging_tee import run_with_optional_tee
+from dataset_builder.logging_tee import run_with_optional_tee
 
 
 def _download_stream(url: str, out_file: Path, total_hint: int = 0) -> None:
@@ -233,7 +235,7 @@ KAGGLE_DATASET = "najzeko/steam-reviews-2021"
 DEFAULT_DATA_DIR = SCRIPT_DIR
 DEFAULT_TEXT_H5 = DEFAULT_DATA_DIR / "text_h5.h5"
 DEFAULT_EMBEDDING_H5 = DEFAULT_DATA_DIR / "embedding_h5.h5"
-DEFAULT_TAG_MAPPING = PROJECT_ROOT / "VICReg_review" / "tags" / "tag_mapping.json"
+DEFAULT_TAG_MAPPING = PROJECT_ROOT / "dataset_builder" / "corpora" / "tags" / "tag_mapping.json"
 DEFAULT_KAGGLE_GAMES_JSON = SCRIPT_DIR / "kaggle_storepage_data" / "games.json"
 KAGGLE_META_FIELDS = ("detailed_description", "about_the_game", "short_description")
 KAGGLE_REQUIRED_FIELDS = ("name", "detailed_description", "about_the_game", "short_description", "tags")
@@ -623,7 +625,7 @@ def choose_auto_split_workers(device: str | None) -> tuple[int, float | None, fl
     try:
         from split_data import get_cuda_total_memory_gib, get_total_system_ram_gib
     except ImportError:
-        from game_review_data.split_data import get_cuda_total_memory_gib, get_total_system_ram_gib
+        from dataset_builder.reviews.split_data import get_cuda_total_memory_gib, get_total_system_ram_gib
 
     ram_gib = get_total_system_ram_gib()
     vram_gib = get_cuda_total_memory_gib(device)
@@ -651,7 +653,7 @@ def split_data_parallel(args, metadata_dir: Path, sentences_dir: Path) -> None:
         try:
             from split_data import split_data
         except ImportError:
-            from game_review_data.split_data import split_data
+            from dataset_builder.reviews.split_data import split_data
 
         split_data(
             input_dir=metadata_dir,

@@ -12,11 +12,7 @@ from pathlib import Path
 import numpy as np
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-_CODE_DIR = SCRIPT_DIR
-import os as _os
-# data/code separation: corpora TEXT lives under the data root, not the repo
-SCRIPT_DIR = (Path(_os.environ["LARICE_CORPORA"]) if _os.environ.get("LARICE_CORPORA")
-              else Path(__file__).resolve().parents[2] / "data" / "corpora")
+# The fixed taxonomy is a shipped input, not a generated text corpus.
 DEFAULT_MAPPING = SCRIPT_DIR / "tags" / "tag_mapping.json"
 
 

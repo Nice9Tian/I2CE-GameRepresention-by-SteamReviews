@@ -73,8 +73,51 @@ by the data pipeline in `release/dataset_builder`.
 | `w9_swin.ipynb`, `w9_swin_5fold.ipynb` | sliding fresh-window CE field |
 | `w9_i2ce_continue.ipynb` | budget-extension run |
 
-Selection is deployment-faithful throughout: checkpoints are picked on
-validation-fold review pseudo-queries; LLM rewrites are evaluation-only.
+The workers select checkpoints by the paper's `sum(exp(-rank))` over the
+validation games' **neutral and noname** rewrites, against all 2,020 games.
+Ranks start at 1; equal checkpoint scores prefer the earlier epoch. Tags,
+review pseudo-queries and test-query metrics are report-only diagnostics.
+
+### Reselecting existing checkpoints without training
+
+`Pod/w9_reselect.py` reads saved `SPg`/`SPa` projections and query metadata,
+scores every candidate, and writes a new checkpoint plan in a separate
+directory. It does not train, import a training worker, run a tag probe, or
+modify the source caches/checkpoints. Only NumPy is needed.
+
+```bash
+python contrast_experiment/w9/Pod/w9_reselect.py \
+  --source-root /data/archive \
+  --projection-dir /data/archive/w9_towers \
+  --cache-dir /data/archive/fusion_cache_w9 \
+  --checkpoint-dir /data/archive/w9_cv_out \
+  --checkpoint-dir /data/archive/w9_out \
+  --output-dir ./results/w9_rank_selection \
+  --reference-plan /paper/data/w9/rank_ckpt_plan.json \
+  --max-epoch 2000 --allow-short-runs
+```
+
+The optional reference plan scopes runs and compares the old epochs; it
+does not supply the new choice. Without it, every run in the projection
+directory is scored. Repeat `--run NAME` to select specific runs. `_foldN`
+names use CV validation fold `(N+1)%5` (seed 20260711); other names use the
+pinned split. Default coverage requires every 50 epochs through 2000.
+`--allow-short-runs` permits contiguous shorter runs, including the archived
+600-epoch warm-start trajectories, and reports the actual horizon. Missing
+interior epochs are errors.
+
+Read `selection_summary.json` and require `status: complete` before using
+`rank_ckpt_plan.json`. The plan points at existing checkpoint files; the
+per-run `rank_traj_*.json` records every score and source provenance.
+Outputs are atomic and resume per run; `--overwrite` forces rescoring.
+Use a separate output directory for each run subset. This operation uses
+saved single-draw projections and does not recompute K=10 test tables.
+
+CPU smoke tests (no training or corpus required):
+
+```bash
+python -B -m unittest discover -s contrast_experiment/w9/Pod -p test_w9_selection.py -v
+```
 
 ### Reproducing Table A9 (the window-size sweep)
 

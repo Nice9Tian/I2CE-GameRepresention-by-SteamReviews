@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""R60 wcle-protocol 5-FOLD CV worker: one (ARM, FOLD) job = tower (600ep,
-ckpt/50) + per-checkpoint heads (2 seeds) + post-hoc vsel pick topped to 10.
+"""w9 5-fold CV worker: one (ARM, FOLD) job, zero-shot selection by default.
+Select the checkpoint by sum(exp(-rank)) on validation neutral/noname rewrites.
+Tags are diagnostics only. Optional --head retains the legacy head protocol.
 
 FOLD PROTOCOL: the 814-game clean wiki universe is permuted once (--cv-seed)
 and split into 5 folds. Fold k = TEST (~163), fold (k+1)%5 = VAL (~163),
@@ -145,7 +146,8 @@ def parse_args():
     ap.add_argument("--eval-only", action="store_true",
                     help="skip training/projection; just refresh the "
                          "trajectory from existing tower npz and rewrite "
-                         "zsbest (used to backfill test_tag post-hoc)")
+                         "zsbest by validation rank; for CPU-only reselection "
+                         "with read-only inputs, use w9_reselect.py")
     ap.add_argument("--full-pool-path", default="",
                     help="path of full_pool_fp16.npy (meta npz expected beside "
                          "it); empty = <data-dir>/full_pool_fp16.npy")
@@ -1361,7 +1363,7 @@ def main():
     VORDER = ["neutral", "noname", "positive", "negative"]
 
     def zs_from_arrays(Zg, Za, Zq):
-        # ZS-only CV metrics + selection (user 2026-07-23): cvsel = noname_h1
+        # Legacy CV diagnostics (not checkpoint selection): cvsel = noname_h1
         # + noname_h5 + 2*val_tag, all on the VAL fold, where val_tag is the
         # CLEAN-inductive tag (probe on the train pool, scored on val_g
         # neutral) -- the old 2*noname_tagF1 used the leaky tag_split probe.
@@ -1444,7 +1446,7 @@ def main():
                    for a in range(_p.shape[0]) for b in range(a + 1, _p.shape[0])]
             out["pack_cos"] = float(np.mean(_cs))
         # val-side twin of test_tag (same clean probe, scored on val_g
-        # neutral) -- the LEAK-FREE selection tag; replaces v_non_tag, whose
+        # neutral) -- a report-only diagnostic; replaces v_non_tag, whose
         # tag_split probe had seen most held-out anchors (user 2026-07-23).
         _vi = [i for i in range(len(art_games))
                if variants[i] == "neutral" and art_games[i] in val_g]
@@ -1459,12 +1461,8 @@ def main():
         out["cvsel"] = out["v_non"] + out["v_non5"] + 2.0 * out["val_tag"]
         out["cvsel_leaky"] = (out["v_non"] + out["v_non5"]
                               + 2.0 * out["v_non_tag"])   # old, report-only
-        # --- REVIEW-based selection (user 2026-07-18): deployment has NO
-        # rewrites, so the checkpoint pick uses the val fold's REVIEW
-        # pseudo-queries (ss_queries): rvsel = q@1 + q@RSEL_K + 2*q_tagF1.
-        # (User once wrote '@2'; the canonical formula was @5 -> RSEL_K=5,
-        # single-constant change if @2 was intended.) Rewrite metrics stay
-        # as REPORT-ONLY columns.
+        # Legacy review-query diagnostic: rvsel = q@1 + q@5 + 2*q_tagF1.
+        # Retained for historical comparisons; final selection uses ranksel.
         RSEL_K = 5
         qz = Zq / (np.linalg.norm(Zq, axis=1, keepdims=True) + 1e-8)
         qg = np.asarray(Qs["gidx"])
@@ -1724,38 +1722,33 @@ def main():
             del m2
         (OUT / f"resume_{name}.pt").unlink(missing_ok=True)
 
-    # ---------------- ZS-primary: refresh traj + select zsbest by cvsel ----
-    # cvsel = noname_h1 + noname_h5 + 2*val_tag (val fold), val_tag = clean-
-    # inductive tag (train-pool probe, val_g neutral). Old traj entries
-    # refresh from the projection npz (no GPU) to gain test_tag + val_tag.
+    # Refresh historical readout columns for notebook compatibility.
+    # These diagnostics do not participate in checkpoint selection.
     traj_p = OUT / f"zs_traj_{name}.json"
     zs_traj = json.loads(traj_p.read_text()) if traj_p.exists() else {}
     for npzp in sorted(OUT.glob(f"tower_{name}_ep*.npz"),
                        key=lambda q: int(q.stem.split("_ep")[-1])):
         ek = npzp.stem.split("_ep")[-1]
         if "val_tag" in zs_traj.get(f"ep{ek}", {}):
-            continue   # gate on val_tag (the field ONLY the clean-selection
-        # code writes): entries scored by an earlier version carry test_tag +
-        # the OLD leaky cvsel but no val_tag, so they MUST be recomputed to
-        # gain val_tag + the clean cvsel -- keying on test_tag would skip them
-        # and silently re-select on the leaky metric.
+            continue
         T0 = np.load(npzp)
         zs_traj[f"ep{ek}"] = zs_from_arrays(T0["SPg"], T0["SPa"], T0["SPq"])
         print(f"ZS-refresh(ep{ek}) cvsel={zs_traj[f'ep{ek}']['cvsel']:.3f}",
               flush=True)
         json.dump(zs_traj, open(traj_p, "w"), indent=2)
-    cand = {k: v for k, v in zs_traj.items() if "val_tag" in v}   # only
-    # entries with the CLEAN cvsel (val_tag present) are selection candidates
-    if cand:
-        bk = max(cand, key=lambda k: (cand[k]["cvsel"], -int(k[2:])))
-        json.dump(dict(best_ep=int(bk[2:]), **cand[bk]),
-                  open(OUT / f"zsbest_{name}.json", "w"), indent=2)
-        b = cand[bk]
-        print(f"ZSBEST {name}: ep{bk[2:]} cvsel={b['cvsel']:.3f} "
-              f"test_tag={b['test_tag']:.3f} "
-              f"(q1 {b['v_q1']:.3f} q5 {b['v_q5']:.3f} qtag {b['v_qtag']:.3f}) "
-              f"non={b['nm_noname']:.3f}/{b['h5_noname']:.3f} "
-              f"tag={b['tag_noname']:.3f}", flush=True)
+
+    # ---------------- Paper selection: validation neutral + noname ranks ----
+    # Cached cvsel/rvsel and tag metrics remain historical diagnostics only.
+    # Re-score existing SPg/SPa projections; no training or tag probe is needed.
+    try:
+        from .w9_selection import refresh_rank_selection, validation_rows
+    except ImportError:
+        from w9_selection import refresh_rank_selection, validation_rows
+    rank_rows = validation_rows(names, art_games, variants, A["gidx"], sp,
+                                args.fold, args.n_folds, args.cv_seed)
+    best = refresh_rank_selection(OUT, name, A["gidx"], rank_rows)
+    print(f"ZSBEST {name}: ep{best['best_ep']} ranksel={best['ranksel']:.9f}",
+          flush=True)
 
     # ---------------- heads (LEGACY, --head only) ----------------------------
     if args.head:

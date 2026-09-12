@@ -166,8 +166,9 @@ def ensure_reviews():
             print(f"reviews: MISSING {p}\n"
                   f"  option A: set {env} to a download source and rerun\n"
                   f"  option B: build once from the Kaggle dump —\n"
-                  f"    dataset_builder/reviews/: prepare_kaggle_steam_reviews "
-                  f"-> build.py -> Build_new.py (embed) -> h5_corpus.py",
+                  f"    python dataset_builder/reviews/build.py --data-dir data/reviews\n"
+                  f"    (clean -> split -> text H5 -> embedding H5; "
+                  f"use --text-h5/--embedding-h5 for custom output paths)",
                   flush=True)
     if not ok:
         sys.exit(1)
