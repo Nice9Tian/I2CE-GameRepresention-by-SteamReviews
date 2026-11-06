@@ -158,3 +158,47 @@ Figure 5 from the encodings.
 ```bash
 python contrast_experiment/w9/Pod/table1_recompute.py --plan rank
 ```
+
+## From trained towers to the manuscript's numbers
+
+A worker's own readout scores each checkpoint against the gallery it trained
+with. The manuscript scores every five-fold tower differently: against ten
+independent 4,096-sentence anchor packs per game, and reports the mean over
+the ten. `eval/k10_eval.py` does that step.
+
+```
+eval/
+├── k10_eval.py           # ten-draw encoding, scoring and the table
+├── rank_ckpt_plan.json   # the checkpoint the rank rule picked for each run
+└── i2bce_sel_pool.json   # the I + SimCLR checkpoints, picked by `select`
+Pod/w9_selection.py       # the rank rule (sum of exp(-rank) on validation queries)
+```
+
+The draws read sentences from the full pool (`full_pool_fp16.npy` +
+`full_pool_meta.npz`, built once by `Pod/w9_a100.ipynb` from
+`embedding_h5.h5`); `--h5 <embedding_h5.h5>` reads the h5 instead and gives
+the same draws. A draw depends only on the budget, the draw index and the
+game, so any tower can be scored on the same ten packs.
+
+The 110 checkpoints behind the manuscript's numbers (the 105 runs of
+`rank_ckpt_plan.json` and the five folds of I + SimCLR) are on Hugging Face at
+[`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
+about 181 MiB in all.
+
+```bash
+export W9_DATA_DIR=/path/to/fusion_cache_w9
+hf download chironYu/latenarray-i2ce-checkpoints --local-dir checkpoints
+python contrast_experiment/w9/eval/k10_eval.py cells  cells.json --ckpt-dir checkpoints contrast_experiment/w9/eval/i2bce_sel_pool.json
+python contrast_experiment/w9/eval/k10_eval.py encode cells.json draws.npz      # all towers on 2,020 games x 10 draws
+python contrast_experiment/w9/eval/k10_eval.py score  cells.json draws.npz scores.json
+python contrast_experiment/w9/eval/k10_eval.py table  scores.json               # five-fold mean ± std per run family
+```
+
+`cells` takes every run of `rank_ckpt_plan.json` plus the runs of each
+selection file given after it, and looks every checkpoint name up in
+`--ckpt-dir`, so your own runs under the same names can stand in for the
+downloaded ones. I + SimCLR's worker saved a 512-sentence gallery, so its
+checkpoints were picked by `select`, which applies the rank rule to every
+saved checkpoint of a run on the gallery the other five-fold runs select on;
+`select` does the same for a run you trained yourself. `encode` resumes from
+its `.part.npz` if interrupted.
