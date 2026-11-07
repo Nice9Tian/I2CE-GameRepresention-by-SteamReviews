@@ -260,6 +260,32 @@ python steam_reviews_framework/run.py --data-only    # prepare, do not train
 python dataset_builder/rebuild_data.py --check       # what is missing, and why
 ```
 
+**Prebuilt data: nothing to rebuild.** Every tensor this pipeline builds is
+on Hugging Face at
+[`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data).
+With that folder in place neither review h5 is needed and no sentence is
+embedded again: `run.py` finds every asset, reads the tag labels from
+`tag_labels.npz` instead of `text_h5.h5`, and rebuilds the anchor packs at
+the profile's budget from the shipped review pool (into
+`wscan_gal_rev_pool<budget>.npz`; the shipped `wscan_gal_rev.npz` holds
+512-sentence packs and is left as it is). The packaged entry points need
+neither the full pool nor the two w9 galleries, about 21 GiB in all:
+
+```bash
+hf download chironYu/latenarray-i2ce-data --repo-type dataset --local-dir data/assets \
+  --exclude "full_pool_fp16.npy.part*" "wscan_gal_rev_g*.npz"
+python steam_reviews_framework/run.py --data-only    # reports "the review h5 is not needed"
+```
+
+The w9 campaign and `contrast_experiment/w9/eval/k10_eval.py` also read the
+140 GiB full pool. Download the whole folder (180 GiB) and run
+`python join_full_pool.py` inside it: it joins `full_pool_fp16.npy` from its
+four parts, checks it against `SHA256SUMS` and writes the `full_pool_READY`
+marker the notebooks wait for (keep about 150 GB free for the join). That
+folder is then the w9 data directory as it is.
+
+Building from scratch instead:
+
 1. **Corpora (bundled, reproducibility first).** `wikipage.zip`
    (wiki_clean / variants / llm, 814 games) and `storepage.zip` (six
    store-page corpora, 1,811 games) ship in
@@ -270,7 +296,8 @@ python dataset_builder/rebuild_data.py --check       # what is missing, and why
 2. **Review files.** The 73-million-sentence embedding h5 and the
    text/tag h5 are downloaded when `LARICE_EMBED_H5_URL` /
    `LARICE_TEXT_H5_URL` are set, or rebuilt once from the Kaggle dump via
-   `dataset_builder/reviews/`.
+   `dataset_builder/reviews/`. They are read only to build the tensor
+   assets, so this step is skipped when the assets are already there.
 3. **Tensor assets.** `dataset_builder/build_assets.py` fills in whatever
    is missing.
 

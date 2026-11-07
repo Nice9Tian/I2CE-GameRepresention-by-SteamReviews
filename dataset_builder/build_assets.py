@@ -26,7 +26,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "reviews"))
 
-from dataset_builder.paths import ASSETS, CORPORA, EMBED_H5, SPLIT_JSON
+from dataset_builder.paths import (ASSETS, CORPORA, EMBED_H5, FULL_POOL_META,
+                                   SPLIT_JSON, gallery_path, npz_array_shape)
 from dataset_builder import profiles
 
 SEED = 20260711
@@ -132,24 +133,99 @@ def built_anchor_cap():
     gal = ASSETS / "wscan_gal_rev.npz"
     if not gal.exists():
         return None
-    with np.load(gal, mmap_mode="r") as z:
-        return int(z["gal"].shape[1])
+    return int(npz_array_shape(gal, "gal")[1])
+
+
+def build_anchors_from_pool(cap):
+    """The anchor packs at `cap` sentences from the pool on disk, no h5.
+
+    Replays the random draws of the h5 build below statement for statement:
+    the pool draw of a game consumes default_rng(SEED) the same way whatever
+    the budget, and full_pool_meta.npz holds the review lengths it needs, so
+    the packs come out exactly as the h5 build would write them at `cap`
+    (checked against the shipped 512-sentence wscan_gal_rev.npz).
+    """
+    out = gallery_path(cap)
+    G = np.load(ASSETS / "games.npz", allow_pickle=True)
+    names = [str(x) for x in G["names"]]
+    NG = len(names)
+    M = np.load(ASSETS / FULL_POOL_META, allow_pickle=True)
+    e2i = {str(n): i for i, n in enumerate(M["game_names"])}
+    gro, ro = M["game_review_offsets"], M["review_offsets"]
+    SPV = np.load(ASSETS / "sp_raw_views.npz", allow_pickle=True)
+    sp_row = {int(SPV["gidx"][i]): i for i in range(len(SPV["gidx"]))}
+    SPV_S, SPV_len = SPV["S"], SPV["S_len"]
+    pool = np.load(ASSETS / "wscan_pool_rev.npy", mmap_mode="r")
+    rid = np.load(ASSETS / "wscan_pool_rev_rid.npy")
+    plen = (rid >= 0).sum(1)                             # sentences in each game's pool
+    gal = np.zeros((NG, cap, 1024), np.float16)
+    gal_len = np.zeros(NG, np.int32)
+    gal_doc_len = np.zeros(NG, np.int32)
+    rng = np.random.default_rng(SEED)
+    print(f"anchors: rebuilding {cap}-sentence packs from the review pool "
+          f"(no h5) -> {out.name}", flush=True)
+    for gi, n in enumerate(names):
+        i = e2i[n]
+        r0, r1 = int(gro[i]), int(gro[i + 1])
+        lens = (ro[r0 + 1:r1 + 1] - ro[r0:r1]).astype(np.int64)
+        sel, used = [], 0                                # the pool draw, replayed
+        for j in np.argsort(-lens)[:TOPK]:
+            if used + int(lens[j]) <= CAP:
+                sel.append(int(j))
+                used += int(lens[j])
+        for j in rng.permutation(np.setdiff1d(np.arange(len(lens)), sel)):
+            if used + lens[j] <= CAP:
+                sel.append(int(j))
+                used += int(lens[j])
+        row = int(plen[gi])
+        assert used == row, (f"{n}: replayed pool holds {used} sentences, "
+                             f"wscan_pool_rev_len.npy says {row}")
+        g_row = 0
+        if gi in sp_row:
+            dl = int(SPV_len[sp_row[gi]])
+            gal[gi, :dl] = SPV_S[sp_row[gi], :dl]
+            g_row = dl
+            gal_doc_len[gi] = dl
+        r_lens = np.bincount(rid[gi, :row])
+        r_starts = np.zeros(len(r_lens), np.int64)
+        r_starts[1:] = np.cumsum(r_lens)[:-1]
+        P = np.asarray(pool[gi, :row])
+        for j in rng.permutation(len(r_lens)):
+            L = int(r_lens[j])
+            if g_row + L <= cap:
+                gal[gi, g_row:g_row + L] = P[r_starts[j]:r_starts[j] + L]
+                g_row += L
+        gal_len[gi] = g_row
+        if gi % 200 == 0:
+            print(f"  game {gi}/{NG}: anchor {g_row}", flush=True)
+    np.savez(out, gal=gal, gal_len=gal_len, gal_doc_len=gal_doc_len)
+    print(f"saved {out.name}: median {int(np.median(gal_len))} sentences",
+          flush=True)
 
 
 def build_pool_and_anchors():
     if (ASSETS / "ss_queries_rev.npz").exists():
         have = built_anchor_cap()
-        if have is not None and have != GCAP:
-            raise SystemExit(
-                f"anchor budget mismatch: the assets in {ASSETS} were built "
-                f"at {have} sentences, this run wants {GCAP}.\n"
-                f"Training reads the built packs, so it would silently run "
-                f"at {have}, not {GCAP}.\n"
-                f"Either rerun with --anchor-cap {have} (or the profile that "
-                f"means it), or delete wscan_gal_rev.npz, wscan_pool_rev*.npy "
-                f"and ss_queries_rev* to rebuild at {GCAP}.")
-        print("pool/anchors/queries exist — skip", flush=True)
-        return
+        if have is None or have == GCAP:
+            print("pool/anchors/queries exist — skip", flush=True)
+            return
+        if gallery_path(GCAP).exists():
+            print(f"pool/queries exist, {GCAP}-sentence packs in "
+                  f"{gallery_path(GCAP).name} — skip", flush=True)
+            return
+        if (ASSETS / FULL_POOL_META).exists():
+            build_anchors_from_pool(GCAP)
+            return
+        raise SystemExit(
+            f"anchor budget mismatch: the assets in {ASSETS} were built "
+            f"at {have} sentences, this run wants {GCAP}.\n"
+            f"Training reads the built packs, so it would silently run "
+            f"at {have}, not {GCAP}.\n"
+            f"Either rerun with --anchor-cap {have} (or the profile that "
+            f"means it), put {FULL_POOL_META} (from the prebuilt data) in "
+            f"{ASSETS} to rebuild the packs from the pool without the h5, or "
+            f"delete wscan_gal_rev.npz, wscan_pool_rev*.npy and "
+            f"ss_queries_rev* to rebuild everything at {GCAP}.")
     import h5py
     rng = np.random.default_rng(SEED)
     G = np.load(ASSETS / "games.npz", allow_pickle=True)

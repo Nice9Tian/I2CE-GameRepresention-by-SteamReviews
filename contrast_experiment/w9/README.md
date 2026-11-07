@@ -44,8 +44,19 @@ edit the constant in each notebook's first cell) holding the corpus assets:
 `ss_queries_rev.npz`, `ss_queries_rev_S.npy`, `wiki_clean_views.npz`,
 `sp_raw_views.npz`, `tag_labels.npz`, `wiki_eval_split.json`,
 `_tag_splitM.json`, and (for full-pool training) `full_pool_fp16.npy` +
-`full_pool_meta.npz` with the `full_pool_READY` marker. These are produced
-by the data pipeline in `release/dataset_builder`.
+`full_pool_meta.npz` with the `full_pool_READY` marker. The prebuilt folder
+on Hugging Face,
+[`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data),
+holds all of them, so nothing has to be rebuilt:
+
+```bash
+hf download chironYu/latenarray-i2ce-data --repo-type dataset --local-dir fusion_cache_w9
+cd fusion_cache_w9 && python join_full_pool.py   # joins the full pool, checks SHA256SUMS, writes full_pool_READY
+```
+
+Point `DATA_SRC` (or `W9_DATA_DIR` below) at that folder. The data
+pipeline in `dataset_builder/` produces the same files from the raw
+reviews.
 
 ## Running
 
@@ -186,7 +197,7 @@ The 110 checkpoints behind the manuscript's numbers (the 105 runs of
 about 181 MiB in all.
 
 ```bash
-export W9_DATA_DIR=/path/to/fusion_cache_w9
+export W9_DATA_DIR=/path/to/fusion_cache_w9           # the prebuilt data folder above
 hf download chironYu/latenarray-i2ce-checkpoints --local-dir checkpoints
 python contrast_experiment/w9/eval/k10_eval.py cells  cells.json --ckpt-dir checkpoints contrast_experiment/w9/eval/i2bce_sel_pool.json
 python contrast_experiment/w9/eval/k10_eval.py encode cells.json draws.npz      # all towers on 2,020 games x 10 draws

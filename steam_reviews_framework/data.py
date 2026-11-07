@@ -7,13 +7,13 @@ on device (fp16), the review pool and the ~9.5 GB pseudo-query bank stay in
 host RAM as mmaps.
 """
 import json
+import os
 from types import SimpleNamespace
 
-import h5py
 import numpy as np
 import torch
 
-from dataset_builder.paths import ASSETS, TEXT_H5
+from dataset_builder.paths import ASSETS, TAG_LABELS_NPZ, TEXT_H5, gallery_path
 from .protocol import load_split
 from .sampler import build_review_table
 from .backhead_tag import make_or_load_split
@@ -44,8 +44,15 @@ def load_bundle(device, cv_fold=None):
     B.n2i = {n: i for i, n in enumerate(B.names)}
     appid2name = {n.split("_")[0]: n for n in B.names}
 
-    # ---- anchors (sp_clean doc prefix + whole reviews @512) ----
-    GAL = np.load(ASSETS / "wscan_gal_rev.npz")
+    # ---- anchors (sp_clean doc prefix + whole reviews, at the budget) ----
+    # run.py sets LARICE_ANCHOR_CAP to the profile's budget; without it the
+    # packs on disk are read as they are, as before.
+    cap = os.environ.get("LARICE_ANCHOR_CAP")
+    gal_file = gallery_path(int(cap)) if cap else ASSETS / "wscan_gal_rev.npz"
+    assert gal_file.exists(), (
+        f"no {cap}-sentence anchor packs ({gal_file.name}); run "
+        f"`python dataset_builder/build_assets.py --step 3 --anchor-cap {cap}`")
+    GAL = np.load(gal_file)
     B.SGal = torch.tensor(GAL["gal"]).to(device)
     gl = torch.tensor(GAL["gal_len"]).to(device)
     ar = torch.arange(B.SGal.shape[1], device=device)[None, :]
@@ -80,10 +87,18 @@ def load_bundle(device, cv_fold=None):
     B.tp_t = torch.tensor(B.train_pool_games).to(device)
 
     # ---- 23-tag labels + tag probe split ----
-    with h5py.File(TEXT_H5, "r") as h:
-        tgn = [g.decode() if isinstance(g, bytes) else str(g)
-               for g in h["game_names"][:]]
-        tl = h["tag_labels"][:].astype(np.int8)
+    # text_h5.h5 when present, else tag_labels.npz from the prebuilt data
+    # (the same labels: embedding_h5.h5's tag_labels in games.npz order)
+    if TEXT_H5.exists():
+        import h5py
+        with h5py.File(TEXT_H5, "r") as h:
+            tgn = [g.decode() if isinstance(g, bytes) else str(g)
+                   for g in h["game_names"][:]]
+            tl = h["tag_labels"][:].astype(np.int8)
+    else:
+        T = np.load(ASSETS / TAG_LABELS_NPZ, allow_pickle=True)
+        tgn = [str(x) for x in T["names"]]
+        tl = np.asarray(T["y"]).astype(np.int8)
     g2 = {n: i for i, n in enumerate(tgn)}
     B.y = np.zeros((B.NG, tl.shape[1]), np.int8)
     for i, n in enumerate(B.names):

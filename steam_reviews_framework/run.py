@@ -49,7 +49,8 @@ FRAMEWORK = Path(__file__).resolve().parent
 RELEASE = FRAMEWORK.parent
 sys.path.insert(0, str(RELEASE))
 
-from dataset_builder.paths import ASSETS, CORPORA, EMBED_H5, TEXT_H5
+from dataset_builder.paths import (ASSETS, CORPORA, EMBED_H5, TAG_LABELS_NPZ,
+                                   TEXT_H5, gallery_path)
 from dataset_builder import profiles
 
 
@@ -174,24 +175,46 @@ def ensure_reviews():
         sys.exit(1)
 
 
+def assets_built():
+    """Every asset training reads is on disk, so the review h5 is not needed:
+    the prebuilt data (Hugging Face chironYu/latenarray-i2ce-data) or an
+    earlier build. The tag labels come from text_h5.h5 or tag_labels.npz."""
+    return (all((ASSETS / f).exists() for f in ASSET_FILES)
+            and (TEXT_H5.exists() or (ASSETS / TAG_LABELS_NPZ).exists()))
+
+
 def ensure_assets(profile=profiles.DEFAULT_PROFILE):
+    cap = profiles.anchor_cap(profile)
     missing = [f for f in ASSET_FILES if not (ASSETS / f).exists()]
-    if not missing:
-        print("assets: all present — skip", flush=True)
+    if missing:
+        print(f"assets: building {len(missing)} missing at the {profile} "
+              f"anchor budget ({cap} sentences) ...", flush=True)
+        steps = []
+    elif gallery_path(cap).exists():
+        print(f"assets: all present, {cap}-sentence anchors in "
+              f"{gallery_path(cap).name} — skip", flush=True)
         return
-    print(f"assets: building {len(missing)} missing at the {profile} anchor "
-          f"budget ({profiles.anchor_cap(profile)} sentences) ...", flush=True)
+    else:                                  # e.g. the shipped 512 packs, a 1,024 or 4,096 profile
+        print(f"assets: present, but no {cap}-sentence anchor packs yet ...",
+              flush=True)
+        steps = ["--step", "3"]
     subprocess.check_call([sys.executable,
                            str(RELEASE / "dataset_builder" / "build_assets.py"),
-                           "--profile", profile])
+                           "--profile", profile, *steps])
 
 
 def ensure_data(profile=profiles.DEFAULT_PROFILE):
     """Steps 1-3 (shared with contrast_experiment/run.py)."""
     apply_api_settings()
     ensure_corpora()
-    ensure_reviews()
+    if assets_built():
+        print("reviews: every asset is built — the review h5 is not needed",
+              flush=True)
+    else:
+        ensure_reviews()
     ensure_assets(profile)
+    # training reads the anchor packs of this budget (steam_reviews_framework/data.py)
+    os.environ["LARICE_ANCHOR_CAP"] = str(profiles.anchor_cap(profile))
 
 
 def main():
