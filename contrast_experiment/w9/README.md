@@ -50,13 +50,22 @@ on Hugging Face,
 holds all of them, so nothing has to be rebuilt:
 
 ```bash
-hf download chironYu/latenarray-i2ce-data --repo-type dataset --local-dir fusion_cache_w9
+hf download chironYu/latenarray-i2ce-data --repo-type dataset --local-dir fusion_cache_w9 --exclude "*_rawprefix.*"
 cd fusion_cache_w9 && python join_full_pool.py   # joins the full pool, checks SHA256SUMS, writes full_pool_READY
 ```
 
 Point `DATA_SRC` (or `W9_DATA_DIR` below) at that folder. The data
 pipeline in `dataset_builder/` produces the same files from the raw
 reviews.
+
+Since 2026-11-07 the store-page prefix in `wscan_gal_rev.npz` (the
+512-sentence anchor packs) and `ss_queries_rev_S.npy` is row-standardized,
+like every other input row and like the packs the workers build on the GPU
+at 1,024 sentences and above. The manuscript's @512 runs, and the
+fixed-split rows trained with 512-sentence anchors, trained on the raw
+prefix. To reproduce them bit for bit, leave out the `--exclude`, then put
+`wscan_gal_rev_rawprefix.npz` in place of `wscan_gal_rev.npz`, and
+`ss_queries_rev_S_rawprefix.npy` in place of `ss_queries_rev_S.npy`.
 
 ## Running
 

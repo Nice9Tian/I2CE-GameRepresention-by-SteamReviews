@@ -3,7 +3,7 @@
 review pool, eval queries, pseudo-queries, tag labels, split/exclusions).
 
 GPU layout mirrors the local 3080 protocol: anchors + eval queries resident
-on device (fp16), the review pool and the ~9.5 GB pseudo-query bank stay in
+on device (fp16), the review pool and the ~8.5 GB pseudo-query bank stay in
 host RAM as mmaps.
 """
 import json

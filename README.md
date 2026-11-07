@@ -269,20 +269,31 @@ embedded again: `run.py` finds every asset, reads the tag labels from
 the profile's budget from the shipped review pool (into
 `wscan_gal_rev_pool<budget>.npz`; the shipped `wscan_gal_rev.npz` holds
 512-sentence packs and is left as it is). The packaged entry points need
-neither the full pool nor the two w9 galleries, about 21 GiB in all:
+neither the full pool, nor the two w9 galleries, nor the two `_rawprefix`
+files; what they do need is about 21 GiB in all:
 
 ```bash
 hf download chironYu/latenarray-i2ce-data --repo-type dataset --local-dir data/assets \
-  --exclude "full_pool_fp16.npy.part*" "wscan_gal_rev_g*.npz"
+  --exclude "full_pool_fp16.npy.part*" "wscan_gal_rev_g*.npz" "*_rawprefix.*"
 python steam_reviews_framework/run.py --data-only    # reports "the review h5 is not needed"
 ```
 
 The w9 campaign and `contrast_experiment/w9/eval/k10_eval.py` also read the
-140 GiB full pool. Download the whole folder (180 GiB) and run
+140 GiB full pool. Download the whole folder (180 GiB with
+`--exclude "*_rawprefix.*"`) and run
 `python join_full_pool.py` inside it: it joins `full_pool_fp16.npy` from its
 four parts, checks it against `SHA256SUMS` and writes the `full_pool_READY`
 marker the notebooks wait for (keep about 150 GB free for the join). That
 folder is then the w9 data directory as it is.
+
+The store-page prefix of the anchor packs and the pseudo-queries is
+row-standardized like every other input row. Up to 2026-11-07 the
+512-sentence `wscan_gal_rev.npz` and `ss_queries_rev_S.npy` carried it raw
+(row std about 2.9), and the published @512 runs trained on those packs.
+The files as they were are kept on Hugging Face as
+`wscan_gal_rev_rawprefix.npz` and `ss_queries_rev_S_rawprefix.npy` (10 GiB).
+To reproduce those runs bit for bit, put them in place of the current files.
+`data/assets/README.md` has the details.
 
 Building from scratch instead:
 

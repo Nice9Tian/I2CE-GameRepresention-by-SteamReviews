@@ -44,6 +44,20 @@ VARIANTS = ("neutral", "noname", "positive", "negative")
 GCAP = int(os.environ.get("LARICE_ANCHOR_CAP") or profiles.anchor_cap())
 
 
+def rown_prefix(x):
+    """Row-standardise store-page sentences before they enter an anchor pack or a
+    pseudo-query, exactly as the w9 workers standardise sp_raw_views.npz when they
+    load it (torch float32, unbiased std, eps 1e-6, then fp16).  Every other row of
+    a pack is already standardised; the 512-sentence packs built before 2026-11-07
+    carried this prefix raw (row std ~2.9), while the workers' own GPU-built packs
+    at 1,024 sentences and above standardised it."""
+    import torch
+    x = torch.tensor(np.asarray(x)).float()
+    m = x.mean(-1, keepdims=True)
+    s = x.std(-1, keepdims=True)
+    return ((x - m) / (s + 1e-6)).numpy().astype(np.float16)
+
+
 # ---------------------------------------------------------------- step 1 --
 def build_games():
     out = ASSETS / "games.npz"
@@ -183,7 +197,7 @@ def build_anchors_from_pool(cap):
         g_row = 0
         if gi in sp_row:
             dl = int(SPV_len[sp_row[gi]])
-            gal[gi, :dl] = SPV_S[sp_row[gi], :dl]
+            gal[gi, :dl] = rown_prefix(SPV_S[sp_row[gi], :dl])
             g_row = dl
             gal_doc_len[gi] = dl
         r_lens = np.bincount(rid[gi, :row])
@@ -277,7 +291,7 @@ def build_pool_and_anchors():
             g_row = 0
             if gi in sp_row:
                 dl = int(SPV_len[sp_row[gi]])
-                gal[gi, :dl] = SPV_S[sp_row[gi], :dl]
+                gal[gi, :dl] = rown_prefix(SPV_S[sp_row[gi], :dl])
                 g_row = dl
                 gal_doc_len[gi] = dl
             r_lens = np.bincount(rid[gi, :row])
@@ -312,8 +326,9 @@ def build_pool_and_anchors():
         starts_g[1:] = np.cumsum(lens_g)[:-1]
         has_sp = g in sp_row
         dl = int(SPV_len[sp_row[g]]) if has_sp else 0
+        prefix = rown_prefix(SPV_S[sp_row[g], :dl]) if has_sp else None
         for _ in range(QPG):
-            parts = [SPV_S[sp_row[g], :dl]] if has_sp else []
+            parts = [prefix] if has_sp else []
             used = dl
             for j in rngq.permutation(len(lens_g)):
                 L = int(lens_g[j])
