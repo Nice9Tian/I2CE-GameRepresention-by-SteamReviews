@@ -58,6 +58,14 @@ Point `DATA_SRC` (or `W9_DATA_DIR` below) at that folder. The data
 pipeline in `dataset_builder/` produces the same files from the raw
 reviews.
 
+The folder also holds `wscan_gal_rev_g1024.npz` and
+`wscan_gal_rev_g4096.npz`, the fixed split's anchor packs drawn from the
+whole corpus (a median of 4,096 sentences at 4,096). The fixed-split
+worker uses them when they are present. The five-fold worker uses them
+only for the multi-anchor `ma` arms; every other five-fold run builds its
+packs from the 2,048-sentence review pool, the way the paper's five-fold
+runs were trained (a median of 2,068 sentences at the 4,096 budget).
+
 Since 2026-11-07 the store-page prefix in `wscan_gal_rev.npz` (the
 512-sentence anchor packs) and `ss_queries_rev_S.npy` is row-standardized,
 like every other input row and like the packs the workers build on the GPU

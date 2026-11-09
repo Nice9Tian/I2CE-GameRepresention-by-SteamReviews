@@ -412,13 +412,17 @@ def main():
         SGal = torch.tensor(GALd["gal"]).to(dev)
         gal_len = torch.tensor(GALd["gal_len"]).to(dev)
         gal_doc = torch.tensor(GALd["gal_doc_len"]).to(dev)
-    elif (C / f"wscan_gal_rev_g{args.anchor_cap}.npz").exists():
-        # PREBUILT pack from the volume. Built from the full corpus, so it
-        # actually reaches the cap (med 4096 at cap 4096) instead of the
-        # ~2068 the 2048-sentence POOL can supply. This matters for any arm
-        # that SUB-SAMPLES the pack (multi-anchor): with a POOL-built pack
-        # the per-game review supply equals the per-pack budget and every
-        # pack covers the whole pool.
+    elif MA_N and (C / f"wscan_gal_rev_g{args.anchor_cap}.npz").exists():
+        # PREBUILT pack from the volume, for multi-anchor arms only. Built
+        # from the full corpus, so it actually reaches the cap (med 4096 at
+        # cap 4096) instead of the ~2068 the 2048-sentence POOL can supply.
+        # An arm that SUB-SAMPLES the pack needs that: with a POOL-built
+        # pack the per-game review supply equals the per-pack budget and
+        # every pack covers the whole pool. Every other five-fold arm,
+        # including all the paper's five-fold runs, builds its pack from
+        # the POOL below, even when this file is in the data folder (the
+        # prebuilt folder on Hugging Face ships the fixed split's g1024 and
+        # g4096 packs).
         GALd = np.load(C / f"wscan_gal_rev_g{args.anchor_cap}.npz")
         SGal = torch.tensor(GALd["gal"]).to(dev)
         gal_len = torch.tensor(np.asarray(GALd["gal_len"], np.int64)).to(dev)
