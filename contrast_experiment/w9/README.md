@@ -208,10 +208,14 @@ The draws read sentences from the full pool (`full_pool_fp16.npy` +
 the same draws. A draw depends only on the budget, the draw index and the
 game, so any tower can be scored on the same ten packs.
 
-The 110 checkpoints behind the manuscript's numbers (the 105 runs of
-`rank_ckpt_plan.json` and the five folds of I + SimCLR) are on Hugging Face at
+The checkpoints are on Hugging Face at
 [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-about 181 MiB in all.
+199 files and about 305 MiB in all: the 105 runs of `rank_ckpt_plan.json` and
+the five folds of I + SimCLR, and 89 more listed in that repository's own plan
+files, the 512-sentence runs on the corrected anchor packs
+(`docfix512_ckpt_plan.json`, `c2_docfix512_ckpt_plan.json`,
+`c3_docfix512_ckpt_plan.json`) and the five folds with eight latent queries
+(`q8_g4096_ckpt_plan.json`).
 
 ```bash
 export W9_DATA_DIR=/path/to/fusion_cache_w9           # the prebuilt data folder above
