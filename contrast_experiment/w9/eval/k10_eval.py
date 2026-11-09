@@ -75,7 +75,7 @@ def load_tower(path):
     sd = torch.load(path, map_location="cpu", weights_only=False)
     sd = sd["model"] if isinstance(sd, dict) and "model" in sd else sd
     sd = {k: v for k, v in sd.items() if k == "q0" or k.startswith(("attn.", "head."))}    # VICReg checkpoints carry their expander too
-    m = SetPoolN(4).to(dev).eval(); m.load_state_dict(sd)
+    m = SetPoolN(sd["q0"].shape[1]).to(dev).eval(); m.load_state_dict(sd)    # q0 is [1, Q, 128]: Q latent queries (slot<Q> arms)
     return m
 
 
