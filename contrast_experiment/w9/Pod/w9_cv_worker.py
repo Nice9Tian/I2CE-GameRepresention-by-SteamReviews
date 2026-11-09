@@ -102,13 +102,34 @@ ARMS = {
     "wcle_i2cet05_icetf": ("i2ce", "ice"),   # tau = 0.05 (from ARM name)
     "wcle_i2cet10_icetf": ("i2ce", "ice"),   # tau = 0.10
     "wcle_i2ce_icetl": ("i2ce", "ice"),      # LEARNABLE tau (init 0.02)
+    # ---- campaign 2 (2026-11-07): corrected-pack retrain of the @512 tables ----
+    "wcle_ai2ce_icetf": ("ai2ce", "ice"),    # CE + anchor-in-I (as in the ai2ce arm of
+    #   the fixed-split w9_a100_worker.py): full per-view CE, and the
+    #   game's own anchor joins the alignment set (4 views + anchor, 10 edges, I x2)
+    "wcle_i3ce_icetf": ("i3ce", "ice"),      # i2ce with I x3 (lambda 3), ungated
+    "wcle_i4ce_icetf": ("i4ce", "ice"),      # i2ce with I x4 (lambda 4), ungated
+    # view-count ladder (grammar of the earlier view-count worker, not in this repository):
+    # d<k>r<n>_i<L>ce = n review views + k tiered doc views, I x L.  Per-view-sum
+    # convention kept: CE summed over NV views, I = mean over C(NV,2) pairs.
+    # The protocol NV=4 is d1r3_i2ce (implicit for every other arm).
+    "wcle_d1r2_i2ce_icetf": ("d1r2_i2ce", "ice"),   # 2R+1D  NV=3
+    "wcle_d1r4_i2ce_icetf": ("d1r4_i2ce", "ice"),   # 4R+1D  NV=5
+    "wcle_d1r5_i2ce_icetf": ("d1r5_i2ce", "ice"),   # 5R+1D  NV=6
+    "wcle_d1r6_i2ce_icetf": ("d1r6_i2ce", "ice"),   # 6R+1D  NV=7
+    "wcle_d1r5_i3ce_icetf": ("d1r5_i3ce", "ice"),   # 5R+1D  NV=6, I x3 (lambda/NV as the recipe)
+    "wcle_slot16i2cemean_icetf": ("i2ce", "ice"),   # 16-slot tower, plain i2ce loss
+    "wcle_slot1i2cemean_icetf": ("i2ce", "ice"),    # 1-slot tower, plain i2ce loss (campaign 3)
+    "wcle_slot2i2cemean_icetf": ("i2ce", "ice"),    # 2-slot tower, plain i2ce loss (campaign 3)
     # sliding fresh-window i2ce (user): CE field = now-batch 192 anchors +
     # L ring windows of W (fresh, grad, no cache); micro-pass backward.
 }
 _IW = {"ice": 1.0, "i2ce": 2.0, "ma2i2ce": 2.0, "vfai2ce": 2.0, "mq3072i2ce": 2.0, "swin168step84loop2i2ce": 2.0, "swin84step42loop2i2ce": 2.0, "cegate1": 1.0, "cegate2": 2.0, "cegate3": 3.0,
        "cegate4": 4.0, "cegate1w": 1.0, "cegate2w": 2.0, "igate1": 1.0,
        "igate1w": 1.0, "rgate2": 2.0, "nodoc": 2.0,
-       "i4uni2": 4.0, "i6uni2": 6.0, "i2au2": 2.0, "i2au25": 2.0}
+       "i4uni2": 4.0, "i6uni2": 6.0, "i2au2": 2.0, "i2au25": 2.0,
+       # campaign 2
+       "ai2ce": 2.0, "i3ce": 3.0, "i4ce": 4.0, "d1r2_i2ce": 2.0, "d1r4_i2ce": 2.0,
+       "d1r5_i2ce": 2.0, "d1r6_i2ce": 2.0, "d1r5_i3ce": 3.0}
 SPLIT_SEED = 20260711
 DM, HEADS, NV = 128, 4, 4
 ARC_S_T, ARC_M_T = 50.0, 0.2       # tower ArcFace
@@ -278,6 +299,12 @@ def main():
     HIW = _IW.get(tower_kind, 1.0)
     CE_GATED = tower_kind.startswith("cegate") or tower_kind == "rgate2"
     I_GATED = tower_kind.startswith("igate")
+    # view plan (campaign 2, from the views worker): N_REV review views, then
+    # N_DOC tiered doc views; every other arm is d1r3 (NV_ARM == NV == 4)
+    vp_m = re.match(r"d(\d+)r(\d+)_i\dce$", tower_kind)
+    N_DOC = int(vp_m.group(1)) if vp_m else 1
+    N_REV = int(vp_m.group(2)) if vp_m else NV - 1
+    NV_ARM = N_REV + N_DOC
     name = (f"w9cv_{args.arm}_fold{args.fold}"
             + (f"_g{args.anchor_cap}" if args.anchor_cap != 512 else "")
             + ("_nsp" if args.no_sp_view else "")
@@ -294,6 +321,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     print(f"[{name}] tower={tower_kind} ft={FT} IW={IW} anchor_cap={args.anchor_cap}",
           flush=True)
+    print(f"view plan: {N_REV}R+{N_DOC}D nv={NV_ARM} slots={NSLOT}", flush=True)
 
     # ---------------- corpus: ALL of it onto the GPU ----------------
     G = np.load(C / "games.npz", allow_pickle=True)
@@ -744,7 +772,7 @@ def main():
         m = torch.arange(GC, device=dev)[None, :] >= L[:, None]
         return S, m
 
-    pairs = list(combinations(range(NV), 2))
+    pairs = list(combinations(range(NV_ARM), 2))
     t_m = re.match(r"wcle_i2cet(\d{2})_", args.arm)
     TAU = int(t_m.group(1)) / 100.0 if t_m else 0.02   # from ARM name
     TAU_LEARN = args.arm.endswith("_icetl")            # learnable tau arm
@@ -913,8 +941,9 @@ def main():
                         Zs.append(encode_doc_rows(model, dparts))
                     else:
                         Zs = [model(*sample_views(gids, W, rng))
-                              for _ in range(NV - 1)]
-                        Zs.append(assemble_doc_view(model, gids, W, rng, bs))
+                              for _ in range(N_REV)]
+                        for _ in range(N_DOC):
+                            Zs.append(assemble_doc_view(model, gids, W, rng, bs))
                     if MQ_LEN:
                         # current keys enter the ring head and ARE this
                         # step's positives; the rest of the ring = negatives;
@@ -1011,6 +1040,14 @@ def main():
                             loss = loss + IW * sum(
                                 ((1 - (Zs[i].float() * Zs[j].float()).sum(-1)) * hd).sum()
                                 / hd.sum().clamp(min=1) for i, j in pairs) / len(pairs)
+                        elif tower_kind == "ai2ce":
+                            # anchor joins the alignment set: 4 views + own anchor
+                            # (same expression as the fixed-split worker)
+                            objs = [Z.float() for Z in Zs] + [Zg[tgt].float()]
+                            assert len(objs) == 5
+                            loss = loss + IW * sum(
+                                (1 - (objs[i] * objs[j]).sum(-1)).mean()
+                                for i in range(5) for j in range(i + 1, 5)) / 10.0
                         else:
                             loss = loss + IW * sum(
                                 (1 - (Zs[i].float() * Zs[j].float()).sum(-1)).mean()
