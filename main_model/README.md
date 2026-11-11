@@ -94,7 +94,7 @@ teacher (swin) of the appendix is a different anchor supply and lives in
 
 The full standing gallery is the objective the manuscript reports; the
 variant we propose for deployment keeps the tower and the loss and changes
-only the anchor supply. The catalog sits on a ring split into `K` shards (the `κ` of Appendix H);
+only the anchor supply. The catalog sits on a ring split into `K` shards (the `κ` of Appendix I);
 per micro-pass each shard fresh-encodes the next `w` packs after its own
 pointer (gradients on, gradient-checkpointed so only the `[w, dim]` outputs
 stay live) and advances by `S`; the CE softmax of a view runs over
@@ -105,7 +105,7 @@ store is a memory-mapped fp16 array from which only the current windows are
 paged in. Device memory is constant in the catalog size and a `K`-shard
 single process computes exactly what `K` workers would with an all-reduce
 of their window logits. Per-step compute is Θ(T·(G + K·w)·m_a·Q·d), equation
-(H.3) of Appendix H (which writes the shard count κ), and `K = 1` is the
+(I.3) of Appendix I (which writes the shard count κ), and `K = 1` is the
 windowed teacher of the appendix (`w = 168`, `S = 84`, `T = 2`). `pfc_sample.py` is the self-contained CPU
 walk-through (`ShardedRing`, `encode_window`, `pfc_step`); the research
 implementation is `--pfc-shards K --pfc-window w --full-pool-path <mmap>`

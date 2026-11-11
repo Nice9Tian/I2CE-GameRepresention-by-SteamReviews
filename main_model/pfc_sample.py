@@ -10,7 +10,7 @@ propose for deployment keeps the same loss and the same tower and changes
 only where the negatives come from:
 
   ring        the catalog laid out on a ring in a fixed order, split into
-              K shards (κ in Appendix H of the paper); shard k owns every
+              K shards (κ in Appendix I of the paper); shard k owns every
               K-th ring position
   window      per micro-pass, shard k fresh-encodes the next w packs after
               its own pointer (gradients on), then advances the pointer by

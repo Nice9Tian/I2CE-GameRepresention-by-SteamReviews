@@ -19,17 +19,22 @@ reads only the cached vectors.
 
 ## 1. The paper, its appendices and the supplement
 
-Appendices A to L (Tables A1 to A15) hold what the paper body points to:
-the two query registers on one game, the per-fold cross-validation
-detail, the baseline recipes, the separation-gradient derivations behind
-Section 4.3 and the gradient bounds behind its handover point, the
-query-rewrite prompts, the tag-vocabulary mapping, the cost model at
-scale with the sharded sliding window, the document-view study, the
-windowed teacher and its sweeps, the per-fold detail across anchor
-budgets, and the tag deficit read as a register crossing. Supplements A
-to C (Tables S1 to S4) carry the teacher-exclusion result, the two
-anchor-reading regimes and the training-set versus test-set query
-comparison.
+Appendices A to N (Tables A1 to A18) hold what the paper body points to:
+the five-fold cross-validation detail with the anchor-budget sweep (A),
+the two query registers on one game (B), the temperature,
+invariance-weight, view-count, latent-query and VICReg sweeps and the
+windowed teacher (C), the gradient bounds behind the handover point of
+Section 4.3 (D), the separation-gradient derivations behind Sections 4.3
+and 6.3 (E), the query-rewrite prompts (F), the tag-vocabulary mapping
+(G), the baseline recipes (H), the cost model at scale with the sharded
+sliding window (I), the per-fold detail across anchor budgets (J), the
+tag deficit read as a register crossing (K), the neighborhood figures
+and the four-encoder map (L), the displacement and margin table (M), and
+the document-view study (N). Tables A1 to A6, in Appendices A and C, are
+the ones the paper also prints after its references, together with
+Appendix B. Supplements A to C (Tables S1 to S4) carry the
+teacher-exclusion result, the two anchor-reading regimes and the
+training-set versus test-set query comparison.
 
 [`document/APPENDIX.pdf`](document/APPENDIX.pdf) is the reading copy;
 [`APPENDIX.md`](APPENDIX.md) renders in the browser and diffs as text;
@@ -115,7 +120,7 @@ The objective the paper reports re-encodes the full anchor gallery with
 gradient at every step. The variant proposed for deployment keeps the
 tower and the loss and changes only the anchor supply: a sharded sliding
 window over a memory-mapped pack store, whose device memory is constant
-in the catalog size (Section 8 of the paper; Appendix H, equation (H.3)).
+in the catalog size (Section 8 of the paper; Appendix I, equation (I.3)).
 [`main_model/pfc_sample.py`](main_model/pfc_sample.py) is the
 self-contained CPU walk-through and
 [`main_model/README.md`](main_model/README.md) documents it; the research
@@ -161,7 +166,7 @@ Fixed throughout, and identical to the manuscript:
   recomputed per game, until the view holds at least 16 sentences. Three
   review views plus one document view (raw wiki text where one exists,
   else the store page, else a fourth review view; the LLM-rewritten
-  document is the Appendix I ablation).
+  document is the Appendix N ablation).
 - **Anchor pack (the weak view).** Store-page prefix, then whole reviews
   to a sentence budget, re-encoded with gradient at every step.
 - **Tower.** 4 latent queries, 128-d, 4 heads, one cross-attention layer
