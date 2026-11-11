@@ -325,15 +325,19 @@ MAP = os.environ.get("HOOD_MAP", "stable")          # how the anchors-to-layout 
 def anchor_map(Aq, A2):
     """The linear map that sends the K centred anchors to their layout, built from their pseudo-inverse.  K centred
     points have rank K - 1, so one direction must be left out of the pseudo-inverse.
-    "stable" works in double precision and drops that direction; it gives the same picture on every machine.
+    "stable" centres the anchors and takes the pseudo-inverse in double precision, where that direction's singular
+    value is below 1e-15 of the largest for every tower and the cutoff rcond = 1e-6 drops it (the seventh is above
+    0.15 of the largest); it gives the same picture on every machine.  Centred in float32 the direction's round-off
+    is near 1e-7 and does not shrink with the anchors: 7e-7 of the largest for the frozen embedder, and 1e-4, above
+    the cutoff, for the collapsed a+u @ gallery tower, which is not drawn.
     "drawn" is the computation behind the figure as first drawn: numpy's pinv on the float32 anchors at its default
     cutoff, which does not drop the direction (its singular value is round-off, near 1e-7).  The directions of the
     lines then depend on the numpy build in their second digit; numpy 2.4.3 reproduces that file.
     Line lengths, anchor positions and hit marks are the same in both; only the directions of the lines differ."""
-    X = Aq - Aq.mean(0)
     if MAP == "stable":
-        return np.linalg.pinv(X.astype(np.float64), rcond=1e-6) @ A2
-    return np.linalg.pinv(X) @ A2
+        X = Aq.astype(np.float64)
+        return np.linalg.pinv(X - X.mean(0), rcond=1e-6) @ A2
+    return np.linalg.pinv(Aq - Aq.mean(0)) @ A2
 
 
 def positions(m, layout=None):
