@@ -329,5 +329,7 @@ a near tie between two anchors decides one query differently on another
 machine (one query of 204 is 0.005), and in the collapsed a+u @ gallery
 row, whose Stripped hit@1 is a matter of floating-point ties. The script
 reads the published selections; it does not repeat them, since only the
-selected checkpoints are published. It does not draw Figures 9 and A3 or
-compute the neighborhood statistics of Appendix L.
+selected checkpoints are published. Figures 8, 9 and A3 and the
+neighborhood statistics of Appendix L are made from these readings by
+[`figures/neighborhoods/`](../../figures/neighborhoods/), which has its own
+one-command driver.

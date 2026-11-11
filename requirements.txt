@@ -8,3 +8,5 @@ transformers      # local Qwen3-Embedding backend (data_pipeline only)
 sentence-transformers
 pandas            # kaggle review preparation (data_pipeline only)
 requests
+matplotlib        # figures/neighborhoods
+umap-learn        # figures/neighborhoods/layout_check.py only

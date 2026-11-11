@@ -68,6 +68,20 @@ separate line of work the manuscript does not report.
 training run backs which figure or table. Start there when you want to
 reproduce one specific published number.
 
+### Figures 8, 9 and A3 (neighborhoods)
+
+[`figures/neighborhoods/`](figures/neighborhoods/) holds the scripts that drew
+the genre bars of Figures 8 and A3 and the eight-game neighborhood of
+Figure 9, and that compute the neighborhood statistics of Appendix L. One
+command runs them from the published checkpoints:
+
+```bash
+python figures/neighborhoods/run_all.py --ckpt-dir checkpoints --data-dir /path/to/data
+```
+
+The directory's README says what each step reads and writes, and under
+which library versions the published files come out byte for byte.
+
 ### Figure 10 (trend river) and its interactive page
 
 [`figures/trend_river/`](figures/trend_river/) holds what the paper's
@@ -108,7 +122,8 @@ dataset_builder/           corpus reconstruction: reviews (Kaggle -> clean
                            -> split -> embed -> h5), corpora (wiki scrape
                            -> clean -> LLM rewrites), build_assets,
                            API templates
-figures/                   the interactive trend-river source
+figures/                   the neighborhood figures (Figures 8, 9, A3) and
+                           the interactive trend-river source (Figure 10)
 data/                      every heavy artefact (gitignored except READMEs)
 ```
 
