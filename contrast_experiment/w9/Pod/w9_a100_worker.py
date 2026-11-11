@@ -686,8 +686,12 @@ def main():
     # the machine -- 9 workers cost the same RAM as one; only touched at
     # checkpoint projection). Saves 8.5 GB VRAM and 8.5 GB RAM per worker.
     _qsp = C / "ss_queries_rev_S.npy"
-    if args.raw_prefix and (C / "ss_queries_rev_S_rawprefix.npy").exists():
-        _qsp = C / "ss_queries_rev_S_rawprefix.npy"   # those runs' report-only columns
+    if args.raw_prefix:
+        if (C / "ss_queries_rev_S_rawprefix.npy").exists():
+            _qsp = C / "ss_queries_rev_S_rawprefix.npy"   # those runs' report-only columns
+        else:
+            print("--raw-prefix: ss_queries_rev_S_rawprefix.npy is not here, so the "
+                  "report-only pseudo-query columns read the current file", flush=True)
     QS_G = np.load(_qsp, mmap_mode="r")                                  # fp16 mmap
     y = np.load(C / "tag_labels.npz", allow_pickle=True)["y"]
 
@@ -779,7 +783,7 @@ def main():
                      for g in _dg) / len(_dg)) if _dg else 1.0
         print(f"anchors: 512 packs from {_galp.name}, store-page prefix row "
               f"std {_pstd:.3f} (1.000 = standardized)", flush=True)
-        if (_pstd > 1.5) != args.raw_prefix:
+        if _dg and (_pstd > 1.5) != args.raw_prefix:   # no prefix anywhere: nothing to tell apart
             raise SystemExit(
                 f"{_galp}: the store-page prefix rows are "
                 + ("standardized, so this is the current pack, not the one "
