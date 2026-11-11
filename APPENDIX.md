@@ -87,7 +87,7 @@ In the temperature sweep of Table A3, the learnable variant (initialized at 0.02
 
 **The view size.** Table A6 keeps V = 4 and moves the floor at which a review view stops drawing, 16 sentences in the recipe (Section 4.1), to 8, 32 and 64. A floor of 32 separates from the recipe on no column and a floor of 8 only on Name hit@5, behind by 0.005 in every fold (p = 0.029; p ≥ 0.12 elsewhere). A floor of 64 trails on Stripped hit@1 in all three folds, by 0.050 (p = 0.066), down to CE’s level (0.668 against 0.677, Table A4), while it reads highest on tags without separating (p = 0.37). The gap is not one checkpoint’s: read against the 512-sentence anchor packs at every saved checkpoint, the floor of 64 is behind the recipe by 0.065 validation and 0.039 test Stripped hit@1 over epochs 50 to 300, and by 0.068 and 0.023 over epochs 1,000 to 2,000.
 
-**Table A6:** The size of a review view over folds 0 to 2: V = 4, each review view drawn until it holds at least m<sub>v</sub> sentences (protocol, budget and selection as in Table A4); the second column is the median sentence count of a view so drawn.
+**Table A6:** The size of a review view over folds 0 to 2: V = 4, each review view drawn until its sentence count m<sub>v</sub> reaches the row’s floor (protocol, budget and selection as in Table A4); the second column is the median sentence count of a view so drawn.
 
 | Review-view floor | Median view | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -169,9 +169,11 @@ $$
 \Vert \nabla_{z_{v}}\ell_{\mathrm{CE}}\Vert \le \frac{2(1- p_{g})}{\tau }\le \frac{2}{\tau }=100 \qquad (\text{D.2})
 $$
 
-so $\tau$ sets the ceiling, a bound the tangential projection can only tighten, which the brake of Appendix E spends linearly as $p_{g}\to 1$.
+so $\tau$ sets the ceiling, a bound the tangential projection can only tighten, which the coupling of Appendix E spends linearly as $p_{g}\to 1$.
 
-**The handover.** Writing ${p}^{\ast }$ for the value of $p_{g}$ at which the braked envelope falls to the invariance envelope, the recipe values $V=4$, $\lambda =2$, $\tau =0.02$ give
+**Read as forces.** With $u_{v}$ of Equation (9), the mean of the game’s other $V- 1$ strong views, and $\varphi$ its angle to $z_{v}$, $- \nabla_{z_{v}}(\lambda I)=(2\lambda /V)(u_{v}- \langle z_{v},u_{v}\rangle z_{v})$ is the tangential component of $(2\lambda /V)(u_{v}- z_{v})$, a restoring force along the sphere toward $u_{v}$ of size $(2\lambda /V)\Vert u_{v}\Vert \sin \varphi$ that acts at small angles as a spring of stiffness $2\lambda /V=1$. Writing $a_{- g}=\sum_{h\neq g} p_{h}a_{h}/(1- p_{g})$ for the softmax-weighted competitor centroid above, Equation (E.9) is $- \nabla_{z_{v}}\ell_{\mathrm{CE}}=((1- p_{g})/\tau )(a_{g}- a_{- g})$, pulling the view toward $a_{g}$ and away from $a_{- g}$ at strength $(1- p_{g})/\tau$.
+
+**The handover.** Writing ${p}^{\ast }$ for the value of $p_{g}$ at which the CE envelope falls to the invariance envelope, the recipe values $V=4$, $\lambda =2$, $\tau =0.02$ give
 
 $$
 \frac{2(1- {p}^{\ast })}{\tau }=\frac{2\lambda }{V},\ 1- {p}^{\ast }=\frac{\lambda \tau }{V}=0.01 \qquad (\text{D.3})
@@ -181,7 +183,7 @@ so a view’s envelope hands over once classified at 99% confidence: ceiling tim
 
 ## APPENDIX E: THE SEPARATION GRADIENTS OF SECTIONS 4.3 AND 6.3
 
-This appendix works out Equations (2), (3), (6), (10) and (11) over the noise model of Equation (4), with a remark on Equation (12): why sample repulsion aims along draw noise, why anchor repulsion does not, why the invariance term leaves only the semantic difference, and why the coupled softmax brakes its own forces. Each derivation names its convention: Equation (4) is stated for the pooled input while the repulsion steps read $c$ and $\epsilon$ as free components of the encoding [5], and the invariance steps linearize the tower, whose noise response is what that term suppresses.
+This appendix works out Equations (2), (3), (6), (10) and (11) over the noise model of Equation (4), with a remark on Equation (12): why sample repulsion aims along draw noise, why anchor repulsion does not, why the invariance term leaves only the semantic difference, and why the coupled softmax’s forces vanish together. Each derivation names its convention: Equation (4) is stated for the pooled input while the repulsion steps read $c$ and $\epsilon$ as free components of the encoding [5], and the invariance steps linearize the tower, whose noise response is what that term suppresses.
 
 **The noise model.** Pool an $m$ -sentence pack drawn from game $g$:
 
@@ -329,7 +331,7 @@ $$
 
 up to the drift $t_{g}$ absorbed into $f(c_{g})$ and the static anchor residual of (E.12). Displacement contracts while the margin, an anchor-side quantity made by repulsion, roughly holds, so the displacement-to-margin ratio retrieval depends on falls. The contraction is derived for in-distribution draws; extending it to the zero-shot cross-register queries of Section 5 assumes a query’s displacement lies in the same subspace, the step the document view makes plausible.
 
-**The coupled softmax brake.** Differentiating Equation (2) against the anchors, again free-variable,
+**The softmax coupling.** Differentiating Equation (2) against the anchors, again free-variable,
 
 $$
 \nabla_{a_{g}}\ell_{\mathrm{CE}}=- \frac{1- p_{g}}{\tau }z_{v},\ \nabla_{a_{h}}\ell_{\mathrm{CE}}=\frac{p_{h}}{\tau }z_{v} \qquad (\text{E.23})
@@ -347,7 +349,7 @@ $$
 \nabla_{a_{g}}(\lambda I' )=- \frac{2\lambda }{V(V+1)}\sum_{v=1}^{V} z_{v} \qquad (\text{E.25})
 $$
 
-the second half of Equation (10), whose first half is (E.23), at weight $2\lambda /(V(V+1))=0.2$ per view for $\lambda =2,\ V=4$ ; the braked weight of (E.23) falls below it once $1- p_{g}<0.004$. This is the weak-view prediction of Section 1 tested in Section 6.2. That test varies more than the coupling, so it fixes the direction, not the size. Anchors are treated as constants when differentiating with respect to the views, and the views as constants when differentiating with respect to the anchors, and every claim here is a direction or a dominance relation, not a rate.
+the second half of Equation (10), whose first half is (E.23), at weight $2\lambda /(V(V+1))=0.2$ per view for $\lambda =2,\ V=4$ ; the coupled weight of (E.23) falls below it once $1- p_{g}<0.004$. This is the weak-view prediction of Section 1 tested in Section 6.2. That test varies more than the coupling, so it fixes the direction, not the size. Anchors are treated as constants when differentiating with respect to the views, and the views as constants when differentiating with respect to the anchors, and every claim here is a direction or a dominance relation, not a rate.
 
 ## APPENDIX F: THE QUERY-REWRITE PROMPTS
 
