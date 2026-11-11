@@ -251,7 +251,8 @@ The checkpoints are on Hugging Face at
 
 - the 156 five-fold runs of `rank_ckpt_plan.json` and the five folds of
   I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
-  paper reads, and `cells` takes them all;
+  paper reads, all but the DINO-style control of Table A1 (one fold, not
+  published), and `cells` takes them all;
 - the five BYOL checkpoints the two-stage runs started from, named by the
   `init_ckpt` field of those runs in `rank_ckpt_plan.json`;
 - the eight checkpoints of `fixed_split_ckpt_plan.json`: the seven

@@ -9,7 +9,9 @@ number. This module is that missing statement.
 
 Every CELL below carries `cites`: the figures and tables it feeds. A cell
 with a body citation (FIG7, FIG8, TAB2, TAB3, SEC*) is reported in the paper
-itself; the rest are appendix- or supplement-only. Nothing is listed here
+itself; the rest are appendix- or supplement-only. One reported run has no
+cell: the DINO-style control of Section 4.3 (Table A1, fold 0 only), whose
+training code is not part of this release. Nothing is listed here
 that the paper, the appendix or the supplement does not mention, so the exploratory families -- twin-pack
 `pk*`, the slot/readout capacity grid, multi-anchor `ma2*`, the async
 simulation, hard-negative `nemesis` -- are deliberately absent. They stay
@@ -144,12 +146,14 @@ CELLS = [
     Cell("body.pair.512",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[TAB2, A2, A3, A10, A14],
+         cites=[TAB2, A2, A3, A4, A5, A6, A10, A14, A18, S1],
          was_in="w9_final_experiment.ipynb",
          note="the pair on the 512-sentence packs: the partners of CE + "
               "anchor-in-I in the paired tests of Table 2, the 512 rows of "
-              "Tables A2 and A14, the recipe row of Table A3 at 512, and, on "
-              "folds 0 to 2, the recipe and lambda = 0 rows of Tables A4 to A6"),
+              "Tables A2 (I-CE) and A14, the recipe row of Table A3 at 512, "
+              "the raw-document rows of Table A18, the reference row of "
+              "Table S1 and, on folds 0 to 2, the recipe rows of Tables A4 "
+              "to A6 and the lambda = 0 row of Table A4"),
 
     Cell("body.anchor_in_i.5fold",
          arms=["wcle_ai2ce_icetf"],
@@ -211,7 +215,8 @@ CELLS = [
               "of the pair, capped at 2,048 sentences in total: its I-CE is "
               "the recipe row of Table A3 at 2,048, the seed-paired control "
               "of apx.temperature, and its peak is the 35.0 GiB of Table A10; "
-              "its CE is not printed"),
+              "its CE is not printed. Its fold-0 I-CE tower also gives the "
+              "game vectors of the body's Figure 10 (figures/trend_river)"),
 
     # ---- appendix: anchor-supply economies ----------------------------
     Cell("apx.swin.5fold",
@@ -261,12 +266,12 @@ CELLS = [
          extra={"optional": True}),
 
     Cell("apx.docview",
-         arms=["wcle_i2ce_icetf", "wcle_nodoc_i2ce_icetf"],
+         arms=["wcle_nodoc_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[A18, S1],
-         was_in="w9_docview_5fold.ipynb (the arm without a document view; "
-                "the recipe is a row of w9_final_experiment.ipynb)",
-         note="document view present vs absent"),
+         cites=[A18],
+         was_in="w9_docview_5fold.ipynb",
+         note="no document view, paired per fold with the I-CE of "
+              "body.pair.512, the raw-document row of Table A18"),
 
     Cell("apx.docview.llm",
          arms=["wcle_i2ce_icetf"],

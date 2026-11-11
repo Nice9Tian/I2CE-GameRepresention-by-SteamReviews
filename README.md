@@ -221,7 +221,7 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 19 | 193 | 512 – 2,048 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 19 | 188 | 512 – 2,048 |
 | `paperTest` | every experiment the paper body reports, at its own budget | 7 | 67 | 512, 2,048 |
 | `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 7 | 67 | 512, 1,024 |
 
@@ -243,6 +243,8 @@ differ only in what those towers cost. `fullTest` is nearly three times the
 count; its largest cell is the temperature sweep (30 towers). The body's
 cells include the five-fold towers trained at 512 sentences that Table 2
 tests (CE + anchor-in-I against I-CE and CE), beside the main `pool` block.
+One reported run is in no profile: the DINO-style control of Section 4.3
+(Table A1, fold 0 only), whose training code is not part of this release.
 
 **Twenty-two tables are not twenty-two campaigns.** Tables A1, A13, A15 and
 A16 of the appendix are different readouts of one shared five-fold
