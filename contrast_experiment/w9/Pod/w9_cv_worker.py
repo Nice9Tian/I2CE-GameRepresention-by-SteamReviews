@@ -1553,7 +1553,7 @@ def main():
 
     # ---------------- DINO arm (wcle_dino_dntf) ----------------
     # DINO as published, on this tower: the control of the paper's Section 4.3
-    # (Table A1, fold 0; recipe in online Appendix H, Table A9). No negatives,
+    # (Table A1, fold 0; recipe in online Appendix H, Table A10). No negatives,
     # no anchor gallery and no invariance term. The teacher is an EMA of the
     # student tower plus a DINO head and sees two global views; the student
     # sees those two and the usual strong views (three review views, one

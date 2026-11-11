@@ -11,7 +11,7 @@ beside the number the paper prints,
 
   Table 3        the decomposition ablation (five rows)
   Section 6.2    the four settings that aim the repulsion at the anchor gallery
-  Table A7       the VICReg weight sweep and its two reference rows
+  Table A8       the VICReg weight sweep and its two reference rows
   Appendix L     the SimCLR-style tower's test curve from its selected epoch to the end
   Figure A1      the four latent queries of the I-CE run on their first principal component
   Figure 9, Figure A3, Appendix L   six encoders against ten 4,096-sentence anchor draws
@@ -248,7 +248,7 @@ def one_draw(a, data, ckdir, out, plan):
         c = col[key]
         print("  %-46s ep%-5d margin %.5f  centroid %.3f  Stripped %.3f  rank-1 %3d of %d   paper: %s"
               % (label, c["ep"], c["marg"], c["centroid"], c["strip"], c["n_rank1"], len(q_non), quote))
-    print("\nTable A7: the VICReg weight sweep, computed (paper)")
+    print("\nTable A8: the VICReg weight sweep, computed (paper)")
     for label, key, ref in TABLEA7:
         c = col[key]
         print("  %-34s epoch %d (%d)   " % (label, c["ep"], ref["ep"]) + versus(c, ref, ["name", "strip", "tag"]))

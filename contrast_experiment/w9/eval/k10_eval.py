@@ -24,12 +24,12 @@ runs).  The 162 checkpoints the two files name are on Hugging Face,
 chironYu/latenarray-i2ce-checkpoints, and `cells` takes them all.
 
 Two more files list published checkpoints that `cells` leaves out.  fixed_split_ckpt_plan.json: the
-fixed-split towers (Table 3, Section 6.2, Table A7, Figure 9, Figures A1 and A3, Appendix L); an
+fixed-split towers (Table 3, Section 6.2, Table A8, Figure 9, Figures A1 and A3, Appendix L); an
 entry's `trajectory` lists the other checkpoints of its run that the paper reads.  Its entries have
 no fold: given the file, `cells` takes them and `score` reads them on the fixed split (the 204 test
 games of wiki_eval_split.json), the frozen embedder with them as `frozen|fixed`.  That is the
 ten-draw reading of Figure 9, Figure A3 and Appendix L; fixed_split_eval.py runs it together with
-the one-draw tables of the fixed split (Table 3, Table A7).  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
+the one-draw tables of the fixed split (Table 3, Table A8).  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
 on the packs as built before 2026-11-07 and one fold of an arm the paper dropped; it has the format
 of a selection file, so `cells` scores them when it is given the file.
 

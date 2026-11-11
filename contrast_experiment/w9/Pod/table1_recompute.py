@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r"""Recompute the paper's Table A17 (query displacement against nearest-neighbour
+r"""Recompute the paper's Table A18 (query displacement against nearest-neighbour
 margin) and the encodings behind Figure A2 (the UMAP panels) from the
 published fold-0 checkpoints of the main runs (the `_gpool` files: packs of
 the store-page prefix plus the whole review pool, the paper's 2,048-sentence
@@ -8,7 +8,7 @@ checkpoint selection rule. Both are in the online appendix (Appendices M and L);
 manuscript of September 2026 printed them in its body as Table 1 and
 Figure 5, which is where the file names come from.
 
-What Table A17 measures (Section 6.1 quotes its key numbers)
+What Table A18 measures (Section 6.1 quotes its key numbers)
 ------------------------------------------------------------
 For one encoder, with L2-normalised vectors:
   displacement  mean over the 814 name-stripped wiki rewrites of the fold-0
@@ -230,7 +230,7 @@ def main():
     for lab in t3:
         t3[lab]["epoch"] = None if lab == "Frozen" else eps[lab]
         t3[lab]["arm"] = None if lab == "Frozen" else ARMS[lab]
-    print(f"\n=== Table A17 ({a.plan} fold-{FOLD} @{CAP}) ===")
+    print(f"\n=== Table A18 ({a.plan} fold-{FOLD} @{CAP}) ===")
     for lab in ("Frozen", "BYOL", "VICReg", "CE", "SimCLR", "I-CE"):
         r = t3[lab]
         print(f"{lab:7s} ep {str(r['epoch']):>5}  disp {r['displacement']:.4f}  "
@@ -238,7 +238,7 @@ def main():
               f"inside {100*r['inside_margin']:.1f}%")
 
     res = {"meta": {
-        "table": "Table A17 (displacement / margin / ratio) and Figure A2 clearance labels",
+        "table": "Table A18 (displacement / margin / ratio) and Figure A2 clearance labels",
         "selection_mode": a.plan,
         "selection": ("rank criterion of Section 5: argmax over epochs 50..2000 of "
                       "sum_i exp(-rank_i) over the validation fold's wiki rewrites of "

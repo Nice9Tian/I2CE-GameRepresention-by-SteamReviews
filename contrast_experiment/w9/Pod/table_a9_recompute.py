@@ -2,7 +2,7 @@
 
 The sweep is not in the paper. The appendix of September 2026 printed it as
 its Table A9, which is where the file names come from; the paper's Table A9
-is now the baseline recipes.
+is another table now.
 
 WHY THIS SCRIPT EXISTS
 ----------------------

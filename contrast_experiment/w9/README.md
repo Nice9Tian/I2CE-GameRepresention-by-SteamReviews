@@ -122,12 +122,12 @@ names the run without the tag.
 | `w9_cv.ipynb` | 5-fold base pair |
 | `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style / I + SimCLR × 5 folds @pool |
 | `w9_i2ce_t.ipynb` | temperature sweep × 5 folds × {512, 2048} |
-| `w9_sweeps_3fold.ipynb` | invariance weight, view count and latent queries × folds 0 to 2 @512 (Tables A4 to A6) |
-| `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A14) |
-| `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A18) |
+| `w9_sweeps_3fold.ipynb` | invariance weight, view count and latent queries × folds 0 to 2 @512 (Tables A4, A5 and A7) |
+| `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A15) |
+| `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A19) |
 | `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
 | `w9_dino_control.ipynb` | DINO at its published settings, fold 0 @pool (the control of Section 4.3, Table A1) |
-| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12); the BYOL stage is fetched from Hugging Face, or trained, for folds that have no checkpoint |
+| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A13); the BYOL stage is fetched from Hugging Face, or trained, for folds that have no checkpoint |
 | `w9_flash*.ipynb` | loss-ladder and structure grids |
 | `w9_scale.ipynb`, `w9_mq.ipynb`, `w9_save_4096_tag.ipynb` | anchor-scale & anchor-supply arms |
 | `w9_packageview.ipynb` | twin-pack `pk{N}` fractal family |
@@ -186,7 +186,7 @@ python -B -m unittest discover -s contrast_experiment/w9/Pod -p test_w9_selectio
 The window-size sweep of the windowed teacher (w = 84, 168 and 336 against
 full coupling, on the fixed split) is an extra of this repository. The
 appendix of September 2026 printed it as its Table A9; the paper no longer
-prints it, and its Table A9 is now the baseline recipes. The file names
+prints it, and its Table A9 is another table now. The file names
 keep the old number.
 
 `Pod/table_a9_recompute.py` rebuilds every row of the sweep's table from
@@ -207,7 +207,7 @@ result directory and the cache with `LARICE_RESULTS` (or `W9_OUT`) and
 python contrast_experiment/w9/Pod/table_a9_recompute.py
 ```
 
-### Reproducing Table A17 and Figure A2 (displacement against margin)
+### Reproducing Table A18 and Figure A2 (displacement against margin)
 
 `Pod/table1_recompute.py` re-encodes the published fold-0 checkpoints of the
 six-objective comparison (`ckpt_w9cv_wcle_<arm>_fold0_gpool_fp_ep<N>.pt`,
@@ -237,10 +237,10 @@ the ten. `eval/k10_eval.py` does that step.
 ```
 eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
-├── fixed_split_eval.py          # the fixed split in one command: Table 3, Section 6.2, Table A7, Figure A1, Figure 9's towers
+├── fixed_split_eval.py          # the fixed split in one command: Table 3, Section 6.2, Table A8, Figure A1, Figure 9's towers
 ├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
-├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Section 6.2, Table A7, Figures 9, A1 and A3, Appendix L)
+├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Section 6.2, Table A8, Figures 9, A1 and A3, Appendix L)
 └── superseded_ckpt_plan.json    # published checkpoints that no number of the paper reads
 Pod/w9_selection.py              # the rank rule (sum of exp(-rank) on validation queries)
 ```
@@ -264,7 +264,7 @@ The checkpoints are on Hugging Face at
 - the 69 checkpoints of `fixed_split_ckpt_plan.json`, from 15 fixed-split
   runs: the seven that train with 512-sentence anchors (Table 3,
   Section 6.2), two of them with an earlier checkpoint kept; a+u @ views
-  (Table 3); the three VICReg weightings of Table A7; and the towers of
+  (Table 3); the three VICReg weightings of Table A8; and the towers of
   Figure 9, Figure A3 and Appendix L (CE and I-CE trained at 2,048
   sentences, the SimCLR-style tower, I + SimCLR). Two runs list more
   than their selected checkpoint under `trajectory`: all 40 checkpoints
@@ -310,7 +310,7 @@ reading beside the number the paper prints:
 python contrast_experiment/w9/eval/fixed_split_eval.py --ckpt-dir checkpoints   # --data-dir, or W9_DATA_DIR as above
 ```
 
-- Table 3, the four gallery-aimed settings of Section 6.2 and Table A7, on
+- Table 3, the four gallery-aimed settings of Section 6.2 and Table A8, on
   the one 4,096-sentence anchor draw the fixed split is read on
   (`wscan_gal_rev_g4096.npz` of the data folder): mean pairwise cosine,
   nearest-neighbor margin, centroid distance, Name and Stripped hit@1 over

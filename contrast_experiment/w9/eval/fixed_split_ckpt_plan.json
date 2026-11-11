@@ -454,7 +454,7 @@
   "protocol": "fixed split (seed 0)",
   "worker": "Pod/w9_a100_worker.py",
   "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
-  "reads": "Table A7",
+  "reads": "Table A8",
   "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
   "weights": "v/i/c = 25/25/1"
  },
@@ -470,7 +470,7 @@
   "protocol": "fixed split (seed 0)",
   "worker": "Pod/w9_a100_worker.py",
   "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
-  "reads": "Table A7, Figure 9, Figure A3, Appendix L",
+  "reads": "Table A8, Figure 9, Figure A3, Appendix L",
   "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
   "weights": "v/i/c = 20/10/20 (recipe weights)"
  },
@@ -486,7 +486,7 @@
   "protocol": "fixed split (seed 0)",
   "worker": "Pod/w9_a100_worker.py",
   "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
-  "reads": "Table A7",
+  "reads": "Table A8",
   "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
   "weights": "v/i/c = 20/10/15"
  }

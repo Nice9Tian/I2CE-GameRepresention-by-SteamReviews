@@ -8,8 +8,8 @@ rewrite with names, rewrite without names), all 2,020 anchors:
     other     cosine to the nearest other anchor
     margin    own - other (a hit is a positive margin)
     scatter   std of own over a game's three versions (how consistently a game's queries land)
-    disp      1 - own for the name-stripped version (the displacement of Table A17)
-    nn_margin 1 - cosine between a game's anchor and its nearest other anchor (the margin of Table A17)
+    disp      1 - own for the name-stripped version (the displacement of Table A18)
+    nn_margin 1 - cosine between a game's anchor and its nearest other anchor (the margin of Table A18)
 The 201 held-out neighborhoods (fig_triplet.py): per-tower accuracy over 24 queries, pairwise
 comparisons, the CE minus SimCLR-style lead by confusability quartile, the neighborhoods where CE
 falls behind the SimCLR-style tower, and the lengths of the lines Figure 9 draws.

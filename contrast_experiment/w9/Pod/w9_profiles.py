@@ -46,7 +46,8 @@ outside the standard library, so `w9/` stays copyable to a pod on its own.
 # ---------------------------------------------------------------- cites --
 # Figure, table, section and appendix numbers are those of the paper as
 # APPENDIX.md and SUPPLEMENT.md of this repository cite it (Appendices A
-# to N, Tables A1 to A18).
+# to N, Tables A1 to A19; the numbers of 2026-11-12, when the view-size sweep
+# became Table A6 and every later table moved one place).
 # Body of the manuscript.
 FIG7 = "Figure 7"          # the objective families
 FIG8 = "Figure 8"          # name-stripped hit@1 by genre
@@ -61,11 +62,13 @@ BODY = {FIG7, FIG8, FIG9, TAB2, TAB3, SEC61, SEC62, SEC32}
 
 # Online appendix.
 A1 = "Table A1"; A2 = "Table A2"; A3 = "Table A3"; A4 = "Table A4"
-A5 = "Table A5"; A6 = "Table A6"; A7 = "Table A7"; A8 = "Table A8"
-A9 = "Table A9"; A10 = "Table A10"; A11 = "Table A11"; A12 = "Table A12"
-A13 = "Table A13"; A14 = "Table A14"; A15 = "Table A15"; A16 = "Table A16"
-A17 = "Table A17"          # displacement / margin / ratio (Appendix M)
-A18 = "Table A18"
+A5 = "Table A5"
+A6 = "Table A6"            # the size of a review view (Appendix C); read by body.pair.512 only, see below
+A7 = "Table A7"; A8 = "Table A8"; A9 = "Table A9"; A10 = "Table A10"
+A11 = "Table A11"; A12 = "Table A12"; A13 = "Table A13"; A14 = "Table A14"
+A15 = "Table A15"; A16 = "Table A16"; A17 = "Table A17"
+A18 = "Table A18"          # displacement / margin / ratio (Appendix M)
+A19 = "Table A19"
 FIGA1 = "Figure A1"        # the four latent queries over training (Appendix C)
 FIGA2 = "Figure A2"        # UMAP of anchors and queries (Appendix L)
 FIGA3 = "Figure A3"        # Figure 8 on the fixed split (Appendix L)
@@ -116,19 +119,19 @@ class Cell:
 CELLS = [
 
     # ---- body: the shared five-fold tower set (whole-pool packs) ------
-    # Trained once, read many ways. A1/A13/A15/A16 are different readouts of
+    # Trained once, read many ways. A1/A14/A16/A17 are different readouts of
     # these same towers, NOT more training runs, and S2/S3/S4 read them again
     # next to the swin and two-stage teachers (apx.swin.5fold, apx.twostage)
     # -- which is why the tables outnumber the campaigns.
     Cell("body.pair",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[POOL], folds=5, epochs=2000,
-         cites=[FIG7, FIG8, TAB2, SEC61, A1, A2, A6, A12, A13, A14, A15, A16,
-                A17, FIGA2, S2, S3, S4],
+         cites=[FIG7, FIG8, TAB2, SEC61, A1, A2, A7, A13, A14, A15, A16, A17,
+                A18, FIGA2, S2, S3, S4],
          was_in="w9_final_experiment.ipynb",
          note="the headline I-CE vs CE pair, paired per fold. Its I-CE is "
-              "also the five-fold recipe row of Table A6 and the first row "
-              "of Table A12. Table A17 and "
+              "also the five-fold recipe row of Table A7 and the first row "
+              "of Table A13. Table A18 and "
               "Figure A2 read the published fold-0 checkpoints of this cell "
               "and of body.families at the Section 5 rank-selected epochs "
               "(rank_ckpt_plan.json: I-CE ep2000, CE ep650, SimCLR ep1100, "
@@ -142,7 +145,7 @@ CELLS = [
                "wcle_epd_v20i10c20_cetf",  # VICReg, expander 20/10/20
                "wcle_mq3072i2ce_icetf"],    # EMA teacher + 3,072-key bank
          caps=[POOL], folds=5, epochs=2000,
-         cites=[FIG7, FIG8, TAB2, SEC32, A1, A12, A15, A16, A17, FIGA2,
+         cites=[FIG7, FIG8, TAB2, SEC32, A1, A13, A16, A17, A18, FIGA2,
                 S2, S3, S4],
          was_in="w9_experiment_5fold_2.ipynb",
          note="the other objective families of Figure 7"),
@@ -165,19 +168,19 @@ CELLS = [
     Cell("body.pair.512",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[TAB2, A2, A3, A4, A5, A6, A10, A14, A18, S1],
+         cites=[TAB2, A2, A3, A4, A5, A6, A7, A11, A15, A19, S1],
          was_in="w9_final_experiment.ipynb",
          note="the pair on the 512-sentence packs: the partners of CE + "
               "anchor-in-I in the paired tests of Table 2, the 512 rows of "
-              "Tables A2 (I-CE) and A14, the recipe row of Table A3 at 512, "
-              "the raw-document rows of Table A18, the reference row of "
+              "Tables A2 (I-CE) and A15, the recipe row of Table A3 at 512, "
+              "the raw-document rows of Table A19, the reference row of "
               "Table S1 and, on folds 0 to 2, the recipe rows of Tables A4 "
-              "to A6 and the lambda = 0 row of Table A4"),
+              "to A7 and the lambda = 0 row of Table A4"),
 
     Cell("body.anchor_in_i.5fold",
          arms=["wcle_ai2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[TAB2, SEC62, A14],
+         cites=[TAB2, SEC62, A15],
          was_in="w9_anchor_in_i_5fold.ipynb (the fixed-split run is in "
                 "body.decomp.rows)",
          note="CE + anchor-in-I under the folds, seeds, sampler and schedule "
@@ -189,7 +192,7 @@ CELLS = [
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf",
                "wcle_ai2ce_icetf"],         # CE + anchor-in-I
          caps=[512], folds=FIXED, epochs=2000,
-         cites=[TAB3, SEC62, A7],
+         cites=[TAB3, SEC62, A8],
          was_in="w9_jobs.FS_JOBS + w9_flash.ipynb",
          note="the first three rows of Table 3 (eval/fixed_split_eval.py "
               "reads this cell and the other fixed-split ones from the "
@@ -229,7 +232,7 @@ CELLS = [
          cites=[SEC62],
          was_in="w9_flash.ipynb",
          note="the 'settings in online Appendix H' sweep of Section 6.2; the projection grid "
-              "is repository-only detail behind the geometry files of Table A9"),
+              "is repository-only detail behind the geometry files of Table A10"),
 
     # ---- body: the fixed-split towers of Figure 9 ----------------------
     # Figure 9, Figure A3 and the neighborhood statistics of Appendix L read
@@ -254,13 +257,13 @@ CELLS = [
                "wcle_i2bce_icetf",          # the same with the invariance term
                "wcle_epd_v20i10c20_cetf"],  # VICReg, the recipe weights
          caps=[512], folds=FIXED, epochs=2000,
-         cites=[FIG9, FIGA3, APXL, A7],
+         cites=[FIG9, FIGA3, APXL, A8],
          was_in="w9_jobs.FS_JOBS",
          note="the towers of those figures that read no anchor in training, "
               "so the 512 here only names the gallery the worker saved; "
               "their checkpoints are chosen on a 4,096-sentence pack of the "
               "split. The VICReg arm is also the recipe-weights row of "
-              "Table A7. Appendix L describes the SimCLR-style run's test "
+              "Table A8. Appendix L describes the SimCLR-style run's test "
               "curve from epoch 1,350 on, and those checkpoints are "
               "published too"),
 
@@ -268,21 +271,21 @@ CELLS = [
     Cell("apx.ladder",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[1024], folds=5, epochs=2000,
-         cites=[A2, A10, A14],
+         cites=[A2, A11, A15],
          was_in="w9_final_experiment.ipynb",
-         note="1,024 is the middle row of Tables A2 (I-CE) and A14, whose "
+         note="1,024 is the middle row of Tables A2 (I-CE) and A15, whose "
               "512 rows are body.pair.512 and whose 2,048 rows are "
-              "body.pair, and the 1,024 row of Table A10"),
+              "body.pair, and the 1,024 row of Table A11"),
 
     Cell("apx.ladder.2048",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[2048], folds=5, epochs=2000,
-         cites=[A3, A10],
+         cites=[A3, A11],
          was_in="w9_final_experiment.ipynb",
          note="a second run of the pair, capped at 2,048 sentences in "
               "total: its I-CE is "
               "the recipe row of Table A3 at 2,048, the seed-paired control "
-              "of apx.temperature, and its peak is the 35.0 GiB of Table A10; "
+              "of apx.temperature, and its peak is the 35.0 GiB of Table A11; "
               "its CE is not printed. Its fold-0 I-CE tower also gives the "
               "game vectors of the body's Figure 10 (figures/trend_river)"),
 
@@ -290,7 +293,7 @@ CELLS = [
     Cell("apx.swin.5fold",
          arms=["wcle_swin168step84loop2i2ce_icetf"],
          caps=[POOL], folds=5, epochs=2000,
-         cites=[A12, S2, S3, S4],
+         cites=[A13, S2, S3, S4],
          was_in="w9_swin_5fold.ipynb",
          note="the ~26% gradient window (27% on the fixed split)"),
 
@@ -299,7 +302,7 @@ CELLS = [
          # starts from it with --init-ckpt and runs the window for 600 ep.
          arms=["wcle_swin168step84loop2i2ce_icetf"],
          caps=[POOL], folds=5, epochs=600,
-         cites=[A12, S2, S3, S4],
+         cites=[A13, S2, S3, S4],
          was_in="w9_twostage_5fold.ipynb",
          note="two-stage: BYOL warm start -> windowed. The published runs "
               "started from BYOL epochs 450, 700, 450, 450 and 300 (folds 0 "
@@ -316,12 +319,12 @@ CELLS = [
                "wcle_swin336step168loop2i2ce_icetf",
                "wcle_i2ce_icetf"],           # the fully coupled reference row
          caps=[4096], folds=FIXED, epochs=2000,
-         cites=[WSWEEP, A8],
+         cites=[WSWEEP, A9],
          was_in="w9_swin.ipynb (the three swin arms); the reference arm is the "
                 "anchor-budget ladder tower of w9_jobs.FS_JOBS",
          note="the W = 84-336 window-size sweep. The appendix of September 2026 "
               "printed it as its Table A9; the paper has not printed it since "
-              "2026-10-12, and its Table A9 is now the baseline recipes. The "
+              "2026-10-12, and its Table A9 is another table now. The "
               "sweep's table is regenerated from "
               "the four arms' projection caches by Pod/table_a9_recompute.py "
               "(rank selection of Section 5 over epochs 50..2000, Section 5 "
@@ -336,17 +339,17 @@ CELLS = [
     Cell("apx.docview",
          arms=["wcle_nodoc_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[A18],
+         cites=[A19],
          was_in="w9_docview_5fold.ipynb",
          note="no document view, paired per fold with the I-CE of "
-              "body.pair.512, the raw-document row of Table A18"),
+              "body.pair.512, the raw-document row of Table A19"),
 
     Cell("apx.docview.llm",
          arms=["wcle_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[A18],
+         cites=[A19],
          was_in="w9_docview_5fold.ipynb",
-         note="the LLM rewrite instead of raw wiki (Table A18, the "
+         note="the LLM rewrite instead of raw wiki (Table A19, the "
               "LLM-rewritten row)",
          extra={"wiki_src": "llm"}),
 
@@ -356,11 +359,11 @@ CELLS = [
                "wcle_epd_v20i10c15_cetf", "wcle_epdb_v25i25c1_cetf",
                "wcle_epdb_v20i10c20_cetf"],
          caps=[512], folds=FIXED, epochs=2000,
-         cites=[A7],
+         cites=[A8],
          was_in="w9_jobs.FS_JOBS",
-         note="v/i/c weights; the recipe-weights row of Table A7 (20/10/20) "
+         note="v/i/c weights; the recipe-weights row of Table A8 (20/10/20) "
               "is the VICReg arm of body.neighborhood.views. epdb = the "
-              "batch-all variant, which Table A7 leaves out. The published "
+              "batch-all variant, which Table A8 leaves out. The published "
               "runs were trained 1,000 epochs and then on to 2,000 from the "
               "weights of epoch 1,000"),
 
@@ -371,7 +374,7 @@ CELLS = [
          cites=[A1],
          was_in="w9_dino_control.ipynb",
          note="the control of Section 4.3: DINO at its published settings, "
-              "none swept, on fold 0 only (recipe in Table A9). The teacher's "
+              "none swept, on fold 0 only (recipe in Table A10). The teacher's "
               "two global views hold up to 512 sentences each: both open "
               "with the store-page prefix, and the game's reviews are dealt "
               "whole to the first until no more fit, then from the rest to "
@@ -392,9 +395,14 @@ CELLS = [
               "body.pair.512 and of apx.ladder.2048"),
 
     # ---- appendix: invariance weight, view count, latent queries ------
-    # Folds 0 to 2 at 512 sentences. The recipe rows of Tables A4 to A6 and
+    # Folds 0 to 2 at 512 sentences. The recipe rows of Tables A4 to A7 and
     # the lambda = 0 row of Table A4 are the I-CE and CE towers of body.pair.512
     # on the same three folds, NOT more training runs.
+    # Table A6, the size of a review view, has no cell: its three floors are the
+    # five-fold worker run with --view-w 8, 32 and 64 (the recipe draws a review
+    # view to at least 16 sentences) on folds 0 to 2 at 512 sentences, runs named
+    # w9cv_wcle_i2ce_icetf_fold<k>_w<W>_d512_fp. No profile lists them and their
+    # checkpoints are not on Hugging Face.
     Cell("apx.lambda",
          arms=["wcle_ice_icetf",            # lambda = 1
                "wcle_i3ce_icetf",           # lambda = 3
@@ -421,7 +429,7 @@ CELLS = [
          arms=["wcle_slot1i2cemean_icetf", "wcle_slot2i2cemean_icetf",
                "wcle_slot8i2cemean_icetf", "wcle_slot16i2cemean_icetf"],
          caps=[512], folds=3, epochs=2000,
-         cites=[A6],
+         cites=[A7],
          was_in="w9_sweeps_3fold.ipynb (w9_scale_query.ipynb is the "
                 "fixed-split grid)",
          note="the number of latent queries, Q = 1, 2, 8 and 16, folds 0 to 2"),
@@ -429,10 +437,10 @@ CELLS = [
     Cell("apx.queries.5fold",
          arms=["wcle_slot8i2cemean_icetf"],
          caps=[POOL], folds=5, epochs=2000,
-         cites=[A6],
+         cites=[A7],
          was_in="w9_experiment_5fold_2.ipynb",
          note="Q = 8 on the five folds, seed-paired with the I-CE of "
-              "body.pair (the five-fold rows of Table A6)"),
+              "body.pair (the five-fold rows of Table A7)"),
 
     # ---- appendix: the teacher must exclude the student's views -------
     Cell("apx.vfa",

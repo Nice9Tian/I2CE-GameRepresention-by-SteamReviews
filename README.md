@@ -31,18 +31,18 @@ Published with the code, on Hugging Face:
 
 ## 1. The paper, its appendices and the supplement
 
-Appendices A to N (Tables A1 to A18) hold what the paper body points to:
+Appendices A to N (Tables A1 to A19) hold what the paper body points to:
 the five-fold cross-validation detail with the anchor-budget sweep (A),
 the two query registers on one game (B), the temperature,
-invariance-weight, view-count, latent-query and VICReg sweeps and the
-windowed teacher (C), the gradient bounds behind the handover point of
+invariance-weight, view-count, view-size, latent-query and VICReg sweeps
+and the windowed teacher (C), the gradient bounds behind the handover point of
 Section 4.3 (D), the separation-gradient derivations behind Sections 4.3
 and 6.3 (E), the query-rewrite prompts (F), the tag-vocabulary mapping
 (G), the baseline recipes (H), the cost model at scale with the sharded
 sliding window (I), the per-fold detail across anchor budgets (J), the
 tag deficit read as a register crossing (K), the neighborhood figures
 and the four-encoder map (L), the displacement and margin table (M), and
-the document-view study (N). Tables A1 to A6, in Appendices A and C, are
+the document-view study (N). Tables A1 to A7, in Appendices A and C, are
 the ones the paper also prints after its references, together with
 Appendix B. Supplements A to C (Tables S1 to S4) carry the
 teacher-exclusion result, the two anchor-reading regimes and the
@@ -237,7 +237,7 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 24 | 198 | 512 – 2,048 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports, but for the view-size sweep of Table A6 | 24 | 198 | 512 – 2,048 |
 | `paperTest` | every experiment the paper body reports, at its own budget | 10 | 77 | 512, 2,048 |
 | `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 10 | 77 | 512, 1,024 |
 
@@ -265,8 +265,8 @@ Figure 9 draws. The DINO-style control
 of Section 4.3 (Table A1, fold 0 only) is the appendix cell `apx.dino`, an
 arm of the five-fold worker with its own notebook, `w9_dino_control.ipynb`.
 
-**Twenty-two tables are not twenty-two campaigns.** Tables A1, A13, A15 and
-A16 of the appendix are different readouts of one shared five-fold
+**Twenty-three tables are not twenty-three campaigns.** Tables A1, A14, A16 and
+A17 of the appendix are different readouts of one shared five-fold
 @2,048 tower set, and Tables S2 to S4 of the supplement read those same
 towers plus the swin and two-stage teachers of `apx.swin.5fold` and
 `apx.twostage`. The grid is much smaller than the table count suggests.
@@ -290,6 +290,13 @@ the supplement mentions them: the twin-pack `pk*` family, the slot/readout capac
 grid, multi-anchor `ma2*`, the async simulation, and hard-negative
 `nemesis`. They remain reachable through `w9_jobs.FS_JOBS` and the
 notebooks.
+
+The view-size sweep of Table A6 is the one reported experiment no profile
+lists. Its three floors are the five-fold worker run with `--view-w 8`,
+`32` and `64` in place of the recipe's 16, on folds 0 to 2 at 512
+sentences (runs named `w9cv_wcle_i2ce_icetf_fold<k>_w<W>_d512_fp`); the
+recipe row of the table is the I-CE of `body.pair.512` on those folds.
+Their checkpoints are not on Hugging Face.
 
 ### Hardware
 
