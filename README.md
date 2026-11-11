@@ -210,33 +210,47 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 14 | 151 | 512 – 4,096 |
-| `paperTest` | every experiment the paper body reports, at its own budget | 5 | 52 | 512, 4,096 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 18 | 193 | 512 – 2,048 |
+| `paperTest` | every experiment the paper body reports, at its own budget | 5 | 52 | 512, 2,048 |
 | `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 5 | 52 | 512, 1,024 |
 
 ```bash
 python contrast_experiment/w9/Pod/w9_profiles.py     # print the three plans
 ```
 
-Three things worth knowing before you pick one.
+Four things worth knowing before you pick one.
 
 **The clamp is a ceiling, not a setting.** `litePaperTest` lowers only the
 cells the paper ran above 1,024. A cell the paper ran at 512 stays at 512,
 because rerunning it at 1,024 would not reproduce the published row. What
-moves is the 4,096 five-fold block, to a budget the paper itself measures
+moves is the 2,048 five-fold block, to a budget the paper itself measures
 as within 0.02 of the full configuration on every reading (Section 4.2,
 Table A2) and which fits a 24 GB desktop GPU.
 
 **`paperTest` and `litePaperTest` train the same number of towers.** They
-differ only in what those towers cost. `fullTest` roughly triples the
-count, mostly through two cells: the anchor ladder (30 towers) and the
+differ only in what those towers cost. `fullTest` is nearly four times the
+count; its two largest cells are the anchor ladder (30 towers) and the
 temperature sweep (30 towers).
 
-**Nineteen tables are not nineteen campaigns.** Tables A1, A3, A14 and
-A15 of the appendix are different readouts of one shared five-fold
-@4,096 tower set, and Tables S2 to S4 of the supplement read those same
+**Twenty-two tables are not twenty-two campaigns.** Tables A1, A13, A15 and
+A16 of the appendix are different readouts of one shared five-fold
+@2,048 tower set, and Tables S2 to S4 of the supplement read those same
 towers plus the swin and two-stage teachers of `apx.swin.5fold` and
 `apx.twostage`. The grid is much smaller than the table count suggests.
+
+**The 2,048-sentence budget comes as two pack rules.** The main five-fold
+cells train on `pool` packs: the store-page prefix plus the game's whole
+2,048-sentence review pool, with no review left out (a median of 2,068
+sentences, the longest 2,184). Their runs and checkpoints are named
+`_gpool`; these are the towers of Figure 7 and of the tables that read
+them. A cap of 2,048 stops at 2,048 sentences in total, prefix included (a
+median of 2,046), and names its runs `_g2048`; the 2,048 rung of the anchor
+ladder and the temperature sweep use it. No profile trains above this
+budget. The towers are scored against 4,096-sentence anchors, which costs
+no training memory, and the window-size sweep, the one cell on
+4,096-sentence packs, is not in the paper and in no profile.
+[`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md) has
+the details.
 
 Not listed in any profile, because neither the paper, the appendix nor
 the supplement mentions them: the twin-pack `pk*` family, the slot/readout capacity
@@ -250,9 +264,12 @@ The anchor budget sets the requirement, because the gallery is re-encoded
 with gradient at every step. A 24 GB desktop GPU covers budgets up to
 1,024 sentences, where retrieval has already saturated (a 22.3 GiB
 peak, within 0.02 of the full configuration on every reading); the
-2,048-sentence budget peaks at 35.0 GiB and needs a 48 GB card. The
-4,096-sentence budget occupies a single 80 GB A100, about 61 GiB peak and
-roughly 6.7 wall-clock hours for a 2,000-epoch run.
+2,048-sentence budget, the paper's and the default here, peaks at
+35.0 GiB at a cap of 2,048 and needs a 48 GB card; a 2,000-epoch run took
+4.6 to 6.3 wall-clock hours on A100s shared between folds. `pool` packs
+are up to 2,184 sentences wide. Their peak has not been measured at that
+width; interpolating between the measured peaks at widths of 2,048 and
+4,096 gives about 36.7 GiB.
 
 At inference the cost is ordinary: one forward pass through the frozen
 0.6B embedder (under 3 GiB) plus a millisecond-level inner-product search
@@ -333,14 +350,14 @@ with gradient at every step:
 | 512 | 2.1 GB | 8.4 GiB | anything |
 | 1,024 | 4.2 GB | 22.3 GiB | 24 GB desktop GPU |
 | 2,048 | 8.5 GB | 35.0 GiB | 48 GB card |
-| 4,096 | 16.9 GB | ~61 GiB | 80 GB A100 only |
+| 4,096 (no profile) | 16.9 GB | ~61 GiB | 80 GB A100 only |
 
 **You do not set it by hand.** `--profile` reaches the data build, so the
 packs are built at the budget the profile trains at:
 
 ```bash
 python steam_reviews_framework/run.py --profile litePaperTest   # 1,024
-python steam_reviews_framework/run.py --profile paperTest       # 4,096
+python steam_reviews_framework/run.py --profile paperTest       # 2,048
 python contrast_experiment/run.py --profile litePaperTest --cv
 ```
 
@@ -355,13 +372,13 @@ compares and stops rather than letting training run at a budget you did
 not ask for:
 
 ```
-anchor budget mismatch: the assets in <dir> were built at 4096 sentences,
+anchor budget mismatch: the assets in <dir> were built at 2048 sentences,
 this run wants 1024. Training reads the built packs, so it would silently
-run at 4096, not 1024.
+run at 2048, not 1024.
 ```
 
 The w9 workers take `--anchor-cap` per job, which is how one campaign
-spans 512–4,096; `GCAP` governs only the packaged path.
+spans several budgets; `GCAP` governs only the packaged path.
 
 The other build constants, at the top of `dataset_builder/build_assets.py`:
 

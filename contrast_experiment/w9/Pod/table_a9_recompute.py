@@ -1,8 +1,12 @@
-"""Regenerate Appendix Table A9 (the window-size sweep) under ONE protocol.
+"""Regenerate the window-size sweep of the windowed teacher under ONE protocol.
+
+The sweep is not in the paper. The appendix of September 2026 printed it as
+its Table A9, which is where the file names come from; the paper's Table A9
+is now the baseline recipes.
 
 WHY THIS SCRIPT EXISTS
 ----------------------
-The shipped Table A9 mixed provenance across its four rows:
+The table as first shipped mixed provenance across its four rows:
 
   * the three windowed arms (swin84 / swin168 / swin336) were trained for 2,000
     epochs and their checkpoints were picked by the fixed-split worker's
@@ -46,7 +50,7 @@ both are written to the results JSON; W9_SELECT only decides which one the
 argmax uses.
 
   W9_SELECT=rank   (DEFAULT)
-      The body's Section 5 protocol, Equation (28):
+      The body's Section 5 protocol, its rank criterion:
 
           score(ckpt) = SUM over i in Q_val of exp(-rank_i)
 
@@ -58,7 +62,7 @@ argmax uses.
       against the FULL 2,020-game anchor gallery (SPg), cosine similarity on
       L2-normalised vectors, `rank = (sim > sim_own).sum() + 1` so ties are
       resolved optimistically.  The per-query exponentials are SUMMED, as
-      Equation (28) prints them.  Argmax over the candidate epochs, ties broken
+      Section 5 prints them.  Argmax over the candidate epochs, ties broken
       toward the earlier epoch.
 
       This is EXACTLY the criterion that re-selected the five-fold tables (the
@@ -67,7 +71,7 @@ argmax uses.
       substituting the fixed split's validation games for the fold's.  It is
       the default because the body states one protocol for every table:
       checkpoints are written every 50 epochs and the deployed one maximises
-      Equation (28) over the validation fold, and tags never select a
+      that criterion over the validation fold, and tags never select a
       checkpoint.  The rank criterion touches no tags and no review
       pseudo-queries, so it satisfies that sentence; rvsel does not.
 
@@ -162,7 +166,7 @@ SPLIT_SEED = 20260711
 ANCHOR_CAP = 4096
 LABEL_SUFFIX = "_g%d_fp" % ANCHOR_CAP
 
-# arm -> the row label used in Appendix Table A9
+# arm -> the row label used in the sweep's table
 ARMS = [
     ("wcle_swin84step42loop2i2ce_icetf",  "swin, w = 84 (step 42, 19.7% coverage)"),
     ("wcle_swin168step84loop2i2ce_icetf", "swin, w = 168 (step 84, 27.5% coverage)"),
@@ -170,7 +174,7 @@ ARMS = [
     ("wcle_i2ce_icetf",                   "I-CE, fully coupled (100% coverage)"),
 ]
 
-# the shipped Table A9 body, for the deviation report only
+# the table as first shipped, for the deviation report only
 SHIPPED = {
     "wcle_swin84step42loop2i2ce_icetf":  (1400, 0.946, 1.000, 0.691, 0.902, 0.714),
     "wcle_swin168step84loop2i2ce_icetf": (1150, 0.941, 0.995, 0.691, 0.892, 0.704),
@@ -197,7 +201,7 @@ def die(msg):
     raise SystemExit(2)
 
 
-log("# Table A9 recompute   started %s" % time.strftime("%Y-%m-%d %H:%M:%S"))
+log("# window-size sweep recompute   started %s" % time.strftime("%Y-%m-%d %H:%M:%S"))
 log("  out-dir   %s" % OUT_DIR)
 log("  cache     %s" % CACHE)
 log("  repo      %s" % REPO)
@@ -250,7 +254,7 @@ train_pool_games = np.array([i for i in range(NG) if names[i] not in excl])
 va_neu = [i for i, g in enumerate(art_games) if g in val_g and variants[i] == "neutral"]
 va_non = [i for i, g in enumerate(art_games) if g in val_g and variants[i] == "noname"]
 
-# --------- Equation (28) selection queries: the validation games' `noname` AND
+# --------- rank-criterion selection queries: the validation games' `noname` AND
 # `neutral` rewrites (the "both" register set that rank_ckpt_plan.json ships).
 # `gidx` is the wiki row's own game index into the 2,020-game gallery.
 A_GIDX = np.asarray(A["gidx"])
@@ -343,7 +347,7 @@ zs_from_arrays = ZS_NS["zs_from_arrays"]
 log("\n## lifted zs_from_arrays from %s (lines %d-%d), worker module import: %s"
     % (WORKER.name, node.lineno, node.end_lineno, WORKER_IMPORTED))
 
-# ------------------------------------------------- Equation (28) rank score
+# ------------------------------------------------- Section 5 rank score
 # The five-fold criterion, verbatim, with the fixed split's validation games in
 # place of the fold's: sum of exp(-rank) over the validation `noname` + `neutral`
 # wiki rewrites, ranked against the full 2,020-game anchor gallery.  The rank
@@ -361,7 +365,7 @@ def query_ranks(Q, G, own):
 
 
 def rank_select_score(Zg, Za):
-    """Equation (28): sum_i exp(-rank_i) over the 406 validation-split queries."""
+    """The rank criterion of Section 5: sum_i exp(-rank_i) over the 406 validation-split queries."""
     r = query_ranks(Za[RANK_ROWS], Zg, RANK_OWN)
     return float(np.exp(-r.astype(np.float64)).sum())
 
@@ -399,7 +403,7 @@ RVSEL_KEYS = ("nm_neutral", "h5_neutral", "nm_noname", "h5_noname",
 EPOCHS = list(range(CKPT_EVERY, MAX_EPOCH + 1, CKPT_EVERY))
 
 CRITERION_TEXT = {
-    "rank": ("Equation (28): score = sum_i exp(-rank_i) over the %d validation-split "
+    "rank": ("The rank criterion of Section 5: score = sum_i exp(-rank_i) over the %d validation-split "
              "wiki rewrites (each validation game's `noname` and `neutral` rewrite), "
              "rank counted from 1 against the full %d-game anchor gallery, cosine on "
              "L2-normalised vectors, rank = (sim > sim_own).sum() + 1; argmax, ties -> "
@@ -552,7 +556,7 @@ for arm, row_label in ARMS:
                                               len(traj)))
 
 # ------------------------------------------------- deviation report
-log("\n## deviations from the shipped Table A9")
+log("\n## deviations from the table as first shipped")
 dev = {}
 for arm, _ in ARMS:
     r = results[arm]
@@ -599,7 +603,7 @@ for arm, row_label in ARMS:
                  fmt(r["stripped_hit1"]), fmt(r["stripped_hit5"]),
                  fmt(r["test_tag_f1"])))
 md_text = "\n".join(md)
-log("\n## Table A9 (regenerated, appendix row format)\n")
+log("\n## window-size sweep (regenerated, appendix row format)\n")
 log(md_text)
 
 log("\n## selected epochs (active criterion: %s)" % SELECT_MODE)

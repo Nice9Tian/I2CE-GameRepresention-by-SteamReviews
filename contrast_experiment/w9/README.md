@@ -64,7 +64,22 @@ whole corpus (a median of 4,096 sentences at 4,096). The fixed-split
 worker uses them when they are present. The five-fold worker uses them
 only for the multi-anchor `ma` arms; every other five-fold run builds its
 packs from the 2,048-sentence review pool, the way the paper's five-fold
-runs were trained (a median of 2,068 sentences at the 4,096 budget).
+runs were trained, by one of two rules:
+
+- `--anchor-cap pool`: the store-page prefix plus the game's whole review
+  pool, with no review left out (a median of 2,068 sentences, the longest
+  2,184). The paper's main five-fold towers are these runs, and their runs
+  and checkpoints are named `_gpool`.
+- `--anchor-cap 1024` or `2048`: the prefix plus whole reviews up to that
+  many sentences in total (a median of 2,046 at 2,048); runs are named
+  `_g1024`, `_g2048`.
+
+The paper calls both the 2,048-sentence budget. The worker refuses a cap
+above 2,048, which the pool cannot fill. Until 2026-11-11 the `pool` packs
+had no name of their own: they were requested with a cap the pool never
+reached and the runs were named after that cap, `_g4096`. The packs are
+the same, sentence for sentence; the checkpoints and plan files were
+renamed to `_gpool`.
 
 Since 2026-11-07 the store-page prefix in `wscan_gal_rev.npz` (the
 512-sentence anchor packs) and `ss_queries_rev_S.npy` is row-standardized,
@@ -78,8 +93,9 @@ prefix. To reproduce them bit for bit, leave out the `--exclude`, then put
 ## Running
 
 1. Put this `w9/` folder and the data directory on the machine (any CUDA
-   box; 24 GB VRAM suffices for anchor budgets ≤ 2,048 sentences, 80 GB for
-   4,096).
+   box; 24 GB VRAM suffices for anchor budgets ≤ 1,024 sentences, 48 GB for
+   2,048, the paper's budget, measured at a cap of 2,048 and estimated for
+   `pool`; 4,096 needs 80 GB and no profile asks for it).
 2. Open a notebook under `Pod/` and run its cells top to bottom. Each
    notebook is one experiment: it stages data, launches its workers, and
    prints the readout table at the end.
@@ -90,9 +106,9 @@ prefix. To reproduce them bit for bit, leave out the `--exclude`, then put
 | Notebook | Experiment |
 |---|---|
 | `w9_a100.ipynb` | wave-1 fixed-split arms |
-| `w9_final_experiment.ipynb` | CE vs I-CE × {512…4096} × 5 folds (the paper's scaling table) |
+| `w9_final_experiment.ipynb` | CE vs I-CE × {512, 1,024, 2,048, pool} × 5 folds (the paper's scaling table) |
 | `w9_cv.ipynb` | 5-fold base pair |
-| `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd × 5 folds @4096 |
+| `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style × 5 folds @pool |
 | `w9_i2ce_t.ipynb` | temperature sweep × 5 folds × {512, 2048} |
 | `w9_flash*.ipynb` | loss-ladder and structure grids |
 | `w9_scale.ipynb`, `w9_mq.ipynb`, `w9_save_4096_tag.ipynb` | anchor-scale & anchor-supply arms |
@@ -147,9 +163,15 @@ CPU smoke tests (no training or corpus required):
 python -B -m unittest discover -s contrast_experiment/w9/Pod -p test_w9_selection.py -v
 ```
 
-### Reproducing Table A9 (the window-size sweep)
+### Reproducing the window-size sweep (not in the paper)
 
-`Pod/table_a9_recompute.py` rebuilds every row of appendix Table A9 from
+The window-size sweep of the windowed teacher (w = 84, 168 and 336 against
+full coupling, on the fixed split) is an extra of this repository. The
+appendix of September 2026 printed it as its Table A9; the paper no longer
+prints it, and its Table A9 is now the baseline recipes. The file names
+keep the old number.
+
+`Pod/table_a9_recompute.py` rebuilds every row of the sweep's table from
 the projection caches the fixed-split worker writes beside each checkpoint
 (`tower_<label>_ep<N>.npz`), with no GPU: for each of the four arms it
 re-runs the worker's own `zs_from_arrays` on every checkpoint from epoch 50
@@ -167,21 +189,21 @@ result directory and the cache with `LARICE_RESULTS` (or `W9_OUT`) and
 python contrast_experiment/w9/Pod/table_a9_recompute.py
 ```
 
-### Reproducing Table 1 and Figure 5 (displacement against margin)
+### Reproducing Table A17 and Figure A2 (displacement against margin)
 
-`Pod/table1_recompute.py` re-encodes the fold-0 towers of the six-objective
-comparison at the 4,096-sentence budget (`ckpt_w9cv_wcle_<arm>_fold0_g4096_fp_ep<N>.pt`,
+`Pod/table1_recompute.py` re-encodes the published fold-0 checkpoints of the
+six-objective comparison (`ckpt_w9cv_wcle_<arm>_fold0_gpool_fp_ep<N>.pt`,
 epochs from the paper's rank plan: I-CE 2000, CE 650, SimCLR 1100, VICReg 150,
-BYOL 250) on the single anchor draw `wscan_gal_rev_g4096.npz` and on the
+BYOL 250) on the single 4,096-sentence anchor draw `wscan_gal_rev_g4096.npz` and on the
 wiki rewrites, then computes, per encoder, the mean query displacement
 (1 - cos to the own anchor over the 814 name-stripped rewrites), the mean
 nearest-neighbour margin over the 2,020 anchors, their ratio, and the share
-of queries inside their own margin (Figure 5's clearance labels). It writes
+of queries inside their own margin (Figure A2's clearance labels). It writes
 `table1_results.json` and `fig5_encodings.npz`; `--plan cvsel --check`
 scores the older worker-selected checkpoints instead and compares against
 the shipped numbers. Needs a CUDA interpreter and the research caches
 (`W9_FIG3`, `W9_CACHE`); the paper repository's `figures/fig5_umap.py` draws
-Figure 5 from the encodings.
+Figure A2 from the encodings.
 
 ```bash
 python contrast_experiment/w9/Pod/table1_recompute.py --plan rank
@@ -215,7 +237,7 @@ the five folds of I + SimCLR, and 89 more listed in that repository's own plan
 files, the 512-sentence runs on the corrected anchor packs
 (`docfix512_ckpt_plan.json`, `c2_docfix512_ckpt_plan.json`,
 `c3_docfix512_ckpt_plan.json`) and the five folds with eight latent queries
-(`q8_g4096_ckpt_plan.json`).
+(`q8_gpool_ckpt_plan.json`).
 
 ```bash
 export W9_DATA_DIR=/path/to/fusion_cache_w9           # the prebuilt data folder above
@@ -229,7 +251,11 @@ python contrast_experiment/w9/eval/k10_eval.py table  scores.json               
 `cells` takes every run of `rank_ckpt_plan.json` plus the runs of each
 selection file given after it, and looks every checkpoint name up in
 `--ckpt-dir`, so your own runs under the same names can stand in for the
-downloaded ones. I + SimCLR's worker saved a 512-sentence gallery, so its
+downloaded ones: the five main families are looked up under their `_gpool`
+names, the names a run with `--anchor-cap pool` gets. A run under another
+name is scored when `cells` is given a selection file for it (a JSON of
+`{key: {"ckpt", "fold", "ep"}}`, which `select` writes for one run family).
+I + SimCLR's worker saved a 512-sentence gallery, so its
 checkpoints were picked by `select`, which applies the rank rule to every
 saved checkpoint of a run on the gallery the other five-fold runs select on;
 `select` does the same for a run you trained yourself. `encode` resumes from
