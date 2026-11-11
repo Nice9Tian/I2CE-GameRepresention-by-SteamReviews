@@ -20,8 +20,8 @@ also be run alone; a step whose output is already in the working folder is skipp
   8. layout_check.py            with --layout-check (needs umap-learn)
 
 Everything lands in --work (default ./hood_work): the figures in <work>/figures, the numbers in
-<work>/fig_facts_4096k10.json and <work>/query_stats_4096k10.json.  --map stable draws Figure 9 with
-the version-independent anchor map (see fig_triplet.py); the default is the published computation.
+<work>/fig_facts_4096k10.json and <work>/query_stats_4096k10.json.  --map drawn draws Figure 9 with
+the anchor map of the figure as first drawn (see fig_triplet.py); the default, stable, is the paper's.
 """
 import argparse
 import os
@@ -43,7 +43,7 @@ def main():
     ap.add_argument("--fixed-draws", default="", help="draws_fixed.npz of fixed_split_eval.py")
     ap.add_argument("--cv-draws", default="", help="the five-fold file of `k10_eval.py encode`")
     ap.add_argument("--cv-cells", default="", help="the cells file that encode was given")
-    ap.add_argument("--map", choices=("drawn", "stable"), default="drawn")
+    ap.add_argument("--map", choices=("stable", "drawn"), default="stable")
     ap.add_argument("--layout-check", action="store_true")
     ap.add_argument("--redo", action="store_true", help="run every step again")
     a = ap.parse_args()

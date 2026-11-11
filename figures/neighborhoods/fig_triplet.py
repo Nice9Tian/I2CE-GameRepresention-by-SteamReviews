@@ -36,10 +36,11 @@ neighborhood and about the anchors (layout errors, miss destinations, near ties,
 dimensionality).  fig_genre_bars.py draws Figures 8 and A3 from the same neighborhoods and
 fig_stats.py computes the statistics over all of them.
 
-HOOD_MAP chooses how that linear map is computed (anchor_map below): "drawn", the default, is the
-computation behind the published figure, whose line directions depend on the numpy build in their
-second digit (numpy 2.4.3 and matplotlib 3.10.8 reproduce the published file byte for byte);
-"stable" gives the same picture on every machine.  Only the directions of the lines differ.
+HOOD_MAP chooses how that linear map is computed (anchor_map below).  "stable", the default and the
+paper's figure, leaves the round-off direction out of the pseudo-inverse and gives the same picture
+on every machine.  "drawn" is the computation of the figure as first drawn, which kept that
+direction, so that the line directions depend on the numpy build in their second digit.  Only the
+directions of the lines differ between the two.
 
 Paths come from hood_env.py (HOOD_WORK, HOOD_OUT, W9_DATA_DIR).  The other environment variables
 (HOOD_RULE, HOOD_BOX, HOOD_PICK, HOOD_PROFILE, HOOD_GENRE, HOOD_LAYOUT, HOOD_ANCHORS, HOOD_LABELS,
@@ -318,16 +319,16 @@ def procrustes_rot(Xa, Xb):
     U, _, Vt = np.linalg.svd(Xa.T @ Xb); return U @ Vt
 
 
-MAP = os.environ.get("HOOD_MAP", "drawn")           # how the anchors-to-layout map is computed: "drawn" (as the published figure) or "stable"
+MAP = os.environ.get("HOOD_MAP", "stable")          # how the anchors-to-layout map is computed: "stable" (the paper's figure) or "drawn"
 
 
 def anchor_map(Aq, A2):
     """The linear map that sends the K centred anchors to their layout, built from their pseudo-inverse.  K centred
     points have rank K - 1, so one direction must be left out of the pseudo-inverse.
-    "drawn" is the computation behind the published figure: numpy's pinv on the float32 anchors at its default cutoff,
-    which does not drop that direction (its singular value is round-off, near 1e-7).  The directions of the lines then
-    depend on the numpy build in their second digit; the published file is reproduced exactly by numpy 2.4.3.
-    "stable" works in double precision and drops the direction, and gives the same picture on every machine.
+    "stable" works in double precision and drops that direction; it gives the same picture on every machine.
+    "drawn" is the computation behind the figure as first drawn: numpy's pinv on the float32 anchors at its default
+    cutoff, which does not drop the direction (its singular value is round-off, near 1e-7).  The directions of the
+    lines then depend on the numpy build in their second digit; numpy 2.4.3 reproduces that file.
     Line lengths, anchor positions and hit marks are the same in both; only the directions of the lines differ."""
     X = Aq - Aq.mean(0)
     if MAP == "stable":

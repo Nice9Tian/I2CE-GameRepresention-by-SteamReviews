@@ -75,26 +75,23 @@ they give:
   checkpoints;
 - every number of `query_stats_4096k10.json` and of the neighborhood and
   population entries of `fig_facts_4096k10.json`;
-- the four figure files byte for byte, under the library versions the
-  published files were drawn with: matplotlib 3.11.1 for Figure 8, numpy
-  2.4.3 with matplotlib 3.10.8 for Figures 9 and A3.
+- the four figure files byte for byte, under the matplotlib release each
+  was drawn with (3.11.1 for Figure 8, 3.10.8 for Figures 9 and A3).
+  Another release sets text a little differently, which moves an axis by
+  a pixel or changes the height of a figure by a few.
 
-Other versions give the same figures up to layout: matplotlib sets text a
-little differently between releases, which moves an axis by a pixel or
-changes the height of a figure by a few.
-
-Figure 9 has one more dependence. A query is drawn at its true distance
-from its anchor, in the direction its displacement takes under a linear
-map built from the pseudo-inverse of the eight centred anchors. Eight
-centred points have rank seven, and the published figure computed the
-pseudo-inverse without dropping the eighth direction, whose singular value
-is round-off (about 1e-7). The directions of the lines therefore depend on
-the numpy build in their second digit, and so does the "as drawn" direction
-coherence that `fig_facts_4096k10.json` records. `HOOD_MAP=stable` (or
-`run_all.py --map stable`) computes the map in double precision without
-that direction and gives the same picture on every machine. The lengths of
-the lines, the positions of the anchors and the hit marks are the same
-either way; the default is the published computation.
+A note on the directions of the lines in Figure 9. A query is drawn at its
+true distance from its anchor, in the direction its displacement takes
+under a linear map built from the pseudo-inverse of the eight centred
+anchors. Eight centred points have rank seven, so the eighth direction,
+whose singular value is round-off (about 1e-7), has to be left out: the
+scripts compute the map in double precision without it, and the picture is
+the same on every machine. The figure as first drawn kept that direction,
+which made the line directions depend on the numpy build in their second
+digit; `HOOD_MAP=drawn` (or `run_all.py --map drawn`) is that computation,
+kept for comparison. The lengths of the lines, the positions of the
+anchors and the hit marks are the same either way; of the recorded
+numbers only the "as drawn" direction coherence differs.
 
 ## Requirements
 
