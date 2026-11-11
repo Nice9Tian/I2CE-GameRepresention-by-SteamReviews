@@ -443,7 +443,7 @@ def run_queue(cls, repo, data_dir, out_fs, out_cv, full_pool_path="",
         print("  FAILED:", tag, "->", log)
     return fails
 
-# ---------------- extension (续训) ----------------
+# ---------------- extension ----------------
 def extend_fs(job6, epochs, repo, data_dir, out_fs, full_pool_path="", gpu="0"):
     """EXTEND a finished fixed-split arm past its original budget. The worker
     rebuilds training state from its newest checkpoint (weights + mq shadow;
