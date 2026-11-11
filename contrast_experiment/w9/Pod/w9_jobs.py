@@ -14,6 +14,7 @@ A job tuple may carry an optional 7th field "big"/"small" to override.
 import json
 import os
 import queue
+import re
 import socket
 import subprocess
 import threading
@@ -208,15 +209,29 @@ TAKEOVER_LOCK_STALE = 600  # a .takeover lock older than this = taker died too
 VORD = ["neutral", "noname", "positive", "negative"]
 
 # ---------------- labels (THE compatibility contract) ----------------
+# A run on the 512-sentence anchor packs ends its label in D512, as the workers
+# name it: the packs carry the store-page prefix standardized since 2026-11-07,
+# and the towers retrained on them were published under this tag. The same run
+# on the packs as they were before (worker flag --raw-prefix) has no tag.
+D512 = "_d512"
+
 def fs_label(arm, cap, nsp, lead, wsrc, vw, size=None, epochs=None):
     # NOTE: epochs is NOT in the label -- a label owns ONE budget; changing
     # a row's budget after results exist means extend/retrain, not a fork.
     return (f"w9_{arm}" + (f"_g{cap}" if cap != 512 else "")
             + ("_nsp" if nsp else "") + (f"_ld{lead}" if lead else "")
-            + ("_wllm" if wsrc == "llm" else "") + (f"_w{vw}" if vw != 16 else ""))
+            + ("_wllm" if wsrc == "llm" else "") + (f"_w{vw}" if vw != 16 else "")
+            + (D512 if cap == 512 else ""))
 
 def cv_label(recipe, fold):
-    return f"w9cv_{recipe}_fold{fold}"
+    return f"w9cv_{recipe}_fold{fold}{D512}"   # the CV queue runs at 512
+
+def with_tag(label):
+    """a label written by hand -> the workers' name for it: without a _g<cap>
+    it is a run on the 512 packs and ends in D512"""
+    if label.endswith(D512) or re.search(r"_g(\d+|pool)(_|$)", label):
+        return label
+    return label + D512
 
 def result_name(label):
     return f"ft4var_{label}{'_fp' if FULL_POOL else ''}_best.json"

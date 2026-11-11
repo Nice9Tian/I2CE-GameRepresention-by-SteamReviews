@@ -155,10 +155,19 @@ def parse_args():
     ap.add_argument("--arm", required=True, choices=sorted(ARMS))
     ap.add_argument("--anchor-cap", type=anchor_cap_arg, default=512,
                     help="sentences per anchor pack, store-page prefix "
-                         "included: 512 (the shipped packs), or 1024 / 2048 "
+                         "included: 512 (the shipped packs, run names "
+                         "carry _d512), or 1024 / 2048 "
                          "built from the 2,048-sentence review pool; `pool` = "
                          "the prefix plus the game's whole review pool, the "
                          "packs of the paper's main five-fold runs (_gpool)")
+    ap.add_argument("--raw-prefix", action="store_true",
+                    help="--anchor-cap 512 only: train on the 512 packs as "
+                         "built before 2026-11-07, store-page prefix not "
+                         "standardized (wscan_gal_rev_rawprefix.npz and, "
+                         "when present, ss_queries_rev_S_rawprefix.npy). A "
+                         "512 run on the current packs carries _d512 in its "
+                         "name; with this flag it has the name the runs of "
+                         "that time had, without the tag")
     ap.add_argument("--pfc-shards", type=int, default=0,
                     help="distributed sharded softmax (Partial-FC): split "
                          "the ring into K shards, each sweeps a swin window "
@@ -321,6 +330,13 @@ def main():
     N_DOC = int(vp_m.group(1)) if vp_m else 1
     N_REV = int(vp_m.group(2)) if vp_m else NV - 1
     NV_ARM = N_REV + N_DOC
+    if args.raw_prefix and args.anchor_cap != 512:
+        raise SystemExit("--raw-prefix applies to the shipped 512-sentence "
+                         "packs only (--anchor-cap 512)")
+    # a run on the current 512 packs is named _d512, the tag of the towers
+    # retrained on them in November 2026; on the packs as built before
+    # 2026-11-07 (--raw-prefix) it keeps the name the runs of that time had
+    D512 = args.anchor_cap == 512 and not args.raw_prefix
     name = (f"w9cv_{args.arm}_fold{args.fold}"
             + (f"_g{args.anchor_cap}" if args.anchor_cap != 512 else "")
             + ("_nsp" if args.no_sp_view else "")
@@ -331,6 +347,7 @@ def main():
                 + (f"w{args.pfc_window}" if args.pfc_window else ""))
                if args.pfc_shards else "")
             + (f"_w{args.view_w}" if args.view_w != 16 else "")
+            + ("_d512" if D512 else "")
             + ("_fp" if args.full_pool else ""))
     dev = torch.device("cuda")
     C, OUT = Path(args.data_dir), Path(args.out_dir)
@@ -372,7 +389,10 @@ def main():
     # pseudo-queries as an mmap (page cache SHARED across all GPU workers on
     # the machine -- 9 workers cost the same RAM as one; only touched at
     # checkpoint projection). Saves 8.5 GB VRAM and 8.5 GB RAM per worker.
-    QS_G = np.load(C / "ss_queries_rev_S.npy", mmap_mode="r")            # fp16 mmap
+    _qsp = C / "ss_queries_rev_S.npy"
+    if args.raw_prefix and (C / "ss_queries_rev_S_rawprefix.npy").exists():
+        _qsp = C / "ss_queries_rev_S_rawprefix.npy"   # those runs' report-only columns
+    QS_G = np.load(_qsp, mmap_mode="r")                                  # fp16 mmap
     y = np.load(C / "tag_labels.npz", allow_pickle=True)["y"]
 
     def load_views(fname):
@@ -452,10 +472,29 @@ def main():
     # ---------------- anchors (512 shipped / 2048 built here) ----------------
     sp_row = {int(ST["gidx"][i]): i for i in range(len(ST["gidx"]))}
     if args.anchor_cap == 512:
-        GALd = np.load(C / "wscan_gal_rev.npz")
+        _galp = C / ("wscan_gal_rev_rawprefix.npz" if args.raw_prefix
+                     else "wscan_gal_rev.npz")
+        GALd = np.load(_galp)
         SGal = torch.tensor(GALd["gal"]).to(dev)
         gal_len = torch.tensor(GALd["gal_len"]).to(dev)
         gal_doc = torch.tensor(GALd["gal_doc_len"]).to(dev)
+        # the run name says which packs it trained on: check the file agrees
+        _dg = torch.nonzero(gal_doc > 0)[:64, 0].tolist()
+        _pstd = (sum(float(SGal[g, :int(gal_doc[g])].float().std(-1).mean())
+                     for g in _dg) / len(_dg)) if _dg else 1.0
+        print(f"anchors: 512 packs from {_galp.name}, store-page prefix row "
+              f"std {_pstd:.3f} (1.000 = standardized)", flush=True)
+        if (_pstd > 1.5) != args.raw_prefix:
+            raise SystemExit(
+                f"{_galp}: the store-page prefix rows are "
+                + ("standardized, so this is the current pack, not the one "
+                   "--raw-prefix reads (the 512 packs as built before "
+                   "2026-11-07)" if args.raw_prefix else
+                   f"not standardized (row std {_pstd:.2f}): these are the "
+                   "512 packs as built before 2026-11-07. Download the "
+                   "current wscan_gal_rev.npz, or keep this file as "
+                   "wscan_gal_rev_rawprefix.npz and pass --raw-prefix; that "
+                   "run is named without _d512"))
     elif MA_N and (C / f"wscan_gal_rev_g{args.anchor_cap}.npz").exists():
         # PREBUILT pack from the volume, for multi-anchor arms only. Built
         # from the full corpus, so it actually reaches the cap (med 4096 at
