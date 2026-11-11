@@ -23,6 +23,10 @@ A100 adaptations vs the local (RTX3080) cells:
     names end in _gpool. A numeric cap above the pool's 2,048 review
     sentences is refused: the pool cannot fill it, and the run would carry
     a budget in its name that it did not train at.
+  * --arm wcle_dino_dntf trains the tower with DINO as published (the
+    control of the paper's Section 4.3; Table A1, fold 0). It takes
+    --anchor-cap pool; the checkpoints keep the EMA teacher's tower under
+    "model", the one DINO evaluates, next to the student and both heads.
 Protocol (identical to the local run): fully inductive (train gallery =
 1,613 train games), frozen tower tau=0.02 for CE-family, rejection view
 sampler a(L)=0.2+0.7*(L-Lmin)/(Lmax-Lmin) over WHOLE reviews (no truncation),
@@ -54,6 +58,7 @@ ARMS = {
     "wcle_as8dc5i2ce_icetf": ("as8dc5i2ce", "ice"),    # DC-ASGD sim: 8 workers, lambda 0.5
     "wcle_ce_cetf": ("ce", "ce"),
     "wcle_byol_bytf": ("byol", "by"),
+    "wcle_dino_dntf": ("dino", "by"),   # DINO as published (Table A1, fold 0)
     "wcle_mv3_bytf": ("mv3", "by"),   # MoCo v3 analog: in-batch InfoNCE
     # (no queue, per v3), EMA target (m=0.99) + prediction head; the
     # symmetrized q/k pairing runs over all ordered view pairs.
@@ -219,6 +224,37 @@ def parse_args():
     ap.add_argument("--wiki-src", choices=("clean", "llm"), default="clean",
                     help="wiki doc source: clean=raw wiki text; llm=sentence-wise "
                          "faithful LLM rewrite (name suffix _wllm)")
+    # ---- the DINO arm (wcle_dino_dntf); defaults are DINO's published ones ----
+    ap.add_argument("--dino-global", type=int, default=512,
+                    help="sentences per global view, prefix included")
+    ap.add_argument("--dino-k", type=int, default=65536,
+                    help="number of prototypes")
+    ap.add_argument("--dino-hidden", type=int, default=2048)
+    ap.add_argument("--dino-bottleneck", type=int, default=256)
+    ap.add_argument("--dino-tau-s", type=float, default=0.1)
+    ap.add_argument("--dino-tau-t", type=float, default=0.04,
+                    help="teacher temperature at the start of its warmup")
+    ap.add_argument("--dino-tau-t-final", type=float, default=0.07)
+    ap.add_argument("--dino-tau-t-warm", type=float, default=0.1,
+                    help="teacher-temperature warmup as a fraction of "
+                         "training (DINO: 30 of 300 epochs)")
+    ap.add_argument("--dino-mom", type=float, default=0.996)
+    ap.add_argument("--dino-center-mom", type=float, default=0.9)
+    ap.add_argument("--dino-lr", type=float, default=5e-4,
+                    help="base lr, scaled by batch/256 as in DINO")
+    ap.add_argument("--dino-min-lr", type=float, default=1e-6)
+    ap.add_argument("--dino-lr-warm", type=float, default=10 / 300,
+                    help="lr warmup fraction (DINO: 10 of 300 epochs)")
+    ap.add_argument("--dino-wd", type=float, default=0.04)
+    ap.add_argument("--dino-wd-final", type=float, default=0.4)
+    ap.add_argument("--dino-freeze-last", type=float, default=1 / 300,
+                    help="fraction of training with the last layer frozen")
+    ap.add_argument("--dino-clip", type=float, default=3.0)
+    ap.add_argument("--dino-bs", type=int, default=192)
+    ap.add_argument("--smoke-steps", type=int, default=0,
+                    help="DINO arm only: run this many steps, print the "
+                         "per-step diagnostics and exit before any "
+                         "checkpoint is written")
     return ap.parse_args()
 
 
@@ -337,6 +373,13 @@ def main():
     # retrained on them in November 2026; on the packs as built before
     # 2026-11-07 (--raw-prefix) it keeps the name the runs of that time had
     D512 = args.anchor_cap == 512 and not args.raw_prefix
+    DINO = tower_kind == "dino"
+    if DINO and args.anchor_cap != "pool":
+        raise SystemExit("the DINO arm deals the store-page prefix and the "
+                         "whole review pool into its two global views: pass "
+                         "--anchor-cap pool")
+    if args.smoke_steps and not DINO:
+        raise SystemExit("--smoke-steps is read by the DINO arm only")
     name = (f"w9cv_{args.arm}_fold{args.fold}"
             + (f"_g{args.anchor_cap}" if args.anchor_cap != 512 else "")
             + ("_nsp" if args.no_sp_view else "")
@@ -347,6 +390,9 @@ def main():
                 + (f"w{args.pfc_window}" if args.pfc_window else ""))
                if args.pfc_shards else "")
             + (f"_w{args.view_w}" if args.view_w != 16 else "")
+            + (f"_dg{args.dino_global}"
+               if DINO and args.dino_global != 512 else "")
+            + (f"_k{args.dino_k}" if DINO and args.dino_k != 65536 else "")
             + ("_d512" if D512 else "")
             + ("_fp" if args.full_pool else ""))
     dev = torch.device("cuda")
@@ -540,15 +586,26 @@ def main():
             print(f"building {GCAP}-sentence anchors on GPU "
                   f"(POOL source, caps at {POOL.shape[1]} "
                   f"review sentences) ...", flush=True)
-        SGal = torch.zeros(NG, GCAP, 1024, dtype=torch.float16, device=dev)
+        # The DINO arm never reads the anchors in training, and with the
+        # review pool resident there is no room to build them beside it on a
+        # 24 GB card: its packs are filled a game at a time in a GPU row
+        # buffer and kept on host RAM. Same rows either way.
+        HOST_GAL = DINO
+        SGal = torch.zeros(NG, GCAP, 1024, dtype=torch.float16,
+                           device="cpu" if HOST_GAL else dev)
         gal_len = torch.zeros(NG, dtype=torch.long, device=dev)
         gal_doc = torch.zeros(NG, dtype=torch.long, device=dev)
         rngA = np.random.default_rng(SPLIT_SEED + 5)
+        _buf = (torch.zeros(GCAP, 1024, dtype=torch.float16, device=dev)
+                if HOST_GAL else None)
         for g in range(NG):
             row = 0
+            Sg = _buf if HOST_GAL else SGal[g]
+            if HOST_GAL:
+                _buf.zero_()
             if g in sp_row:
                 dl = int(ST["S_len"][sp_row[g]])
-                SGal[g, :dl] = SS[sp_row[g], :dl]
+                Sg[:dl] = SS[sp_row[g], :dl]
                 row = dl
                 gal_doc[g] = dl
             r_lens = np.bincount(RIDp[g, :plen[g]])
@@ -557,9 +614,12 @@ def main():
             for j in rngA.permutation(len(r_lens)):
                 L = int(r_lens[j])
                 if row + L <= GCAP:
-                    SGal[g, row:row + L] = POOL[g, r_starts[j]:r_starts[j] + L]
+                    Sg[row:row + L] = POOL[g, r_starts[j]:r_starts[j] + L]
                     row += L
             gal_len[g] = row
+            if HOST_GAL:
+                SGal[g] = _buf.cpu()
+        del _buf
         print(f"anchors: used med {int(gal_len.float().median())}", flush=True)
     mGal = torch.arange(SGal.shape[1], device=dev)[None, :] >= gal_len[:, None]
     mGal_nd = mGal | (torch.arange(SGal.shape[1], device=dev)[None, :] <
@@ -635,16 +695,20 @@ def main():
     def ma_sg(k, rows):
         """Pack k's sentences for game rows -> (len(rows), _h, D)."""
         return SGal[rows[:, None], idxP[k][rows]]
-    if tower_kind.startswith(("epd", "vic")):
+    if tower_kind.startswith(("epd", "vic")) or DINO:
         # VICReg family: training never reads the anchors (they are eval-
         # only), and batch=all view activations need the room -- park the
         # anchor tensors on pinned host RAM; the gallery encoders move
-        # chunk slices back on the fly.
-        SGal = SGal.cpu().pin_memory()
+        # chunk slices back on the fly. The DINO arm does not read them in
+        # training either (its global views come from the pool); its packs
+        # were built on host RAM above and stay there unpinned.
+        if SGal.is_cuda:
+            SGal = SGal.cpu().pin_memory()
         mGal = mGal.cpu()
         mGal_nd = mGal_nd.cpu()
         torch.cuda.empty_cache()
-        print("anchors parked on host RAM (VICReg family)", flush=True)
+        print("anchors parked on host RAM (training does not read them)",
+              flush=True)
     print(f"VRAM after load: {torch.cuda.memory_allocated()/1e9:.1f} GB", flush=True)
 
     # ---------------- review table + GPU view sampler ----------------
@@ -1478,6 +1542,276 @@ def main():
         model.eval()
         return model
 
+    # ---------------- DINO arm (wcle_dino_dntf) ----------------
+    # DINO as published, on this tower: the control of the paper's Section 4.3
+    # (Table A1, fold 0; recipe in online Appendix H, Table A9). No negatives,
+    # no anchor gallery and no invariance term. The teacher is an EMA of the
+    # student tower plus a DINO head and sees two global views; the student
+    # sees those two and the usual strong views (three review views, one
+    # document view).
+    # Review table of the 2,048-sentence POOL, the teacher's source whether or
+    # not --full-pool points the student's review views at the full library.
+    POOL_TAB = []
+    for g in range(NG):
+        r_lens = np.bincount(RIDp[g, :plen[g]]).astype(np.int64)
+        r_starts = np.zeros(len(r_lens), np.int64)
+        r_starts[1:] = np.cumsum(r_lens)[:-1]
+        POOL_TAB.append((r_starts, r_lens))
+    SP_LEN = np.zeros(NG, np.int64)
+    SP_ROW = np.zeros(NG, np.int64)
+    for g, r in sp_row.items():
+        SP_ROW[g], SP_LEN[g] = r, int(ST["S_len"][r])
+
+    def global_views(gids, rng):
+        """Two disjoint global views per game -> (S, m) of shape (2B, G, .).
+        Rows 0..B-1 are view 0, rows B..2B-1 view 1. The game's pool pack
+        is the store-page prefix plus its whole review pool; each step the
+        reviews are shuffled and dealt greedily ("fits -> goes in", the pack
+        rule) into view 0 up to G sentences, then the remaining reviews into
+        view 1. The store-page prefix opens both views."""
+        G = args.dino_global
+        B = len(gids)
+        pidx = np.zeros((2 * B, G), np.int64)
+        lens = np.zeros(2 * B, np.int64)
+        dls = np.zeros(2 * B, np.int64)
+        for k, g in enumerate(gids):
+            g = int(g)
+            st, ln = POOL_TAB[g]
+            dl = min(int(SP_LEN[g]), G)
+            used = np.zeros(len(ln), bool)
+            order = rng.permutation(len(ln))
+            for v in range(2):
+                row, segs = dl, []
+                for j in order:
+                    if used[j]:
+                        continue
+                    L = int(ln[j])
+                    if row + L <= G:
+                        segs.append(np.arange(st[j], st[j] + L))
+                        used[j] = True
+                        row += L
+                if not segs:
+                    # no whole review fits (a few games' pools are mostly
+                    # over-long reviews, and view 1 would be EMPTY, a fully
+                    # masked attention row): take the next unused review,
+                    # cut to the room left
+                    for j in order:
+                        if not used[j] and G - row > 0:
+                            L = min(int(ln[j]), G - row)
+                            segs.append(np.arange(st[j], st[j] + L))
+                            used[j] = True
+                            row += L
+                            break
+                r = v * B + k
+                if segs:
+                    seg = np.concatenate(segs)
+                    pidx[r, dl:dl + len(seg)] = seg
+                lens[r], dls[r] = row, dl
+        gid2 = np.concatenate([np.asarray(gids), np.asarray(gids)]).astype(np.int64)
+        gid_t = torch.as_tensor(gid2, device=dev)
+        S = POOL[gid_t[:, None], torch.as_tensor(pidx, device=dev)]
+        pos = torch.arange(G, device=dev)[None, :]
+        L_t = torch.as_tensor(lens, device=dev)[:, None]
+        D_t = torch.as_tensor(dls, device=dev)[:, None]
+        LP = int(dls.max())
+        if LP:
+            PRE = SS[torch.as_tensor(SP_ROW[gid2], device=dev), :LP]
+            pm = (pos[:, :LP] < D_t).unsqueeze(-1)
+            S[:, :LP] = torch.where(pm, PRE, S[:, :LP])
+        m = pos >= L_t
+        return S.masked_fill(m.unsqueeze(-1), 0), m, lens, dls
+
+    class DINOHead(nn.Module):
+        """DINO projection head: 3-layer MLP -> L2 norm -> weight-normalised
+        linear to K prototypes with the norm fixed at 1 (norm_last_layer)."""
+        def __init__(s, in_dim, K, hidden, bottleneck):
+            super().__init__()
+            s.mlp = nn.Sequential(nn.Linear(in_dim, hidden), nn.GELU(),
+                                  nn.Linear(hidden, hidden), nn.GELU(),
+                                  nn.Linear(hidden, bottleneck))
+            for mm in s.mlp:
+                if isinstance(mm, nn.Linear):
+                    nn.init.trunc_normal_(mm.weight, std=0.02)
+                    nn.init.zeros_(mm.bias)
+            s.V = nn.Parameter(torch.empty(K, bottleneck))
+            nn.init.trunc_normal_(s.V, std=0.02)
+
+        def forward(s, x):
+            x = F.normalize(s.mlp(x), dim=-1)
+            return x @ F.normalize(s.V, dim=-1).T
+
+    def _cos(a, b, it, T):
+        return b + (a - b) * 0.5 * (1 + math.cos(math.pi * min(it, T) / T))
+
+    def train_dino(seed=0, W=16):
+        torch.manual_seed(seed)
+        rng = np.random.default_rng(seed)
+        bs = args.dino_bs
+        spe = 3072 // bs                       # paper: 16 steps / epoch at 192
+        T = args.epochs * spe
+        s_bb = SetPoolN(NSLOT).to(dev)
+        s_hd = DINOHead(DM, args.dino_k, args.dino_hidden,
+                        args.dino_bottleneck).to(dev)
+        t_bb = SetPoolN(NSLOT).to(dev)
+        t_hd = DINOHead(DM, args.dino_k, args.dino_hidden,
+                        args.dino_bottleneck).to(dev)
+        t_bb.load_state_dict(s_bb.state_dict())
+        t_hd.load_state_dict(s_hd.state_dict())
+        for p in list(t_bb.parameters()) + list(t_hd.parameters()):
+            p.requires_grad_(False)
+        s_params = list(s_bb.parameters()) + list(s_hd.parameters())
+        t_params = list(t_bb.parameters()) + list(t_hd.parameters())
+        named = list(s_bb.named_parameters()) + \
+            [("head." + n, p) for n, p in s_hd.named_parameters()]
+        reg = [p for n, p in named if not (n.endswith(".bias") or p.ndim <= 1)]
+        noreg = [p for n, p in named if n.endswith(".bias") or p.ndim <= 1]
+        opt = torch.optim.AdamW([{"params": reg}, {"params": noreg,
+                                                   "weight_decay": 0.0}])
+        amp = amp_cls()
+        center = torch.zeros(1, args.dino_k, device=dev)
+        base_lr = args.dino_lr * bs / 256
+        warm = max(1, int(args.dino_lr_warm * T))
+        tt_warm = max(1, int(args.dino_tau_t_warm * T))
+        freeze = int(args.dino_freeze_last * T)
+        RES = OUT / f"resume_{name}.pt"
+        start_ep = 0
+        if RES.exists() and not args.smoke_steps:
+            st = torch.load(RES, map_location="cpu", weights_only=False)
+            for mod, key in ((s_bb, "student"), (s_hd, "s_head"),
+                             (t_bb, "model"), (t_hd, "t_head")):
+                mod.load_state_dict({k: v.to(dev) for k, v in st[key].items()})
+            center = st["center"].to(dev)
+            opt.load_state_dict(st["opt"])
+            amp.load_state_dict(st["amp"])
+            torch.set_rng_state(st["cpu_rng"])
+            torch.cuda.set_rng_state(st["cuda_rng"])
+            rng.bit_generator.state = st["np_rng"]
+            start_ep = int(st["ep"])
+            print(f"RESUME from ep{start_ep}", flush=True)
+        print(f"[dino] K={args.dino_k} global={args.dino_global} "
+              f"review students from the "
+              f"{'full library' if args.full_pool else 'pool'} "
+              f"bs={bs} steps={T} lr={base_lr:.2e} "
+              f"warm={warm} tau_t {args.dino_tau_t}->{args.dino_tau_t_final} "
+              f"over {tt_warm} freeze_last={freeze}", flush=True)
+        t0 = time.time()
+        diag = {}
+        mv_steps = 0
+        if dev.type == "cuda":
+            torch.cuda.reset_peak_memory_stats()
+        for ep in range(start_ep, args.epochs):
+            s_bb.train(); s_hd.train()
+            for si in range(spe):
+                it = ep * spe + si
+                lr = (base_lr * it / warm if it < warm else
+                      _cos(base_lr, args.dino_min_lr, it - warm, T - warm))
+                wd = _cos(args.dino_wd, args.dino_wd_final, it, T)
+                mom = 1 - (1 - args.dino_mom) * 0.5 * (1 + math.cos(math.pi * it / T))
+                tau_t = (args.dino_tau_t + (args.dino_tau_t_final - args.dino_tau_t)
+                         * it / tt_warm if it < tt_warm else args.dino_tau_t_final)
+                for gi, gr in enumerate(opt.param_groups):
+                    gr["lr"] = lr
+                    gr["weight_decay"] = wd if gi == 0 else 0.0
+                gids = rng.choice(train_pool_games, bs, replace=False)
+                Sg, mg, glen, gdl = global_views(gids, rng)
+                with torch.amp.autocast("cuda"):
+                    zs = [s_bb(Sg, mg)]
+                    zs += [s_bb(*sample_views(gids, W, rng)) for _ in range(NV - 1)]
+                    zs.append(assemble_doc_view(s_bb, gids, W, rng, bs))
+                    zs = torch.cat([z.float() for z in zs])          # (6B, DM)
+                    with torch.no_grad():
+                        out_t = t_hd(t_bb(Sg, mg).float()).float()   # (2B, K)
+                    out_s = s_hd(zs).float()                         # (6B, K)
+                with torch.no_grad():
+                    p_t = F.softmax((out_t - center) / tau_t, dim=-1).chunk(2)
+                ls = F.log_softmax(out_s / args.dino_tau_s, dim=-1).chunk(2 + NV)
+                loss, n = 0.0, 0
+                for iq in range(2):
+                    for v in range(2 + NV):
+                        if v == iq:
+                            continue
+                        loss = loss + (-(p_t[iq] * ls[v]).sum(-1)).mean()
+                        n += 1
+                loss = loss / n
+                if not torch.isfinite(loss):
+                    raise RuntimeError(f"non-finite loss at step {it}")
+                opt.zero_grad(set_to_none=True)
+                amp.scale(loss).backward()
+                amp.unscale_(opt)
+                for p in s_params:                     # DINO: per-param clip
+                    if p.grad is not None:
+                        pn = p.grad.norm()
+                        cf = args.dino_clip / (pn + 1e-6)
+                        if cf < 1:
+                            p.grad.mul_(cf)
+                if it < freeze:
+                    s_hd.V.grad = None
+                amp.step(opt)
+                amp.update()
+                with torch.no_grad():
+                    for pt, ps in zip(t_params, s_params):
+                        pt.data.mul_(mom).add_(ps.data.detach(), alpha=1 - mom)
+                    center.mul_(args.dino_center_mom).add_(
+                        out_t.mean(0, keepdim=True), alpha=1 - args.dino_center_mom)
+                    pt_all = torch.cat(p_t)
+                    ent = float(-(pt_all * pt_all.clamp_min(1e-12).log()).sum(-1).mean())
+                    pbar = pt_all.mean(0)
+                    ent_bar = float(-(pbar * pbar.clamp_min(1e-12).log()).sum())
+                    top = pt_all.argmax(-1)
+                    diag = dict(step=it, loss=float(loss), lr=lr, wd=wd, mom=mom,
+                                tau_t=tau_t,
+                                # sharpness: per-sample teacher entropy (nats)
+                                H_t=ent,
+                                # uniformity: entropy of the batch-mean teacher
+                                H_mean=ent_bar,
+                                # distinct argmax prototypes in the batch
+                                n_top=int(top.unique().numel()),
+                                # do the two globals of a game agree?
+                                agree=float((top[:bs] == top[bs:]).float().mean()),
+                                glen_med=int(np.median(glen)),
+                                prefix_med=int(np.median(gdl)))
+                if args.measure_vram:
+                    mv_steps += 1
+                    if mv_steps >= 3:
+                        torch.cuda.synchronize()
+                        peak = int(torch.cuda.max_memory_allocated())
+                        Path(args.measure_vram).write_text(str(peak))
+                        print(f"[measure-vram] cap={args.anchor_cap} "
+                              f"peak={peak / 2**30:.2f}GiB", flush=True)
+                        raise SystemExit(0)
+                if args.smoke_steps:
+                    print("  " + json.dumps({k: (round(v, 4) if isinstance(v, float)
+                                                 else v) for k, v in diag.items()}),
+                          flush=True)
+                    if it + 1 >= args.smoke_steps:
+                        dt = (time.time() - t0) / (it + 1)
+                        pk = torch.cuda.max_memory_allocated() / 2**30
+                        print(f"[smoke] {it+1} steps, {dt:.2f}s/step, "
+                              f"peak {pk:.1f} GiB, est {dt*T/3600:.1f} h for "
+                              f"{args.epochs} ep", flush=True)
+                        raise SystemExit(0)
+            if (ep + 1) % args.ckpt_every == 0:
+                cp = lambda mod: {k: v.detach().cpu().clone()
+                                  for k, v in mod.state_dict().items()}
+                core = dict(model=cp(t_bb), student=cp(s_bb), t_head=cp(t_hd),
+                            s_head=cp(s_hd), center=center.cpu().clone())
+                torch.save(core, OUT / f"ckpt_{name}_ep{ep+1}.pt")
+                bundle = dict(core, opt=opt.state_dict(), amp=amp.state_dict(),
+                              cpu_rng=torch.get_rng_state(),
+                              cuda_rng=torch.cuda.get_rng_state(),
+                              np_rng=rng.bit_generator.state, ep=ep + 1)
+                tmp = RES.with_suffix(".tmp")
+                torch.save(bundle, tmp)
+                tmp.replace(RES)
+                with open(OUT / f"dino_diag_{name}.jsonl", "a") as fh:
+                    fh.write(json.dumps(dict(diag, ep=ep + 1)) + "\n")
+            if ep % 50 == 49:
+                print(f"  [dino ep{ep+1}] {time.time()-t0:.0f}s "
+                      + json.dumps({k: (round(v, 4) if isinstance(v, float) else v)
+                                    for k, v in diag.items()}), flush=True)
+        t_bb.eval()
+        return t_bb
+
     # ---------------- eval machinery ----------------
     VORDER = ["neutral", "noname", "positive", "negative"]
 
@@ -1810,7 +2144,9 @@ def main():
         # so the across-fold std is the TOTAL error bar; within a fold both
         # recipes share the seed (and the split), keeping ce-vs-i2ce PAIRED.
         # Fold identity is untouched (--cv-seed drives the permutation).
-        if tower_kind in ("byol", "mv3"):
+        if DINO:
+            train_dino(seed=args.fold, W=args.view_w)
+        elif tower_kind in ("byol", "mv3"):
             train_byol(seed=args.fold, W=args.view_w)
         elif tower_kind.startswith("epd"):
             train_vicreg(seed=args.fold, W=args.view_w)
