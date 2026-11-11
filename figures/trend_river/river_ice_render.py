@@ -10,7 +10,7 @@ drawing are the same.
 Position in the chain
 ---------------------
     river_ice_prep.py   -> river_assets/games_raw_ice.js      (data, once)
-    river_flat_fit.py   -> river_assets/flat_fit_ice.json     (levels and transfers)
+    river_shift_fit.py  -> river_assets/shift_fit_ice.json    (periods, levels and ribbons)
     river_ice_render.py -> river_assets/paper_render_ice.html (this script)
                            river_assets/fig6_content_river_ice.png
     sync_figures.py     -> assets/paper/fig6_content_river.png + the declared
@@ -18,18 +18,27 @@ Position in the chain
 
 What the bands and ribbons are (since 2026-10-13)
 -------------------------------------------------
-The page is no longer asked for its pressure model.  It is given, from
-river_flat_fit.py, the level of every band at the left edge and a list of
-transfers (source lane, target lane, share moved, start date, end date), on
-the years 2020.0 to 2024.75.  A band keeps its thickness except where a
-ribbon leaves or joins it; there its edge is cut on the slant, from the
-transfer's start date on the source band and up to its end date on the target
-band.  The ribbon runs from the one cut to the other: its two ends span the
-cuts, so they show durations, and in between it is a straight band as thick as
-the share it carries (SLANT_JS below; --joints step draws the page's own
-vertical steps instead).  All transfers are drawn (PRUNE = 0).
---pressure draws the figure as it was before: the page's pressure-driven event
-model on its causal-kernel shares, 2019 to mid-2024, with the parameters
+The page is no longer asked for its pressure model.  It is given, from a fit,
+the level of every band at the left edge and a list of transfers (source lane,
+target lane, share moved, start date, end date), on the years 2020.0 to
+2024.75.  A band keeps its thickness except where a ribbon leaves or joins it;
+there its edge is cut on the slant, from the transfer's start date on the
+source band and up to its end date on the target band.  The ribbon runs from
+the one cut to the other: its two ends span the cuts, and in between it is a
+band as thick as the share it carries, on a flat S-curve (SLANT_JS below;
+--joints step draws the page's own vertical steps instead).  All transfers are drawn
+(PRUNE = 0).
+Since 2026-11-11 the fit is river_shift_fit.py's: the periods are placed by a
+change-point test, a band's level is its cluster's share of a period's
+releases, the ribbons are the cheapest transport between two periods, and a
+ribbon's dates follow a stated convention (that script's docstring).  The fit
+also names the row of every lane ("rows": the author moved one cluster to the
+bottom row); a fit without it keeps the page's order.  Ribbons that leave
+one band edge over overlapping stretches each take a part of that stretch and
+leave side by side.  --fit river_assets/flat_fit_ice.json draws, with today's joints, the fit of 2026-10-13
+to 2026-11-10 (river_flat_fit.py, least squares).
+--pressure draws the figure as it was before that: the page's pressure-driven
+event model on its causal-kernel shares, 2019 to mid-2024, with the parameters
 described below.  That account is up to 24 points of share away from the
 measured shares, which is why the paper no longer uses it.
 
@@ -105,7 +114,7 @@ Run with:
     py figures/river_ice_render.py                 # THR=0.004, DSF 4
 Options:
     --fit FILE                  levels and transfers (default
-                                <assets>/flat_fit_ice.json, from river_flat_fit.py)
+                                <assets>/shift_fit_ice.json, from river_shift_fit.py)
     --pressure                  the page's pressure model instead of the fit
     --joints slant|step         slanted cuts with the ribbon from cut to cut
                                 (default), or the page's vertical steps;
@@ -147,6 +156,7 @@ DEFAULT_ASSETS = HERE / "river_assets" if (HERE / "river_assets").exists() else 
 # paper repo: the I-CE data is games_raw_ice.js, beside an older games_raw.js;
 # release bundle: it is the page's own games_raw.js
 DEFAULT_DATA = "games_raw_ice.js" if (DEFAULT_ASSETS / "games_raw_ice.js").exists() else "games_raw.js"
+DEFAULT_FIT = "shift_fit_ice.json"
 
 CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 
@@ -186,13 +196,15 @@ PAGE_T_END, PAGE_YEAR0 = 8, 2017
 
 
 def flat_inputs(path):
-    """What the page is given in place of its pressure model: the fit written by
-    river_flat_fit.py, as the axis limits (WARM_A / WARM_B, in the page's years
-    since YEAR0), the level of every lane at the left edge and one event per
-    transfer (fork at its start date, merge at its end date)."""
+    """What the page is given in place of its pressure model: a fit written by
+    river_shift_fit.py (or river_flat_fit.py), as the axis limits (WARM_A /
+    WARM_B, in the page's years since YEAR0), the level of every lane at the
+    left edge, one event per transfer (fork at its start date, merge at its
+    end date) and the row of every lane (0 = bottom; the lane's own index
+    where the fit names none)."""
     path = Path(path)
     if not path.exists():
-        raise SystemExit(f"no fit at {path}: run river_flat_fit.py first (or pass --pressure)")
+        raise SystemExit(f"no fit at {path}: run river_shift_fit.py first (or pass --pressure)")
     fit = json.loads(path.read_text(encoding="utf-8"))
     if fit["year0"] != PAGE_YEAR0:
         raise SystemExit(f"{path.name} counts years from {fit['year0']}, the page from {PAGE_YEAR0}")
@@ -200,17 +212,44 @@ def flat_inputs(path):
     events = [dict(t=round(t["end"] - y0, 5),
                    flows=[dict(i=t["from"], j=t["to"], w=t["share"], ts=round(t["start"] - y0, 5))])
               for t in fit["transfers"]]
+    rows = fit.get("rows") or list(range(len(fit["levels_start"])))
+    if sorted(rows) != list(range(len(rows))):
+        raise SystemExit(f"{path.name}: rows {rows} is not a permutation of the rows")
+    # the measured shares of the last period, for the shares printed beside the bands
+    end_shares = fit["periods"][-1]["shares"] if fit.get("periods") else None
     return dict(fit=fit, path=str(path), warm_a=fit["start"] - y0,
-                warm_b=PAGE_T_END - (fit["end"] - y0), flat0=fit["levels_start"], events=events)
+                warm_b=PAGE_T_END - (fit["end"] - y0), flat0=fit["levels_start"], events=events,
+                rows=rows, end_shares=end_shares)
+
+
+def widest_level(fit):
+    """The largest share any band reaches (what the page scales the bands by)."""
+    top = 0.0
+    for k, level in enumerate(fit["levels_start"]):
+        top = max(top, level)
+        for t in sorted(fit["transfers"], key=lambda t: (t["end"], 1) if t["to"] == k else (t["start"], 0)):
+            if t["to"] == k:
+                level += t["share"]
+            elif t["from"] == k:
+                level -= t["share"]
+            top = max(top, level)
+    return top
+
+
+LANE_Y = "const laneY=k=>H-PAD.b-(k+0.5)*plotH/K;"
+LANE_DROP = "LANE_DROP=[%s]"      # CSS px a lane is drawn lower; river_ice_column.py sets the bottom row's
 
 
 def flat_patches(flat):
     """The page edits that put the fit in place of the pressure model."""
+    rows = flat["rows"]
     return [
+        (LANE_Y, "const LANE_ROW=%s, %s;\n  const laneY=k=>H-PAD.b-(LANE_ROW[k]+0.5)*plotH/K+LANE_DROP[k];"
+         % (json.dumps(rows), LANE_DROP % ",".join("0" for _ in rows))),
         ("WARM_A=2; WARM_B=0.5;", "WARM_A=%g; WARM_B=%g;" % (flat["warm_a"], flat["warm_b"])),
         ("<script>\nlet K=8;",
-         "<script>\nconst FLAT0=%s;\nconst FLAT_EVENTS=%s;\nlet K=8;"
-         % (json.dumps(flat["flat0"]), json.dumps(flat["events"]))),
+         "<script>\nconst FLAT0=%s;\nconst FLAT_EVENTS=%s;\nconst FLAT_END=%s;\nlet K=8;"
+         % (json.dumps(flat["flat0"]), json.dumps(flat["events"]), json.dumps(flat["end_shares"]))),
         ("function computeFlows(){\n  EVENTS=[];",
          "function computeFlows(){\n"
          "  EVENTS=FLAT_EVENTS.map(e=>({t:e.t,flows:e.flows.map(f=>Object.assign({},f))}));\n"
@@ -226,10 +265,19 @@ def note_fit(meta, flat, joints="step", slant_part=None):
     meta["joints"] = joints
     if joints == "slant":
         meta["slant_part"] = SLANT_PART if slant_part is None else slant_part
+        meta["slant_max_years"] = SLANT_MAX
+        meta["slant_bend"], meta["slant_handle"] = SLANT_BEND, SLANT_HANDLE
     if flat is None:
         meta["levels"] = "the page's pressure model (--pressure)"
         return meta
     fit = flat["fit"]
+    meta["rows"] = flat["rows"]
+    if fit.get("method") == "shift":
+        meta["levels"] = "river_shift_fit.py"
+        meta["shift_fit"] = {k: fit[k] for k in ("games_used", "games_total", "start", "end", "boundaries",
+                                                "boundary_tests", "minlen_months", "shuffles", "level", "seed",
+                                                "min_share", "min_transfer_years", "largest_gap_to_measured")}
+        return meta
     meta["levels"] = "river_flat_fit.py"
     meta["flat_fit"] = {k: fit[k] for k in ("games_used", "games_total", "start", "end", "sigma_years",
                                            "tolerance", "min_transfer_years", "fit")}
@@ -246,7 +294,7 @@ def note_fit(meta, flat, joints="step", slant_part=None):
 # runs from cut to cut:
 #   * the source band narrows along a straight slope that starts at A (the
 #     start date, on the edge that faces the target) and takes the first
-#     SLANT_PART of the transfer;
+#     SLANT_PART of the transfer, at most SLANT_MAX years (see below);
 #   * the target band widens along a slope that takes the last SLANT_PART of
 #     the transfer and ends at B (the end date);
 #   * the ribbon's two ends are those two slopes, whole, so an end is as wide
@@ -254,21 +302,45 @@ def note_fit(meta, flat, joints="step", slant_part=None):
 #     edge runs from the start of the source's slope to the start of the
 #     target's, its second edge from the end of the source's slope to the end
 #     of the target's;
-#   * between the ends the ribbon is a straight band as thick, measured across,
-#     as the share it carries.  The edge that leaves at the END of the source's
-#     slope runs straight from there, and the edge that lands at the START of
-#     the target's slope runs straight into it: the two straight lines are
-#     parallel, one share's thickness apart.  Each of the other two corners,
-#     where the first edge leaves the source band and where the second edge
-#     joins the target band, is rounded: the edge is level there, as the band
-#     edge it continues, and turns into its straight line on one curve.
-# Drawn and rejected by the author on the way: a ribbon tapering to a point at
-# A and at B (it touched the bands only at two points); a ribbon as wide as
+#   * between the ends the ribbon is a band as thick, measured across, as the
+#     share it carries.  The edge that leaves at the END of the source's slope
+#     and the edge that lands at the START of the target's slope are the two
+#     parallels of one curve, one share's thickness apart.  Each of the other
+#     two corners, where the first edge leaves the source band and where the
+#     second edge joins the target band, is rounded: the edge is level there,
+#     as the band edge it continues, and turns into the curve on one parabola.
+# Drawn and rejected by the author on 2026-10-13: a ribbon tapering to a point
+# at A and at B (it touched the bands only at two points); a ribbon as wide as
 # its ends all along (its width then showed a duration, not the share); and
 # S-curves on all four corners (the two that bulged beside the straight lines
-# above were the ones crossed out in green on the sketch of 2026-10-13).
+# of that day were the ones crossed out in green on the sketch).
+# Three changes of 2026-11-11 and 2026-11-12, when river_shift_fit.py began to
+# draw a small movement as a ribbon several years long:
+#   * a cut is at most SLANT_MAX years wide.  A cut of a third of such a ribbon
+#     was over a year wide, the two fanned ends took nine tenths of the ribbon,
+#     and a ribbon of 2 points looked thicker than one of 6 (the author:
+#     "他看起来很粗");
+#   * the run between the cuts is a curve, not a straight line (the author:
+#     "现在长程的传输线太“直”了，能不能更曲线一点").  The ribbon leaves the source's
+#     cut and reaches the target's at SLANT_BEND times the slope of the straight
+#     run and follows a cubic in between (handles SLANT_HANDLE of the run), so a
+#     long ribbon is a flat S.  A ribbon that leaves and lands level, as in a
+#     Sankey diagram, was tried and dropped: a thin long ribbon then hugs the
+#     band it joins over a long stretch, and the slanted cuts turn into steps;
+#   * ribbons whose cuts on one band edge overlap in time each take a part of
+#     that stretch, in proportion to their shares, and so leave (or land) side
+#     by side.  Before, they all left from the one end of the shared cut, on
+#     top of each other (the author, of the left end of the puzzle band:
+#     "这里太怪了").  Where the cuts coincide, as the two on the puzzle band
+#     do, the band's edge is the same line either way; cuts that overlap only
+#     in part become one slope over their union, and a group in which that
+#     would push a ribbon's source cut past the start of its target cut keeps
+#     its own cuts.
 # The block of draw() between the two markers is replaced as a whole.
 SLANT_PART = 1 / 3
+SLANT_MAX = 1 / 3            # years: the widest a slanted cut is drawn (four months, the shortest ribbon)
+SLANT_BEND = 0.45            # a ribbon leaves and lands at this share of the straight run's slope (1: straight)
+SLANT_HANDLE = 0.4           # the two handles of the ribbon's cubic, as a share of the run's length
 SLANT_FROM = "  /* EDGE-anchored account: top and bottom edges move INDEPENDENTLY."
 SLANT_TO = "  /* anchor games (edit mode: labels draggable, offsets persisted) */"
 SLANT_JS = """  /* SLANTED JOINTS (river_ice_render.py, joints="slant").  Every band edge is
@@ -276,7 +348,7 @@ SLANT_JS = """  /* SLANTED JOINTS (river_ice_render.py, joints="slant").  Every 
      moves the edge facing the target inward over the first part of the
      transfer, a merge moves the edge facing the source outward over the last
      part. */
-  const SLANT_PART=__PART__;
+  const SLANT_PART=__PART__, SLANT_MAX=__MAX__;
   window.__JOINTS__=[];
   /* Bands and ribbons are painted opaque here, in the colour their usual
      translucent fill gives on the page's background: where a ribbon continues
@@ -294,11 +366,55 @@ SLANT_JS = """  /* SLANTED JOINTS (river_ice_render.py, joints="slant").  Every 
   const ED=Array.from({length:K},(_,k)=>({top0:laneY(k)-lvl0(k)/2, bot0:laneY(k)+lvl0(k)/2,
                                            top:[], bot:[]}));
   usable.forEach(f=>{
-    const wf=f.w*F, up=laneY(f.j)<laneY(f.i), d=f._te-f._ts;
-    f._tp=f._ts+SLANT_PART*d; f._tq=f._te-SLANT_PART*d;
+    const up=laneY(f.j)<laneY(f.i), d=f._te-f._ts;
+    /* a cut takes SLANT_PART of the transfer and at most SLANT_MAX years: on a long
+       ribbon wider cuts left almost no stretch as thick as the share (2026-11-11) */
+    const cutw=Math.min(SLANT_PART*d, SLANT_MAX);
     f._se=up?'top':'bot'; f._de=up?'bot':'top';
-    ED[f.i][f._se].push({t0:f._ts, t1:f._tp, dy:up?wf:-wf});
-    ED[f.j][f._de].push({t0:f._tq, t1:f._te, dy:up?wf:-wf});
+    f._a0=f._ts; f._a1=f._ts+cutw; f._b0=f._te-cutw; f._b1=f._te;
+  });
+  /* Ribbons whose cuts on one band edge overlap in time share that stretch of
+     the edge: each takes a part of it in proportion to its share, so every
+     ribbon has a cut of its own and leaves or lands beside the others, not on
+     top of them.  Where ribbons leave, the one that travels farthest takes the
+     first part (the strip next to the band's old edge); where they land, the
+     last part.  Cuts that coincide leave the band's edge the line it was; cuts
+     that overlap only in part become one slope over their union.  Should that
+     push a ribbon's cut on its source past the start of its cut on its target
+     (a short ribbon given a late part of a long shared stretch), the group
+     keeps the cuts it had. */
+  const far=f=>Math.abs(laneY(f.j)-laneY(f.i));
+  const share=(key,t0k,t1k,edge,farFirst)=>{
+    const by={};
+    usable.forEach(f=>{ (by[f[key]+'|'+f[edge]]=by[f[key]+'|'+f[edge]]||[]).push(f); });
+    Object.values(by).forEach(L=>{
+      L.sort((p,q)=>p[t0k]-q[t0k]);
+      let grp=[];
+      const close=()=>{
+        if(grp.length>1){
+          const a=Math.min(...grp.map(f=>f[t0k])), b=Math.max(...grp.map(f=>f[t1k]));
+          const tot=grp.reduce((x,f)=>x+f.w,0);
+          grp.sort((p,q)=>farFirst?far(q)-far(p):far(p)-far(q));
+          const kept=grp.map(f=>[f[t0k],f[t1k]]);
+          let t=a;
+          grp.forEach(f=>{ f[t0k]=t; t+=(b-a)*f.w/tot; f[t1k]=t; });
+          if(grp.some(f=>f._a1>f._b0+1e-9)) grp.forEach((f,q)=>{ f[t0k]=kept[q][0]; f[t1k]=kept[q][1]; });
+        }
+        grp=[];
+      };
+      let end=0;
+      L.forEach(f=>{ if(grp.length && f[t0k]>=end-1e-9) close();
+                     end=grp.length?Math.max(end,f[t1k]):f[t1k];
+                     grp.push(f); });
+      close();
+    });
+  };
+  share('i','_a0','_a1','_se',true);
+  share('j','_b0','_b1','_de',false);
+  usable.forEach(f=>{
+    const wf=f.w*F, up=(f._se==='top');
+    ED[f.i][f._se].push({t0:f._a0, t1:f._a1, dy:up?wf:-wf});
+    ED[f.j][f._de].push({t0:f._b0, t1:f._b1, dy:up?wf:-wf});
   });
   const edgeY=(k,which,t)=>{
     let y=(which==='top')?ED[k].top0:ED[k].bot0;
@@ -338,17 +454,12 @@ SLANT_JS = """  /* SLANTED JOINTS (river_ice_render.py, joints="slant").  Every 
   /* ribbons, from slanted cut to slanted cut.  A cut follows the band edge it
      lies on, 0.8 px inside the band so that no hairline shows between the two
      fills.
-     Corners: S0, S1 the start and the end of the source's slope, T0, T1 the
-     start and the end of the target's.  The second edge leaves S1 on a
-     straight line and the first edge reaches T0 on a straight line; the two
-     lines are parallel and one share's thickness apart (u is their direction:
-     the direction from S1 to T0 turned by the small angle that puts T0 that
-     far beside the line through S1, on S0's side).  The first edge leaves S0
-     level, as the band edge it continues, and turns into its line on one
-     parabola (control point PA, where the line meets that level; the two
-     tangents equally long, or the line's length if that is shorter); the
-     second edge turns off its line the same way and lands level at T1
-     (control point PB). */
+     Corners: S0, S1 the start and the end of the source's cut, T0, T1 the
+     start and the end of the target's.  The second edge leaves S1 and the
+     first edge reaches T0; the two are the parallels of one cubic, half a
+     share's thickness to either side of it.  The first edge leaves S0 level,
+     as the band edge it continues, and turns into its curve on one parabola;
+     the second edge turns off its curve the same way and lands level at T1. */
   const cut=(k,which,ta,tb)=>{
     const inn=(which==='top')?0.8:-0.8;
     return [ta, ...breaks(k,which).filter(t=>t>ta+1e-9 && t<tb-1e-9), tb]
@@ -362,28 +473,66 @@ SLANT_JS = """  /* SLANTED JOINTS (river_ice_render.py, joints="slant").  Every 
   };
   usable.forEach(f=>{
     const wf=f.w*F;
-    const cs=cut(f.i,f._se,f._ts,f._tp), cd=cut(f.j,f._de,f._tq,f._te);
+    const cs=cut(f.i,f._se,f._a0,f._a1), cd=cut(f.j,f._de,f._b0,f._b1);
     /* the four corners lie on the band edges themselves; only the cuts between
        them are drawn a hair inside the bands */
     const on=(k,which,t)=>({x:sx(t), y:edgeY(k,which,t)});
-    const S0=on(f.i,f._se,f._ts), S1=on(f.i,f._se,f._tp), T0=on(f.j,f._de,f._tq), T1=on(f.j,f._de,f._te);
+    const S0=on(f.i,f._se,f._a0), S1=on(f.i,f._se,f._a1), T0=on(f.j,f._de,f._b0), T1=on(f.j,f._de,f._b1);
+    /* u0: the direction of the straight ribbon (the edge through S1 and the edge
+       through T0 parallel, one share's thickness apart).  The curved ribbon
+       leaves S1 and reaches T0 at BEND times that slope and follows a cubic in
+       between; its two edges are the cubic's parallels, half a thickness to
+       either side, so it is as thick as its share all along. */
     const D={x:T0.x-S1.x, y:T0.y-S1.y}, dl=Math.hypot(D.x,D.y)||1;
     const phi=Math.asin(Math.min(1,wf/dl)), cross=(a,b)=>a.x*b.y-a.y*b.x;
     const turn=a=>({x:(D.x*Math.cos(a)-D.y*Math.sin(a))/dl, y:(D.x*Math.sin(a)+D.y*Math.cos(a))/dl});
-    let u=turn(phi);
-    if(cross(u,D)*cross(u,{x:S0.x-S1.x, y:S0.y-S1.y})<0) u=turn(-phi);
-    const sA=(S0.y-T0.y)/u.y, PA={x:T0.x+sA*u.x, y:S0.y};
-    const sB=(T1.y-S1.y)/u.y, PB={x:S1.x+sB*u.x, y:T1.y};
-    const lA=Math.min(PA.x-S0.x, 0.9*Math.abs(sA)), lB=Math.min(T1.x-PB.x, 0.9*Math.abs(sB));
-    /* first edge: S0, round the corner at PA, straight to T0;
-       second edge: S1, straight, round the corner at PB, T1.
-       (should a line meet its level behind the corner it starts from, the
-        edge is the plain straight line between its two corners) */
-    const e0=(lA>1)?[...corner(S0,PA,{x:PA.x+lA*u.x, y:PA.y+lA*u.y},40), T0]:[S0,T0];
-    const e1=(lB>1)?[S1, ...corner({x:PB.x-lB*u.x, y:PB.y-lB*u.y},PB,T1,40)]:[S1,T1];
-    window.__JOINTS__.push({i:f.i, j:f.j,
-      waist:+(Math.abs(cross(u,D))/F).toFixed(5), lean:+(Math.atan2(Math.abs(u.y),u.x)*180/Math.PI).toFixed(1),
-      lA:+lA.toFixed(1), lB:+lB.toFixed(1), sA:+Math.abs(sA).toFixed(1), sB:+Math.abs(sB).toFixed(1)});
+    let u0=turn(phi);
+    if(cross(u0,D)*cross(u0,{x:S0.x-S1.x, y:S0.y-S1.y})<0) u0=turn(-phi);
+    const BEND=__BEND__, HANDLE=__HANDLE__;
+    const ul=Math.hypot(u0.x, BEND*u0.y)||1, u={x:u0.x/ul, y:BEND*u0.y/ul};
+    const sd=(cross(u,{x:S0.x-S1.x, y:S0.y-S1.y})>0)?1:-1;       /* S0's side of the run */
+    const nrm=t=>({x:-t.y*sd, y:t.x*sd});
+    const n0=nrm(u);
+    const A={x:S1.x+n0.x*wf/2, y:S1.y+n0.y*wf/2}, B={x:T0.x-n0.x*wf/2, y:T0.y-n0.y*wf/2};
+    const hl=HANDLE*Math.hypot(B.x-A.x,B.y-A.y);
+    const c1={x:A.x+hl*u.x, y:A.y+hl*u.y}, c2={x:B.x-hl*u.x, y:B.y-hl*u.y};
+    const N=120, E0=[], E1=[], TG=[];
+    for(let q=0;q<=N;q++){ const t=q/N, m=1-t;
+      const x=m*m*m*A.x+3*m*m*t*c1.x+3*m*t*t*c2.x+t*t*t*B.x, y=m*m*m*A.y+3*m*m*t*c1.y+3*m*t*t*c2.y+t*t*t*B.y;
+      let tx=3*m*m*(c1.x-A.x)+6*m*t*(c2.x-c1.x)+3*t*t*(B.x-c2.x), ty=3*m*m*(c1.y-A.y)+6*m*t*(c2.y-c1.y)+3*t*t*(B.y-c2.y);
+      const tl=Math.hypot(tx,ty)||1, tg={x:tx/tl, y:ty/tl}, nn=nrm(tg);
+      TG.push(tg);
+      E0.push({x:x+nn.x*wf/2, y:y+nn.y*wf/2});               /* first edge: ends at T0 */
+      E1.push({x:x-nn.x*wf/2, y:y-nn.y*wf/2}); }             /* second edge: starts at S1 */
+    /* The first edge leaves S0 level, as the band edge it continues, and turns
+       into the curve on one parabola: it meets the curve at the first point
+       whose tangent crosses S0's level ahead of S0 and at least as far from
+       that crossing as S0 is.  The second edge lands level at T1 the same way. */
+    /* (on a short ribbon no point of its first half is that far: the point
+       whose two tangent lengths are nearest to equal is taken.  A ribbon so
+       short or steep that no tangent of its first half crosses S0's level
+       ahead of S0 keeps the straight join from S0 to the start of the curve;
+       none of the figure's does: corner_s and corner_t in the meta file) */
+    let e0=[S0, ...E0], e1=[...E1, T1], qa=-1, qb=-1, ra=0, rb=0, Ca=null, Cb=null;
+    for(let q=1;q<=N*0.5;q++){ const Q=E0[q], t=TG[q];
+      if(Math.abs(t.y)<1e-6) continue;
+      const s2=(S0.y-Q.y)/t.y, C={x:Q.x+s2*t.x, y:S0.y};
+      if(!(s2<0 && C.x>S0.x+0.5)) continue;
+      const r=Math.min(1,-s2/(C.x-S0.x));
+      if(r>ra){ ra=r; qa=q; Ca=C; }
+      if(r>=1) break; }
+    if(qa>0) e0=[...corner(S0,Ca,E0[qa],40), ...E0.slice(qa+1)];
+    for(let q=N-1;q>=N*0.5;q--){ const Q=E1[q], t=TG[q];
+      if(Math.abs(t.y)<1e-6) continue;
+      const s2=(T1.y-Q.y)/t.y, C={x:Q.x+s2*t.x, y:T1.y};
+      if(!(s2>0 && C.x<T1.x-0.5)) continue;
+      const r=Math.min(1,s2/(T1.x-C.x));
+      if(r>rb){ rb=r; qb=q; Cb=C; }
+      if(r>=1) break; }
+    if(qb>0) e1=[...E1.slice(0,qb), ...corner(E1[qb],Cb,T1,40)];
+    window.__JOINTS__.push({i:f.i, j:f.j, waist:+(wf/F).toFixed(5),
+      lean:+(Math.atan2(Math.abs(u.y),u.x)*180/Math.PI).toFixed(1), straight:+(Math.atan2(Math.abs(u0.y),u0.x)*180/Math.PI).toFixed(1),
+      corner_s:qa, corner_t:qb, cut_s:[+f._a0.toFixed(4), +f._a1.toFixed(4)], cut_t:[+f._b0.toFixed(4), +f._b1.toFixed(4)]});
     const p=new Path2D();
     p.moveTo(S0.x,S0.y);
     cs.forEach(q=>p.lineTo(q.x,q.y));
@@ -397,7 +546,8 @@ SLANT_JS = """  /* SLANTED JOINTS (river_ice_render.py, joints="slant").  Every 
     const ys=[S0.y,S1.y], yd=[T0.y,T1.y], down=T0.y>S0.y;
     const g0=down?Math.min(...ys):Math.max(...ys), g1=down?Math.max(...yd):Math.min(...yd);
     const span=Math.max(Math.abs(g1-g0),1e-6);
-    const a0=Math.min(0.45,(Math.abs(ys[1]-ys[0])+2)/span), a1=Math.min(0.45,(Math.abs(yd[1]-yd[0])+2)/span);
+    let a0=Math.min(0.45,(Math.abs(ys[1]-ys[0])+2)/span);
+    const a1=Math.min(0.45,(Math.abs(yd[1]-yd[0])+2)/span);
     const grad=ctx.createLinearGradient(0,g0,0,g1);
     const cS=solid(col(f.i, PAPER?0.92:0.8, PAPER)), cT=solid(col(f.j, PAPER?0.92:0.8, PAPER));
     grad.addColorStop(0, cS);
@@ -434,7 +584,8 @@ def slant_joints(h, name, part=SLANT_PART):
     a, b = h.find(SLANT_FROM), h.find(SLANT_TO)
     if a < 0 or b < a:
         raise SystemExit(f"{name}: the width-account block of draw() was not found")
-    return h[:a] + SLANT_JS.replace("__PART__", repr(float(part))) + h[b:]
+    return h[:a] + (SLANT_JS.replace("__PART__", repr(float(part))).replace("__MAX__", repr(float(SLANT_MAX)))
+                    .replace("__BEND__", repr(float(SLANT_BEND))).replace("__HANDLE__", repr(float(SLANT_HANDLE)))) + h[b:]
 
 
 # ------------------------------------------------------------------ patches
@@ -451,7 +602,7 @@ FIX_YTITLE = ("ctx.translate(24,(PAD.t+H-PAD.b)/2);",
 # " / " into two lines, the share on the second line
 FIX_LANE_TEXT = ("""    ctx.fillText(`${CLUSTER_LABELS[k].label}  ${(100*Wend).toFixed(0)}%`,
                  W-PAD.r+12, laneY(k)+3);""",
-                 """    { const lab=CLUSTER_LABELS[k].label, pct=`${(100*Wend).toFixed(0)}%`;
+                 """    { const lab=CLUSTER_LABELS[k].label, pct=`${(100*Wlab).toFixed(0)}%`;
       const one=`${lab}  ${pct}`, cut=lab.indexOf(' / ');
       if(one.length<=LANE_WRAP || cut<0){
         ctx.fillText(one, W-PAD.r+12, laneY(k)+3);
@@ -477,8 +628,12 @@ FIX_LANES_NEW = """  window.__LANES__=[];
   for(let k=0;k<K;k++){
     const sEnd=SEG[k][SEG[k].length-1];
     const Wend=(sEnd.yB-sEnd.yT)/F;              // account width, matches the band
+    /* the share printed beside the band: the measured share of the last period
+       where the fit gives one (a movement too small to draw leaves the band up
+       to that much off it), the band's own width otherwise */
+    const Wlab=(typeof FLAT_END!=='undefined' && FLAT_END)?FLAT_END[k]:Wend;
     window.__LANES__.push({lane:k, label:CLUSTER_LABELS[k].label,
-      n:CLUSTER_LABELS[k].n, share:+(Wend.toFixed(5)),
+      n:CLUSTER_LABELS[k].n, share:+(Wend.toFixed(5)), share_label:+(Wlab.toFixed(5)),
       share0:+(aW(WARM_A)[k].toFixed(5))});
     ctx.fillStyle=ink;"""
 
@@ -777,11 +932,18 @@ def report(meta):
               f"{ff['start']:g} on, sigma {ff['sigma_years']:g} y; levels within "
               f"{100 * ff['fit']['largest']:.1f} points of the smoothed share "
               f"(rms {100 * ff['fit']['rms']:.1f}); the event-model parameters above are not used")
+    if meta.get("shift_fit"):
+        sf = meta["shift_fit"]
+        print(f"levels and transfers from river_shift_fit.py: {sf['games_used']} games released from "
+              f"{sf['start']:g} on, boundaries {sf['boundaries']}; levels within "
+              f"{100 * sf['largest_gap_to_measured']:.1f} points of the measured shares; "
+              "the event-model parameters above are not used")
     print(f"events {meta['n_events']}  flows in events {meta['n_flow_total']}  "
           f"ribbons drawn {len(meta['flows'])}")
-    print("lanes (index 0 = bottom of the figure):")
-    for l in lanes:
-        print(f"  {l['lane']}  {l['label']:<44} n={l['n']:4d}  "
+    rows = meta.get("rows") or list(range(len(lanes)))
+    print("lanes, top row first (lane index, row; row 0 = bottom of the figure):")
+    for l in sorted(lanes, key=lambda l: -rows[l["lane"]]):
+        print(f"  {l['lane']} row {rows[l['lane']]}  {l['label']:<44} n={l['n']:4d}  "
               f"share {100*l['share0']:5.1f}% -> {100*l['share']:5.1f}%")
     print("ribbons (source -> target, share moved, start -> arrival, calendar years):")
     for f in sorted(meta["flows"], key=lambda f: f["ts"]):
@@ -809,8 +971,9 @@ def main():
                     help="JSON of the exported flows / lanes / labels "
                          "(default: <png>.meta.json next to the PNG)")
     ap.add_argument("--fit", default=None,
-                    help="levels and transfers from river_flat_fit.py "
-                         "(default <assets>/flat_fit_ice.json)")
+                    help="levels and transfers from river_shift_fit.py "
+                         f"(default <assets>/{DEFAULT_FIT}; flat_fit_ice.json is the fit of "
+                         "2026-10-13 to 2026-11-10)")
     ap.add_argument("--pressure", action="store_true",
                     help="draw the page's pressure model instead of the fit "
                          "(the figure as it was before 2026-10-13)")
@@ -840,7 +1003,7 @@ def main():
         raise SystemExit(f"data file missing: {assets / a.data} (run river_ice_prep.py)")
     # the page loads the data file relative to its own directory
     data_rel = Path(os.path.relpath(assets / a.data, page.parent)).as_posix()
-    flat = None if a.pressure else flat_inputs(a.fit if a.fit else assets / "flat_fit_ice.json")
+    flat = None if a.pressure else flat_inputs(a.fit if a.fit else assets / DEFAULT_FIT)
     t0 = time.time()
     bake_variant(page, data_rel, a.thr, a.prune, src=src, fonta=a.fonta, fontl=a.fontl,
                  anchors=a.anchors, flat=flat, joints=a.joints, slant_part=a.slant_part)

@@ -89,7 +89,7 @@ release-share river is made from: the page that clusters the game vectors
 and paints the canvas, the scripts that render the figure, and the bundled
 dataset (1,649 games: 128-d I-CE game vectors from the fold-0 run
 `i2ce_icetf_fold0_g2048`, plus release times, coarse tags, titles).
-`river_flat_fit.py` fits the levels and transfers the figure draws;
+`river_shift_fit.py` gives the figure its periods, levels and ribbons;
 `river_ice_column.py` and `river_ice_render.py` regenerate the paper's PNG
 headlessly, at one column and at full width. Open
 `cluster_share_stack.html` in any browser, no build step, to explore the

@@ -1,0 +1,64 @@
+{
+ "made_by": "figures/river_shift_fit.py --test 2000",
+ "seed": 20261112,
+ "runs": 2000,
+ "boundaries": [
+  {
+   "date": 2020.5,
+   "within_3_months": 0.393,
+   "within_6_months": 0.3955
+  }
+ ],
+ "single_boundary": {
+  "best": 2020.5,
+  "within_3_months": 0.393,
+  "runner_up": 2023.6667,
+  "runner_up_within_3_months": 0.2535,
+  "by_year": {
+   "2020": 0.395,
+   "2021": 0.118,
+   "2022": 0.086,
+   "2023": 0.3815,
+   "2024": 0.0195
+  }
+ },
+ "ribbons": [
+  {
+   "from": 0,
+   "to": 4,
+   "share": 0.0409,
+   "boundary": 2020.5,
+   "p_pair": 0.0555,
+   "p_any": 0.512,
+   "present": 0.8425
+  },
+  {
+   "from": 0,
+   "to": 3,
+   "share": 0.03342,
+   "boundary": 2020.5,
+   "p_pair": 0.0305,
+   "p_any": 0.6985,
+   "present": 0.7015
+  },
+  {
+   "from": 5,
+   "to": 3,
+   "share": 0.02076,
+   "boundary": 2020.5,
+   "p_pair": 0.107,
+   "p_any": 0.9725,
+   "present": 0.5855
+  },
+  {
+   "from": 0,
+   "to": 1,
+   "share": 0.06524,
+   "boundary": 2020.5,
+   "p_pair": 0.0085,
+   "p_any": 0.1525,
+   "present": 0.9445
+  }
+ ],
+ "largest_null_ribbon_95": 0.08077
+}

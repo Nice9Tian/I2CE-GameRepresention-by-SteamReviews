@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
-r"""Level bands joined by transfers: the numbers Figure 10 (release-share river) draws.
+r"""Level bands joined by transfers: the numbers the release-share river drew from 2026-10-13 to 2026-11-10.
 
 In this repository (figures/trend_river/) the data file is `games_raw.js` and
 the fit is written beside this script; the paths below are those of the
 paper's own repository.
 
-Position in the chain
----------------------
+Since 2026-11-11 the figure (Figure 10) draws river_shift_fit.py's periods and ribbons instead; that script's
+docstring says why.  This one is kept so that the earlier fit can be drawn again (--fit river_assets/flat_fit_ice.json
+on either renderer), and river_shift_fit.py reads the page's clusters through export_lanes() below.
+
+Position in the chain (as it was)
+---------------------------------
     river_ice_prep.py   -> river_assets/games_raw_ice.js     (data, once)
     river_flat_fit.py   -> river_assets/flat_fit_ice.json    (this script)
-    river_ice_render.py -> the full-width figure the Word build embeds   (reads the fit)
-    river_ice_column.py -> the one-column figure of the two-column build (reads the fit)
+    river_ice_render.py -> the full-width figure the Word build embeds   (--fit river_assets/flat_fit_ice.json)
+    river_ice_column.py -> the one-column figure of the two-column build (same option)
 
 What is fitted
 --------------
@@ -71,7 +75,8 @@ window.addEventListener('load', function(){
   var d=document.createElement('div'); d.id='lanesout'; d.style.display='none';
   d.textContent=JSON.stringify({year0:YEAR0, k:K, n:RAW_N,
     labels:CLUSTER_LABELS.map(function(c){return {label:c.label, n:c.n};}),
-    lane_of:Array.from(LANE_OF), tau:Array.from(RAW_TAU)});
+    lane_of:Array.from(LANE_OF), tau:Array.from(RAW_TAU),
+    dist:CLUSTER_DIST});   // 1 - cos between cluster centroids over the largest one (river_shift_fit.py)
   document.body.appendChild(d);
 });
 </script>

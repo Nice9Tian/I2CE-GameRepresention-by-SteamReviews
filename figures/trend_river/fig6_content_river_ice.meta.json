@@ -24,102 +24,153 @@
  "flows": [
   {
    "i": 0,
-   "j": 1,
-   "w": 0.091093,
+   "j": 4,
+   "w": 0.0409,
+   "ts": 3,
+   "te": 5.1417
+  },
+  {
+   "i": 0,
+   "j": 3,
+   "w": 0.03342,
+   "ts": 3,
+   "te": 6.207
+  },
+  {
+   "i": 5,
+   "j": 3,
+   "w": 0.02076,
    "ts": 3,
    "te": 7.75
   },
   {
    "i": 0,
-   "j": 3,
-   "w": 0.064081,
-   "ts": 3.0417,
-   "te": 3.6667
-  },
-  {
-   "i": 4,
-   "j": 5,
-   "w": 0.039403,
-   "ts": 6,
-   "te": 6.5833
+   "j": 1,
+   "w": 0.06524,
+   "ts": 3.0791,
+   "te": 3.9209
   }
  ],
  "joints_drawn": [
   {
    "i": 0,
-   "j": 1,
-   "waist": 0.09109,
-   "lean": 8.9,
-   "lA": 266,
-   "lB": 408.8,
-   "sA": 295.6,
-   "sB": 454.2
+   "j": 4,
+   "waist": 0.0409,
+   "lean": 15.8,
+   "straight": 32.2,
+   "corner_s": 18,
+   "corner_t": 75,
+   "cut_s": [
+    3,
+    3.1834
+   ],
+   "cut_t": [
+    4.8084,
+    5.1417
+   ]
   },
   {
    "i": 0,
    "j": 3,
-   "waist": 0.06408,
-   "lean": 75.6,
-   "lA": 40.8,
-   "lB": 39.6,
-   "sA": 307.9,
-   "sB": 312.7
+   "waist": 0.03342,
+   "lean": 6.7,
+   "straight": 14.5,
+   "corner_s": 9,
+   "corner_t": 85,
+   "cut_s": [
+    3.1834,
+    3.3333
+   ],
+   "cut_t": [
+    5.8737,
+    6.207
+   ]
   },
   {
-   "i": 4,
-   "j": 5,
-   "waist": 0.0394,
-   "lean": 42.1,
-   "lA": 48.9,
-   "lB": 48.9,
-   "sA": 81.7,
-   "sB": 81.7
+   "i": 5,
+   "j": 3,
+   "waist": 0.02076,
+   "lean": 4.3,
+   "straight": 9.5,
+   "corner_s": 15,
+   "corner_t": 105,
+   "cut_s": [
+    3,
+    3.3333
+   ],
+   "cut_t": [
+    7.4167,
+    7.75
+   ]
+  },
+  {
+   "i": 0,
+   "j": 1,
+   "waist": 0.06524,
+   "lean": 14.9,
+   "straight": 30.5,
+   "corner_s": 60,
+   "corner_t": 60,
+   "cut_s": [
+    3.0791,
+    3.3597
+   ],
+   "cut_t": [
+    3.6403,
+    3.9209
+   ]
   }
  ],
- "n_events": 3,
- "n_flow_total": 3,
+ "n_events": 4,
+ "n_flow_total": 4,
  "lanes": [
   {
    "lane": 0,
    "label": "Puzzle / Crime/Mystery",
    "n": 308,
-   "share": 0.14499,
-   "share0": 0.30017
+   "share": 0.17891,
+   "share_label": 0.17892,
+   "share0": 0.31847
   },
   {
    "lane": 1,
    "label": "Simulation/Management / Open World/Survival",
    "n": 265,
-   "share": 0.20465,
-   "share0": 0.11355
+   "share": 0.16078,
+   "share_label": 0.16778,
+   "share0": 0.09554
   },
   {
    "lane": 2,
    "label": "Racing/Driving / Sports/Rhythm",
    "n": 186,
-   "share": 0.10937,
-   "share0": 0.10937
+   "share": 0.11465,
+   "share_label": 0.10765,
+   "share0": 0.11465
   },
   {
    "lane": 3,
    "label": "Turn-Based / Card Game",
    "n": 280,
-   "share": 0.1736,
-   "share0": 0.10952
+   "share": 0.1752,
+   "share_label": 0.1752,
+   "share0": 0.12102
   },
   {
    "lane": 4,
    "label": "Platformer / Shooter/FPS",
    "n": 315,
-   "share": 0.16155,
-   "share0": 0.20095
+   "share": 0.19377,
+   "share_label": 0.19376,
+   "share0": 0.15287
   },
   {
    "lane": 5,
    "label": "Historical/War / Shooter/FPS",
    "n": 295,
-   "share": 0.20584,
-   "share0": 0.16644
+   "share": 0.17669,
+   "share_label": 0.17669,
+   "share0": 0.19745
   }
  ],
  "labels": [],
@@ -144,20 +195,53 @@
  ],
  "joints": "slant",
  "slant_part": 0.3333333333333333,
- "levels": "river_flat_fit.py",
- "flat_fit": {
+ "slant_max_years": 0.3333333333333333,
+ "slant_bend": 0.45,
+ "slant_handle": 0.4,
+ "rows": [
+  1,
+  0,
+  2,
+  3,
+  4,
+  5
+ ],
+ "levels": "river_shift_fit.py",
+ "shift_fit": {
   "games_used": 1504,
   "games_total": 1649,
   "start": 2020.0,
   "end": 2024.75,
-  "sigma_years": 0.25,
-  "tolerance": 0.04,
-  "min_transfer_years": 0.25,
-  "fit": {
-   "rms": 0.01524,
-   "largest": 0.0357,
-   "largest_lane": "Historical/War / Shooter/FPS",
-   "largest_year": 2023.4167
-  }
+  "boundaries": [
+   2020.5
+  ],
+  "boundary_tests": [
+   {
+    "gain": 10.882,
+    "threshold": 9.119,
+    "p": 0.0123,
+    "added": true,
+    "placement": [
+     2020.5
+    ]
+   },
+   {
+    "gain": 8.505,
+    "threshold": 9.137,
+    "p": 0.0842,
+    "added": false,
+    "placement": [
+     2020.5,
+     2023.6667
+    ]
+   }
+  ],
+  "minlen_months": 3,
+  "shuffles": 10000,
+  "level": 0.95,
+  "seed": 20261112,
+  "min_share": 0.01,
+  "min_transfer_years": 0.3333333333333333,
+  "largest_gap_to_measured": 0.007
  }
 }

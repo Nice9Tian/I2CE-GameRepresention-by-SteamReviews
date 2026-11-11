@@ -1,0 +1,226 @@
+{
+ "made_by": "figures/river_shift_fit.py",
+ "method": "shift",
+ "data": "games_raw.js",
+ "year0": 2017,
+ "games_total": 1649,
+ "games_used": 1504,
+ "start": 2020.0,
+ "end": 2024.75,
+ "last_release": 2024.849,
+ "releases_per_year": 310.17,
+ "labels": [
+  "Puzzle / Crime/Mystery",
+  "Simulation/Management / Open World/Survival",
+  "Racing/Driving / Sports/Rhythm",
+  "Turn-Based / Card Game",
+  "Platformer / Shooter/FPS",
+  "Historical/War / Shooter/FPS"
+ ],
+ "lane_games_used": [
+  291,
+  241,
+  163,
+  255,
+  285,
+  269
+ ],
+ "rows": [
+  1,
+  0,
+  2,
+  3,
+  4,
+  5
+ ],
+ "minlen_months": 3,
+ "shuffles": 10000,
+ "level": 0.95,
+ "seed": 20261112,
+ "min_share": 0.01,
+ "min_transfer_years": 0.3333333333333333,
+ "boundaries": [
+  2020.5
+ ],
+ "boundary_tests": [
+  {
+   "gain": 10.882,
+   "threshold": 9.119,
+   "p": 0.0123,
+   "added": true,
+   "placement": [
+    2020.5
+   ]
+  },
+  {
+   "gain": 8.505,
+   "threshold": 9.137,
+   "p": 0.0842,
+   "added": false,
+   "placement": [
+    2020.5,
+    2023.6667
+   ]
+  }
+ ],
+ "single_boundary": {
+  "best": {
+   "date": 2020.5,
+   "gain": 10.882
+  },
+  "runner_up": {
+   "date": 2023.6667,
+   "gain": 10.539
+  },
+  "months_apart_at_least": 6
+ },
+ "periods": [
+  {
+   "from": 2020.0,
+   "to": 2020.5,
+   "games": 157,
+   "shares": [
+    0.31847,
+    0.09554,
+    0.11465,
+    0.12102,
+    0.15287,
+    0.19745
+   ]
+  },
+  {
+   "from": 2020.5,
+   "to": 2024.9167,
+   "games": 1347,
+   "shares": [
+    0.17892,
+    0.16778,
+    0.10765,
+    0.1752,
+    0.19376,
+    0.17669
+   ]
+  }
+ ],
+ "cost": [
+  [
+   0.0,
+   0.89995,
+   0.80518,
+   0.8002,
+   0.56784,
+   1.0
+  ],
+  [
+   0.89995,
+   0.0,
+   0.61153,
+   0.64973,
+   0.81216,
+   0.76306
+  ],
+  [
+   0.80518,
+   0.61153,
+   -0.0,
+   0.91948,
+   0.81451,
+   0.62889
+  ],
+  [
+   0.8002,
+   0.64973,
+   0.91948,
+   -0.0,
+   0.48028,
+   0.60084
+  ],
+  [
+   0.56784,
+   0.81216,
+   0.81451,
+   0.48028,
+   -0.0,
+   0.6039
+  ],
+  [
+   1.0,
+   0.76306,
+   0.62889,
+   0.60084,
+   0.6039,
+   0.0
+  ]
+ ],
+ "levels_start": [
+  0.31847,
+  0.09554,
+  0.11465,
+  0.12102,
+  0.15287,
+  0.19745
+ ],
+ "levels_end": [
+  0.17891,
+  0.16078,
+  0.11465,
+  0.1752,
+  0.19377,
+  0.17669
+ ],
+ "transfers": [
+  {
+   "from": 0,
+   "to": 4,
+   "from_label": "Puzzle / Crime/Mystery",
+   "to_label": "Platformer / Shooter/FPS",
+   "share": 0.0409,
+   "start": 2020.0,
+   "end": 2022.1417,
+   "boundary": 2020.5,
+   "games_to_resolve": 664
+  },
+  {
+   "from": 0,
+   "to": 3,
+   "from_label": "Puzzle / Crime/Mystery",
+   "to_label": "Turn-Based / Card Game",
+   "share": 0.03342,
+   "start": 2020.0,
+   "end": 2023.207,
+   "boundary": 2020.5,
+   "games_to_resolve": 995
+  },
+  {
+   "from": 5,
+   "to": 3,
+   "from_label": "Historical/War / Shooter/FPS",
+   "to_label": "Turn-Based / Card Game",
+   "share": 0.02076,
+   "start": 2020.0,
+   "end": 2024.75,
+   "boundary": 2020.5,
+   "games_to_resolve": 2577
+  },
+  {
+   "from": 0,
+   "to": 1,
+   "from_label": "Puzzle / Crime/Mystery",
+   "to_label": "Simulation/Management / Open World/Survival",
+   "share": 0.06524,
+   "start": 2020.0791,
+   "end": 2020.9209,
+   "boundary": 2020.5,
+   "games_to_resolve": 261
+  }
+ ],
+ "left_out": [
+  {
+   "boundary": 2020.5,
+   "from": 2,
+   "to": 1,
+   "share": 0.007
+  }
+ ],
+ "largest_gap_to_measured": 0.007
+}
