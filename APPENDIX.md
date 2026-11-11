@@ -6,9 +6,9 @@ Appendices A–N
 
 ## APPENDIX A: FIVE-FOLD CROSS-VALIDATION DETAIL
 
-Table A1 gives the full five-fold account of every objective family, the numbers the body’s Figure 7 plots, and Table A2 the same readings for I-CE trained at each anchor budget. Tables A13 and A14 in online Appendix J give the fold-level detail, and Table A12 in online Appendix I tabulates the EMA + memory-bank variant.
+Tables A13 and A14 in online Appendix J give the fold-level detail behind Tables A1 and A2, and Table A12 in online Appendix I tabulates the EMA + memory-bank variant.
 
-**Table A1:** The self-supervision families in full, the five-fold account behind the body’s Figure 7 (test-set queries (ts), five-fold mean ± std, protocol as in Figure 7). Rows are sorted by Stripped hit@1, worst first; the first row is the no-tower baseline, the frozen embedder’s mean-pooled sentence vectors, and “epd” marks VICReg wired on the expander outputs, $v/i/c=20/10/20$. The DINO-style row is the control of Section 4.3, DINO at its published settings (online Appendix H, Table A9), trained on fold 0 only; its ± is over the ten anchor draws, and I-CE on the same fold reads 0.970, 1.000, 0.728, 0.920 and 0.689.
+**Table A1:** The self-supervision families in full, the five-fold account behind the body’s Figure 7 (test-set queries (ts), five-fold mean ± std, protocol as in Figure 7). Rows are sorted by Stripped hit@1, worst first; “epd” marks VICReg wired on the expander outputs, $v/i/c=20/10/20$. The DINO-style row is the control of Section 4.3, DINO at its published settings (online Appendix H, Table A9), trained on fold 0 only; its ± is over the ten anchor draws, and I-CE on the same fold reads 0.970, 1.000, 0.728, 0.920 and 0.689.
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Table A1 gives the full five-fold account of every objective family, the numbers
 
 ## APPENDIX B: THE TWO QUERY REGISTERS ON ONE GAME
 
-Both registers of Section 5 are written from the same wiki article by the same model and differ only in the instruction (Appendix F): name-intact keeps the names and is scored as Name hit@k, name-stripped is scored as Stripped hit@k, and the openings below are verbatim, for one held-out game.
+Both registers of Section 5 are written from the same wiki article by the same model and differ only in the instruction (Appendix F); the openings below are verbatim.
 
 **LISTING 1:** The two query registers on one held-out game
 
@@ -48,7 +48,7 @@ The five sweeps behind design choices come first, followed by the windowed teach
 
 In the temperature sweep of Table A3, the learnable variant (initialized at 0.02, $\tau$ clamped to $[0.005,\ 0.2]$ ) never settles at an interior optimum: in all five folds it sharpens monotonically to the clamp floor within 250 epochs and trains there, an effective fixed $\tau =0.005$, beating the frozen recipe by 0.010 Stripped hit@1 in four folds of five and by 0.009 on tags (computed before rounding), the sharp-side headroom that the frozen setting of Section 4.2 leaves to deployment.
 
-**Table A3:** The temperature sweep behind the Section 8 verdict and the frozen setting of Section 4.2 (test-set queries (ts), five-fold mean ± std; towers trained at the 512- and 2,048-sentence anchor budgets, read as in Table A1). The 2,048-sentence rows are seed-paired on the same anchor packs; their recipe row is a second run of the recipe at that budget (the towers of Table A2 read 0.741 ± 0.018 Stripped hit@1).
+**Table A3:** The temperature sweep behind the Section 8 verdict and the frozen setting of Section 4.2 (test-set queries (ts), five-fold mean ± std, read as in Table A1). The 2,048-sentence rows are seed-paired on the same anchor packs; their recipe row is a second run of the recipe at that budget (the towers of Table A2 read 0.741 ± 0.018 Stripped hit@1).
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -87,7 +87,7 @@ In the temperature sweep of Table A3, the learnable variant (initialized at 0.02
 
 **The number of latent queries.** From four queries up the axis is flat under both protocols; below four it is not (Table A6). Over folds 0 to 2 the one- and two-query towers trail I-CE on Stripped hit@1 in all three folds, by 0.017 and 0.031 (p = 0.18 and 0.031), the one-query tower on Name hit@1 as well, by 0.028 (p = 0.047); the eight- and sixteen-query towers lead it in three and two of the three folds, neither separating (p = 0.20 and 0.64), and over the five folds the eight-query tower trails the recipe on tags in four folds of five without separating. Averaged right after the attention, the slots amount to one attention readout whose weights, head by head, are the mean of the slots’ weights: Q sets how many attention patterns the reader mixes, not how many vectors it keeps, and for the stripped queries one or two patterns are too few where four are enough. The four queries do not stay alike (Figure A1): close together at the first checkpoint, they part between epochs 200 and 450, rearrange until about epoch 800 and keep distinct positions from then on.
 
-**Table A6:** The number of latent queries under both protocols (test-set queries (ts)): the three-fold rows as in Table A4, the five-fold rows trained at the 2,048-sentence budget, seed-paired per fold and read as Table A1 is, Q = 4 being its I-CE. The paired differences over the five folds (Q = 8 minus Q = 4) are −0.003 ± 0.009 Name hit@1, +0.003 ± 0.042 Stripped hit@1 and −0.021 ± 0.022 test-set tag F1 (p = 0.52, 0.90 and 0.11). The readout is the mean over the slots throughout.
+**Table A6:** The number of latent queries under both protocols (test-set queries (ts)): the three-fold rows as in Table A4, the five-fold rows seed-paired per fold and read as Table A1 is, Q = 4 being its I-CE. The paired differences over the five folds (Q = 8 minus Q = 4) are −0.003 ± 0.009 Name hit@1, +0.003 ± 0.042 Stripped hit@1 and −0.021 ± 0.022 test-set tag F1 (p = 0.52, 0.90 and 0.11). The readout is the mean over the slots throughout.
 
 | Latent queries | Protocol | Anchor budget | Name hit@1 | Stripped hit@1 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
