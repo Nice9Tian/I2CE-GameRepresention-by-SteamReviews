@@ -12,7 +12,7 @@ resume-safe: existing files are skipped). `gidx` always indexes rows of
 | `wscan_pool_rev_rid.npy` | (2020, 2048) i32 | per-row review id in the pool (−1 = padding) — the basis of review-level rejection sampling |
 | `wscan_pool_rev_len.npy` | (2020,) i32 | used rows per game |
 | `wscan_gal_rev.npz` | `gal` (2020, 512, 1024) fp16; `gal_len` i32; `gal_doc_len` i32 | **the anchors**: sp_raw document sentences FIRST, row-standardized like every other row, whole reviews fill the 512 budget; `gal_doc_len` = doc-prefix length (0 = no doc) — the head's doc-gating masks the prefix through it |
-| `wscan_gal_rev_rawprefix.npz` | as above | the 512 packs as built before 2026-11-07, sp_raw prefix copied raw (row std ~2.9) — what the published @512 runs trained on; only for reproducing them bit for bit (see the note below) |
+| `wscan_gal_rev_rawprefix.npz` | as above | the 512 packs as built before 2026-11-07, sp_raw prefix copied raw (row std ~2.9): what the @512 runs made before that date trained on; only for repeating them (see the note below) |
 | `ss_queries_rev.npz` | `off` (8081,) i64; `gidx` (8080,) i64 | pseudo-query index: 4 per game, anchor-shaped (doc prefix + whole reviews @512), flat-stored |
 | `ss_queries_rev_S.npy` | (Σ sentences, 1024) fp16, ~8.5 GB | pseudo-query vectors (sp_raw prefix row-standardized); query j = `S[off[j]:off[j+1]]`. **Loaded as mmap**. Report-only diagnostics, never a selection or a published number |
 | `ss_queries_rev_S_rawprefix.npy` | as above | the pseudo-query vectors as built before 2026-11-07 (raw sp_raw prefix) |
@@ -31,7 +31,10 @@ other input. The w9 workers' own GPU-built packs (1,024 sentences and above) alw
 took the prefix from `load_views("sp_raw_views.npz")`, i.e. standardized, and the
 prebuilt `wscan_gal_rev_g1024.npz` / `_g4096.npz` carry it standardized. `build_assets.py` now
 standardizes the prefix the same way (`rown_prefix`), and the prebuilt data on
-Hugging Face carries the fixed `wscan_gal_rev.npz` and `ss_queries_rev_S.npy`. To
-reproduce the published @512 runs bit for bit, put `wscan_gal_rev_rawprefix.npz` in
-place of `wscan_gal_rev.npz` (and `ss_queries_rev_S_rawprefix.npy` in place of
-`ss_queries_rev_S.npy` for their report-only pseudo-query columns).
+Hugging Face carries the fixed `wscan_gal_rev.npz` and `ss_queries_rev_S.npy`. The
+paper's @512 rows come from towers retrained on the fixed packs. The w9 workers
+(`contrast_experiment/w9/Pod/`) name a run on them `_d512` and stop when the
+`wscan_gal_rev.npz` they are given still holds the prefix raw. To repeat a run made
+before the fix, pass the worker `--raw-prefix`: it reads `wscan_gal_rev_rawprefix.npz`
+(and `ss_queries_rev_S_rawprefix.npy` for the report-only pseudo-query columns) and
+names the run as it was named then, without the tag.

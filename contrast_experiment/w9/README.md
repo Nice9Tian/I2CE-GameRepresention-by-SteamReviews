@@ -81,14 +81,22 @@ reached and the runs were named after that cap, `_g4096`. The packs are
 the same, sentence for sentence; the checkpoints and plan files were
 renamed to `_gpool`.
 
-Since 2026-11-07 the store-page prefix in `wscan_gal_rev.npz` (the
-512-sentence anchor packs) and `ss_queries_rev_S.npy` is row-standardized,
-like every other input row and like the packs the workers build on the GPU
-at 1,024 sentences and above. The manuscript's @512 runs, and the
-fixed-split rows trained with 512-sentence anchors, trained on the raw
-prefix. To reproduce them bit for bit, leave out the `--exclude`, then put
-`wscan_gal_rev_rawprefix.npz` in place of `wscan_gal_rev.npz`, and
-`ss_queries_rev_S_rawprefix.npy` in place of `ss_queries_rev_S.npy`.
+At `--anchor-cap 512`, the default of both workers, the packs are the
+shipped `wscan_gal_rev.npz`. Since 2026-11-07 its store-page prefix, and
+that of `ss_queries_rev_S.npy`, is row-standardized, like every other input
+row and like the packs the workers build on the GPU at 1,024 sentences and
+above. The paper's 512-sentence rows come from towers retrained on these
+packs (a run whose loss never reads the anchors kept its weights and was
+read again on them). Both workers name a run on them `_d512`, for example
+`w9cv_wcle_i2ce_icetf_fold0_d512_fp` and `w9_wcle_i2ce_icetf_d512_fp`, the
+names the retrained checkpoints have on Hugging Face, and they stop when
+the `wscan_gal_rev.npz` they are given still holds the prefix raw.
+
+The runs made before that date trained on the raw prefix and have no tag in
+their names; their checkpoints stay on Hugging Face. To repeat one, leave
+out the `--exclude` and pass the worker `--raw-prefix`: it reads
+`wscan_gal_rev_rawprefix.npz` and `ss_queries_rev_S_rawprefix.npy` and
+names the run without the tag.
 
 ## Running
 
@@ -114,7 +122,7 @@ prefix. To reproduce them bit for bit, leave out the `--exclude`, then put
 | `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A14) |
 | `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A18) |
 | `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
-| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12) |
+| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12); trains the BYOL stage itself for folds that have no checkpoint |
 | `w9_flash*.ipynb` | loss-ladder and structure grids |
 | `w9_scale.ipynb`, `w9_mq.ipynb`, `w9_save_4096_tag.ipynb` | anchor-scale & anchor-supply arms |
 | `w9_packageview.ipynb` | twin-pack `pk{N}` fractal family |
@@ -242,7 +250,10 @@ the five folds of I + SimCLR, and 89 more listed in that repository's own plan
 files, the 512-sentence runs on the corrected anchor packs
 (`docfix512_ckpt_plan.json`, `c2_docfix512_ckpt_plan.json`,
 `c3_docfix512_ckpt_plan.json`) and the five folds with eight latent queries
-(`q8_gpool_ckpt_plan.json`).
+(`q8_gpool_ckpt_plan.json`). The 512-sentence entries of
+`rank_ckpt_plan.json` are the earlier runs, on the packs as built before
+2026-11-07 and named without `_d512`; the paper's 512-sentence rows are the
+`_d512` runs of the three `docfix512` plan files.
 
 ```bash
 export W9_DATA_DIR=/path/to/fusion_cache_w9           # the prebuilt data folder above

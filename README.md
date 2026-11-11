@@ -316,11 +316,13 @@ folder is then the w9 data directory as it is.
 The store-page prefix of the anchor packs and the pseudo-queries is
 row-standardized like every other input row. Up to 2026-11-07 the
 512-sentence `wscan_gal_rev.npz` and `ss_queries_rev_S.npy` carried it raw
-(row std about 2.9), and the published @512 runs trained on those packs.
-The files as they were are kept on Hugging Face as
-`wscan_gal_rev_rawprefix.npz` and `ss_queries_rev_S_rawprefix.npy` (10 GiB).
-To reproduce those runs bit for bit, put them in place of the current files.
-`data/assets/README.md` has the details.
+(row std about 2.9). The paper's 512-sentence rows come from towers
+retrained on the current packs, and the w9 workers name a run on them
+`_d512`, as the retrained checkpoints on Hugging Face are named. The files
+as they were are kept on Hugging Face as `wscan_gal_rev_rawprefix.npz` and
+`ss_queries_rev_S_rawprefix.npy` (10 GiB), for repeating a run of that
+time: the w9 workers read them with `--raw-prefix` and name the run without
+the tag. `data/assets/README.md` has the details.
 
 Building from scratch instead:
 

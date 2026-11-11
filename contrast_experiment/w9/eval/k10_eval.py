@@ -14,7 +14,10 @@ the same vectors and offsets and give the same draws.
 
 Which checkpoint a tower is scored at is NOT decided here: five-fold runs are selected by the rank
 rule (Pod/w9_selection.py) on the gallery their own worker saved; rank_ckpt_plan.json lists the
-selections behind the manuscript.  `select` re-runs that rule for a run whose worker saved another
+selections behind the manuscript, except for its 512-sentence rows: those are the towers retrained
+on the corrected 512 packs (run names with _d512), selected in the three docfix512 plan files of the
+checkpoint repository, and the plan's own 512-sentence entries are the earlier runs on the packs as
+built before 2026-11-07.  `select` re-runs that rule for a run whose worker saved another
 gallery, on the gallery the workers of the main runs build (--anchor-cap pool in
 Pod/w9_cv_worker.py: store-page prefix plus the whole 2,048-sentence review pool, a median of
 2,068 sentences; the manuscript's 2,048-sentence budget, run names ending in _gpool).  I + SimCLR was
