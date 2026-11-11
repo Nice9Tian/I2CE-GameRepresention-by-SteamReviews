@@ -1,0 +1,302 @@
+{
+ "ce_cetf_fold0": {
+  "arm": "ce_cetf",
+  "fold": 0,
+  "cap": "",
+  "sfx": "",
+  "ep": 400,
+  "ckpt": "ckpt_w9cv_wcle_ce_cetf_fold0_fp_ep400.pt",
+  "sha256": "a98f3af6ee53a70895c91b50a0ca8d51776c78eb67f12cfc9a8b33a9da7352df",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run ce_cetf_fold0_d512"
+ },
+ "ce_cetf_fold1": {
+  "arm": "ce_cetf",
+  "fold": 1,
+  "cap": "",
+  "sfx": "",
+  "ep": 400,
+  "ckpt": "ckpt_w9cv_wcle_ce_cetf_fold1_fp_ep400.pt",
+  "sha256": "da1b74ed9295db58588ce8c6ed1f30403289c765bad0d31d3117464f21e07afb",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run ce_cetf_fold1_d512"
+ },
+ "ce_cetf_fold2": {
+  "arm": "ce_cetf",
+  "fold": 2,
+  "cap": "",
+  "sfx": "",
+  "ep": 200,
+  "ckpt": "ckpt_w9cv_wcle_ce_cetf_fold2_fp_ep200.pt",
+  "sha256": "89ff688ae563acf5302d3e150e036f1c1a5670a53a4627b15ac1f6ce3296e27f",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run ce_cetf_fold2_d512"
+ },
+ "ce_cetf_fold3": {
+  "arm": "ce_cetf",
+  "fold": 3,
+  "cap": "",
+  "sfx": "",
+  "ep": 500,
+  "ckpt": "ckpt_w9cv_wcle_ce_cetf_fold3_fp_ep500.pt",
+  "sha256": "6e69c432deb9f05db13f2b5bb00ac2faac6961a832801ac39629845bfb44da71",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run ce_cetf_fold3_d512"
+ },
+ "ce_cetf_fold4": {
+  "arm": "ce_cetf",
+  "fold": 4,
+  "cap": "",
+  "sfx": "",
+  "ep": 400,
+  "ckpt": "ckpt_w9cv_wcle_ce_cetf_fold4_fp_ep400.pt",
+  "sha256": "84330ff65abcfbaea3a600ced5236ef783b0d81e0d621efbedc807ec3f90772e",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run ce_cetf_fold4_d512"
+ },
+ "i2ce_icetf_fold0": {
+  "arm": "i2ce_icetf",
+  "fold": 0,
+  "cap": "",
+  "sfx": "",
+  "ep": 400,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold0_fp_ep400.pt",
+  "sha256": "c81c78aa94cedc194641d5bc213c523065a8ce7c3800e26e0f4f464f7570cfb5",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold0_d512"
+ },
+ "i2ce_icetf_fold1": {
+  "arm": "i2ce_icetf",
+  "fold": 1,
+  "cap": "",
+  "sfx": "",
+  "ep": 1050,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold1_fp_ep1050.pt",
+  "sha256": "aec90cc2ba31550c6f707d0050cab79930d6687083242a609a2c3f2dcd3d42f9",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold1_d512"
+ },
+ "i2ce_icetf_fold2": {
+  "arm": "i2ce_icetf",
+  "fold": 2,
+  "cap": "",
+  "sfx": "",
+  "ep": 1500,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold2_fp_ep1500.pt",
+  "sha256": "d19e24f1e5b6b3d2a8918df05dcc00d7fb3c1d05201e560fdb0142f9693c3d43",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold2_d512"
+ },
+ "i2ce_icetf_fold3": {
+  "arm": "i2ce_icetf",
+  "fold": 3,
+  "cap": "",
+  "sfx": "",
+  "ep": 950,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold3_fp_ep950.pt",
+  "sha256": "75ea823f3d3430832ee8b0bd2eec519d472af8dc7377062be32be559f3e192ac",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold3_d512"
+ },
+ "i2ce_icetf_fold4": {
+  "arm": "i2ce_icetf",
+  "fold": 4,
+  "cap": "",
+  "sfx": "",
+  "ep": 900,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold4_fp_ep900.pt",
+  "sha256": "29e06abb6d336885f6cf078f0637d354ddb398f18f37722bd26c3f0f2122113b",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold4_d512"
+ },
+ "i2ce_icetf_fold0_wllm": {
+  "arm": "i2ce_icetf",
+  "fold": 0,
+  "cap": "",
+  "sfx": "_wllm",
+  "ep": 1900,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold0_wllm_fp_ep1900.pt",
+  "sha256": "fe4b12880c75b247c73c9ec7ab2724fd7defd41b888d4e08a2ba1a9973fd4556",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold0_wllm_d512"
+ },
+ "i2ce_icetf_fold1_wllm": {
+  "arm": "i2ce_icetf",
+  "fold": 1,
+  "cap": "",
+  "sfx": "_wllm",
+  "ep": 1450,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold1_wllm_fp_ep1450.pt",
+  "sha256": "0581d8c0c68b2e4c1118bf873c2f6fc7dc90fb7150078599fd0ab0520f7f8051",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold1_wllm_d512"
+ },
+ "i2ce_icetf_fold2_wllm": {
+  "arm": "i2ce_icetf",
+  "fold": 2,
+  "cap": "",
+  "sfx": "_wllm",
+  "ep": 1600,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold2_wllm_fp_ep1600.pt",
+  "sha256": "b4e22edc50ec0d287d2679f86377a25131af9f3f06f220ee9a5c70c4be1cb656",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold2_wllm_d512"
+ },
+ "i2ce_icetf_fold3_wllm": {
+  "arm": "i2ce_icetf",
+  "fold": 3,
+  "cap": "",
+  "sfx": "_wllm",
+  "ep": 950,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold3_wllm_fp_ep950.pt",
+  "sha256": "6094aebf54a7dfe444d52b67973f41c34e89eb2e0a41c81e70f6aa2e48ec53b6",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold3_wllm_d512"
+ },
+ "i2ce_icetf_fold4_wllm": {
+  "arm": "i2ce_icetf",
+  "fold": 4,
+  "cap": "",
+  "sfx": "_wllm",
+  "ep": 800,
+  "ckpt": "ckpt_w9cv_wcle_i2ce_icetf_fold4_wllm_fp_ep800.pt",
+  "sha256": "860400466cea3e90ad42ba36f9e333088ce095088cec7dc5dabf9b95a099abb8",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2ce_icetf_fold4_wllm_d512"
+ },
+ "i2cet05_icetf_fold0": {
+  "arm": "i2cet05_icetf",
+  "fold": 0,
+  "cap": "",
+  "sfx": "",
+  "ep": 950,
+  "ckpt": "ckpt_w9cv_wcle_i2cet05_icetf_fold0_fp_ep950.pt",
+  "sha256": "cd4171d61a0b44b0babc55e7e60680e49d597156f20d28d22a888c4e16db60eb",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet05_icetf_fold0_d512"
+ },
+ "i2cet05_icetf_fold1": {
+  "arm": "i2cet05_icetf",
+  "fold": 1,
+  "cap": "",
+  "sfx": "",
+  "ep": 1050,
+  "ckpt": "ckpt_w9cv_wcle_i2cet05_icetf_fold1_fp_ep1050.pt",
+  "sha256": "d2f44f311511b06d6ba7bcda0fd5d4bfebc5d7a8ba8e87c3c91d97eeda8c9e73",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet05_icetf_fold1_d512"
+ },
+ "i2cet05_icetf_fold2": {
+  "arm": "i2cet05_icetf",
+  "fold": 2,
+  "cap": "",
+  "sfx": "",
+  "ep": 300,
+  "ckpt": "ckpt_w9cv_wcle_i2cet05_icetf_fold2_fp_ep300.pt",
+  "sha256": "4c0d104b99065d9467a459fc7674e47c9920113990ff32903096993eeea64eb7",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet05_icetf_fold2_d512"
+ },
+ "i2cet05_icetf_fold3": {
+  "arm": "i2cet05_icetf",
+  "fold": 3,
+  "cap": "",
+  "sfx": "",
+  "ep": 700,
+  "ckpt": "ckpt_w9cv_wcle_i2cet05_icetf_fold3_fp_ep700.pt",
+  "sha256": "fd20a5f0a9839d702c3bc5fbf438529fa0b711c7051fefe3eef92820fea06177",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet05_icetf_fold3_d512"
+ },
+ "i2cet05_icetf_fold4": {
+  "arm": "i2cet05_icetf",
+  "fold": 4,
+  "cap": "",
+  "sfx": "",
+  "ep": 400,
+  "ckpt": "ckpt_w9cv_wcle_i2cet05_icetf_fold4_fp_ep400.pt",
+  "sha256": "f24f571fde0403224dbea14547fdc0daa0f9439405b30c9f800c18966b4cfc90",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet05_icetf_fold4_d512"
+ },
+ "i2cet10_icetf_fold0": {
+  "arm": "i2cet10_icetf",
+  "fold": 0,
+  "cap": "",
+  "sfx": "",
+  "ep": 50,
+  "ckpt": "ckpt_w9cv_wcle_i2cet10_icetf_fold0_fp_ep50.pt",
+  "sha256": "0a9ebda2e7d59547b036813d4cb784d2aa57b27187a58ba470c26c3c81c0ee45",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet10_icetf_fold0_d512"
+ },
+ "i2cet10_icetf_fold1": {
+  "arm": "i2cet10_icetf",
+  "fold": 1,
+  "cap": "",
+  "sfx": "",
+  "ep": 100,
+  "ckpt": "ckpt_w9cv_wcle_i2cet10_icetf_fold1_fp_ep100.pt",
+  "sha256": "f30edbf58ccfc4d45e56c991107d7354860d18b77a3115d14b8656f37366dd42",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet10_icetf_fold1_d512"
+ },
+ "i2cet10_icetf_fold2": {
+  "arm": "i2cet10_icetf",
+  "fold": 2,
+  "cap": "",
+  "sfx": "",
+  "ep": 50,
+  "ckpt": "ckpt_w9cv_wcle_i2cet10_icetf_fold2_fp_ep50.pt",
+  "sha256": "39ff54b2f44ac5d75cf0d71df9fd9d77b15fed1c08fc33adcfef93daed3837eb",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet10_icetf_fold2_d512"
+ },
+ "i2cet10_icetf_fold3": {
+  "arm": "i2cet10_icetf",
+  "fold": 3,
+  "cap": "",
+  "sfx": "",
+  "ep": 100,
+  "ckpt": "ckpt_w9cv_wcle_i2cet10_icetf_fold3_fp_ep100.pt",
+  "sha256": "528f536c38cf5c31cd69a8eb8b6ac73a123524c5344790a881eb4e6371e2bab2",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run i2cet10_icetf_fold3_d512"
+ },
+ "nodoc_i2ce_icetf_fold0": {
+  "arm": "nodoc_i2ce_icetf",
+  "fold": 0,
+  "cap": "",
+  "sfx": "",
+  "ep": 650,
+  "ckpt": "ckpt_w9cv_wcle_nodoc_i2ce_icetf_fold0_fp_ep650.pt",
+  "sha256": "f6a18da53287453a2a420ff0005d24aa02096b1cb2d6bc772b28c4055815f5a6",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run nodoc_i2ce_icetf_fold0_d512"
+ },
+ "nodoc_i2ce_icetf_fold1": {
+  "arm": "nodoc_i2ce_icetf",
+  "fold": 1,
+  "cap": "",
+  "sfx": "",
+  "ep": 1500,
+  "ckpt": "ckpt_w9cv_wcle_nodoc_i2ce_icetf_fold1_fp_ep1500.pt",
+  "sha256": "529b715b70bedc11cd1a3ecb2c8f2ed6e02d64c988c28105fdc9b30fb4b493ac",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run nodoc_i2ce_icetf_fold1_d512"
+ },
+ "nodoc_i2ce_icetf_fold2": {
+  "arm": "nodoc_i2ce_icetf",
+  "fold": 2,
+  "cap": "",
+  "sfx": "",
+  "ep": 950,
+  "ckpt": "ckpt_w9cv_wcle_nodoc_i2ce_icetf_fold2_fp_ep950.pt",
+  "sha256": "294227237af6cbc2731e53c3bce70a9aef2a2b5cd1a02612234f16361f8d6027",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run nodoc_i2ce_icetf_fold2_d512"
+ },
+ "nodoc_i2ce_icetf_fold3": {
+  "arm": "nodoc_i2ce_icetf",
+  "fold": 3,
+  "cap": "",
+  "sfx": "",
+  "ep": 950,
+  "ckpt": "ckpt_w9cv_wcle_nodoc_i2ce_icetf_fold3_fp_ep950.pt",
+  "sha256": "9661d496c2c349833af592278ca491bb3eada5cdd38ba7fd85ccb95b65cee7cd",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run nodoc_i2ce_icetf_fold3_d512"
+ },
+ "nodoc_i2ce_icetf_fold4": {
+  "arm": "nodoc_i2ce_icetf",
+  "fold": 4,
+  "cap": "",
+  "sfx": "",
+  "ep": 600,
+  "ckpt": "ckpt_w9cv_wcle_nodoc_i2ce_icetf_fold4_fp_ep600.pt",
+  "sha256": "354148e325dcf15b9c483bb920aa4061e83df5b20bf2d1a1c75fba7811581f8e",
+  "note": "trained on the 512-sentence packs as built before 2026-11-07 (worker flag --raw-prefix); the paper reads the retrained run nodoc_i2ce_icetf_fold4_d512"
+ },
+ "epdb_v20i10c20_cetf_fold1_gpool": {
+  "arm": "epdb_v20i10c20_cetf",
+  "fold": 1,
+  "cap": "_gpool",
+  "sfx": "",
+  "ep": 150,
+  "ckpt": "ckpt_w9cv_wcle_epdb_v20i10c20_cetf_fold1_gpool_fp_ep150.pt",
+  "sha256": "3030febba4201879053cb98b5dd81fb95ac0ae56835ee1ebf0e24f100e3de4b9",
+  "note": "VICReg with the whole training set as the batch, one fold; the arm is not in the paper"
+ }
+}

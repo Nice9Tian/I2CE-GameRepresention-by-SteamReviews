@@ -1,0 +1,93 @@
+{
+ "ai25auni2_icetf_fixed_d512": {
+  "arm": "ai25auni2_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 50,
+  "ckpt": "ckpt_w9_wcle_ai25auni2_icetf_d512_fp_ep50.pt",
+  "sha256": "9c2db27ebf9a6c7926423f9d425da27d5b7b751f8531acd20f14555a2c6afe61",
+  "ranksel": 43.202704703363686,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py"
+ },
+ "ai2auni25_icetf_fixed_d512": {
+  "arm": "ai2auni25_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 450,
+  "ckpt": "ckpt_w9_wcle_ai2auni25_icetf_d512_fp_ep450.pt",
+  "sha256": "778a94d36875894bc8872a43976a5f271152e8303605c1b4ca073ef9d6170ee3",
+  "ranksel": 0.8912054361316923,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py"
+ },
+ "ai2ce_icetf_fixed_d512": {
+  "arm": "ai2ce_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 1650,
+  "ckpt": "ckpt_w9_wcle_ai2ce_icetf_d512_fp_ep1650.pt",
+  "sha256": "838fd0cb8af107844fd9f0356a87825bdd46a3be76afbbf2f22c16f7e8f6ca51",
+  "ranksel": 129.90038982957003,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG, as the original fixed-split I-CE and CE reached 2,000); rank rule over all 40 checkpoints",
+  "previous": {
+   "ep": 1000,
+   "ckpt": "ckpt_w9_wcle_ai2ce_icetf_d512_fp_ep1000.pt",
+   "sha256": "42ca7e5bad6f025c8b42ac7a955c90f0fe06cd850a64f52f96945ec11e4d5f5b",
+   "ranksel": 127.89447553198298
+  }
+ },
+ "ai4auni2_icetf_fixed_d512": {
+  "arm": "ai4auni2_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 900,
+  "ckpt": "ckpt_w9_wcle_ai4auni2_icetf_d512_fp_ep900.pt",
+  "sha256": "34f2ee0e051da230e57f713ec7446477686739d2eb4bac6e562ae606d0f876dd",
+  "ranksel": 1.5249424624108827,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py"
+ },
+ "ai6auni2_icetf_fixed_d512": {
+  "arm": "ai6auni2_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 100,
+  "ckpt": "ckpt_w9_wcle_ai6auni2_icetf_d512_fp_ep100.pt",
+  "sha256": "d40740b355bd881d7865ca0ba004c99fff4f85b1147ec83ce090aa7ce5276996",
+  "ranksel": 64.68700112813966,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py"
+ },
+ "ce_cetf_fixed_d512": {
+  "arm": "ce_cetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 1900,
+  "ckpt": "ckpt_w9_wcle_ce_cetf_d512_fp_ep1900.pt",
+  "sha256": "0e54c849c9b9b7878c52acd3419448b3c03d48cbab6829a6ea6a396b2df2083a",
+  "ranksel": 125.73065382842148,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py"
+ },
+ "i2ce_icetf_fixed_d512": {
+  "arm": "i2ce_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "_d512",
+  "ep": 2000,
+  "ckpt": "ckpt_w9_wcle_i2ce_icetf_d512_fp_ep2000.pt",
+  "sha256": "7955a086ee874f4eaa07432f1ee3d92b9dff76cf3d6b0f7151b05ec4c616f0d4",
+  "ranksel": 130.45839742717456,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py"
+ }
+}

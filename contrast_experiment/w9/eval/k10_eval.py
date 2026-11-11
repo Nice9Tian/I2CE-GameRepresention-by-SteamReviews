@@ -13,30 +13,38 @@ embedding_h5.h5).  When the pool is absent, pass --h5 to read embedding_h5.h5 di
 the same vectors and offsets and give the same draws.
 
 Which checkpoint a tower is scored at is NOT decided here: five-fold runs are selected by the rank
-rule (Pod/w9_selection.py) on the gallery their own worker saved; rank_ckpt_plan.json lists the
-selections behind the manuscript, except for its 512-sentence rows: those are the towers retrained
-on the corrected 512 packs (run names with _d512), selected in the three docfix512 plan files of the
-checkpoint repository, and the plan's own 512-sentence entries are the earlier runs on the packs as
-built before 2026-11-07.  `select` re-runs that rule for a run whose worker saved another
-gallery, on the gallery the workers of the main runs build (--anchor-cap pool in
-Pod/w9_cv_worker.py: store-page prefix plus the whole 2,048-sentence review pool, a median of
-2,068 sentences; the manuscript's 2,048-sentence budget, run names ending in _gpool).  I + SimCLR was
-selected that way (i2bce_sel_pool.json).  The 110 checkpoints both files name are on Hugging Face,
-chironYu/latenarray-i2ce-checkpoints.
+rule (Pod/w9_selection.py) on the gallery their own worker saved.  rank_ckpt_plan.json lists that
+selection for every five-fold run a number of the paper reads: 156 runs, each with its fold, its
+epoch and the SHA-256 of its file; the 512-sentence ones are the runs on the current packs, named
+_d512.  `select` re-runs the rule for a run whose worker saved another gallery, on the gallery the
+workers of the main runs build (--anchor-cap pool in Pod/w9_cv_worker.py: store-page prefix plus
+the whole 2,048-sentence review pool, a median of 2,068 sentences; the paper's 2,048-sentence
+budget, run names ending in _gpool).  I + SimCLR was selected that way (i2bce_sel_pool.json, five
+runs).  The 161 checkpoints the two files name are on Hugging Face,
+chironYu/latenarray-i2ce-checkpoints, and `cells` takes them all.
+
+Two more files list published checkpoints that `cells` leaves out.  fixed_split_ckpt_plan.json: the
+fixed-split towers of Table 3 and Section 6.2, which this script does not score (it reads the five
+folds).  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
+on the packs as built before 2026-11-07 and one fold of an arm the paper dropped; it has the format
+of a selection file, so `cells` scores them when it is given the file.
 
 Every command takes --data-dir (or the W9_DATA_DIR environment variable): the folder holding
 games.npz, wiki_eval.npz, sp_raw_views.npz, tag_labels.npz, wiki_eval_split.json,
 wscan_pool_rev*.npy and full_pool_fp16.npy + full_pool_meta.npz.  From the repository root:
 
     E = contrast_experiment/w9/eval
-    python $E/k10_eval.py cells  <cells.json> --ckpt-dir <dir> [$E/i2bce_sel_pool.json ...]
+    python $E/k10_eval.py cells  <cells.json> --ckpt-dir <dir> [--only <regex>] [<selection file> ...]
     python $E/k10_eval.py encode <cells.json> <draws.npz> [--cap 4096] [--k 10] [--games N] [--h5 <embedding_h5.h5>]
     python $E/k10_eval.py check  <draws.npz> <reference.npz>       max difference against a reference encoding
     python $E/k10_eval.py score  <cells.json> <draws.npz> <out.json>
     python $E/k10_eval.py table  <out.json>                        five-fold mean ± std per run family
     python $E/k10_eval.py select <sel.json> <checkpoint dir> <run name with {fold}>
 
-`cells` looks a selection file's checkpoint names up in --ckpt-dir (absolute paths are kept).
+`cells` looks every checkpoint name up in --ckpt-dir (absolute paths are kept), adds the runs of
+each selection file given after it, and with --only keeps the cells whose key matches the regular
+expression (--only "_d512$" for the 512-sentence runs, --only "^I-CE|^CE" for two of the main
+families).
 Needs torch with CUDA, numpy, scikit-learn (the tag probe) and h5py (imported by the tag probe's
 module; `encode` reads embedding_h5.h5 only with --h5).
 """
@@ -59,8 +67,10 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_bufferin
 from Pod.w9_cv_worker import SetPoolN, rown  # noqa: E402
 from w9_selection import rank_score, validation_rows  # noqa: E402
 
-PLAN = HERE / "rank_ckpt_plan.json"
-JULY_ARMS = {"I-CE": "i2ce_icetf", "CE": "ce_cetf", "SimCLR": "bce_cetf", "VICReg": "epd_v20i10c20_cetf", "BYOL": "byol_bytf"}
+PLAN = HERE / "rank_ckpt_plan.json"          # every five-fold run the paper reads
+SEL_I2BCE = HERE / "i2bce_sel_pool.json"     # I + SimCLR, selected by `select`
+# the five families of the main comparison, scored under the paper's names
+MAIN_ARMS = {"I-CE": "i2ce_icetf", "CE": "ce_cetf", "SimCLR": "bce_cetf", "VICReg": "epd_v20i10c20_cetf", "BYOL": "byol_bytf"}
 SPLIT_SEED, NF = 20260711, 5
 GAP, SPAN = 2048, 65536          # the store is chunked by 2,048 rows; one read holds at most 65,536
 dev = torch.device("cuda")
@@ -202,19 +212,18 @@ def select(args):
 
 # ------------------------------------------------------------------ cells
 def cells(args):
-    ckdir = Path(opt(args, "--ckpt-dir", ""))
+    import re
+    ckdir = Path(opt(args, "--ckpt-dir", "")); only = opt(args, "--only", "")
     assert str(ckdir) not in ("", "."), "--ckpt-dir <folder with the ckpt_*.pt files> is required"
-    out = Path(args[0]); plan = json.loads(PLAN.read_text(encoding="utf-8")); c = {}
-    for key, v in plan.items():
-        if v["cap"] != "_gpool":                                   # packs capped at 512, 1,024 or 2,048 sentences
-            c[key] = dict(ckpt=str(ckdir / v["ckpt"]), fold=v["fold"], ep=v["ep"])
-    for label, arm in JULY_ARMS.items():                           # the five main arms: prefix + whole pool (_gpool)
-        for k in range(NF):
-            v = plan["%s_fold%d_gpool" % (arm, k)]; c["%s|%d" % (label, k)] = dict(ckpt=str(ckdir / v["ckpt"]), fold=k, ep=v["ep"])
-    for f in args[1:]:
-        for key, v in json.loads(Path(f).read_text(encoding="utf-8")).items():
+    out = Path(args[0]); c = {}
+    main = {"%s_fold%d_gpool" % (arm, k): "%s|%d" % (label, k) for label, arm in MAIN_ARMS.items() for k in range(NF)}
+    for f in [PLAN, SEL_I2BCE] + [Path(a) for a in args[1:]]:
+        for key, v in json.loads(f.read_text(encoding="utf-8")).items():
             p = Path(v["ckpt"])                                    # a name is looked up in --ckpt-dir
-            c[key] = dict(ckpt=str(p if p.is_absolute() else ckdir / p), fold=v["fold"], ep=v["ep"])
+            c[main.get(key, key)] = dict(ckpt=str(p if p.is_absolute() else ckdir / p), fold=v["fold"], ep=v["ep"])
+    if only:
+        c = {key: v for key, v in c.items() if re.search(only, key)}
+        assert c, "--only %r matches no cell" % only
     missing = [k for k, v in c.items() if not Path(v["ckpt"]).exists()]
     if missing:
         print("warning: %d checkpoints not found (first: %s); `encode` needs them all" % (len(missing), c[missing[0]]["ckpt"]))
