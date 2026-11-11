@@ -21,7 +21,8 @@
   "sha256": "778a94d36875894bc8872a43976a5f271152e8303605c1b4ca073ef9d6170ee3",
   "ranksel": 0.8912054361316923,
   "protocol": "fixed split (seed 0)",
-  "worker": "Pod/w9_a100_worker.py"
+  "worker": "Pod/w9_a100_worker.py",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints, which leaves the selection where it was"
  },
  "ai2ce_icetf_fixed_d512": {
   "arm": "ai2ce_icetf",
@@ -47,12 +48,19 @@
   "fold": null,
   "cap": "",
   "sfx": "_d512",
-  "ep": 900,
-  "ckpt": "ckpt_w9_wcle_ai4auni2_icetf_d512_fp_ep900.pt",
-  "sha256": "34f2ee0e051da230e57f713ec7446477686739d2eb4bac6e562ae606d0f876dd",
-  "ranksel": 1.5249424624108827,
+  "ep": 1250,
+  "ckpt": "ckpt_w9_wcle_ai4auni2_icetf_d512_fp_ep1250.pt",
+  "sha256": "c8dfd8a19a855f51d6a6c7afca635a2930d0312937c00538621f4d421bb05e64",
+  "ranksel": 1.6230743265482546,
   "protocol": "fixed split (seed 0)",
-  "worker": "Pod/w9_a100_worker.py"
+  "worker": "Pod/w9_a100_worker.py",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
+  "previous": {
+   "ep": 900,
+   "ckpt": "ckpt_w9_wcle_ai4auni2_icetf_d512_fp_ep900.pt",
+   "sha256": "34f2ee0e051da230e57f713ec7446477686739d2eb4bac6e562ae606d0f876dd",
+   "ranksel": 1.5249424624108827
+  }
  },
  "ai6auni2_icetf_fixed_d512": {
   "arm": "ai6auni2_icetf",
@@ -64,7 +72,8 @@
   "sha256": "d40740b355bd881d7865ca0ba004c99fff4f85b1147ec83ce090aa7ce5276996",
   "ranksel": 64.68700112813966,
   "protocol": "fixed split (seed 0)",
-  "worker": "Pod/w9_a100_worker.py"
+  "worker": "Pod/w9_a100_worker.py",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints, which leaves the selection where it was"
  },
  "ce_cetf_fixed_d512": {
   "arm": "ce_cetf",
