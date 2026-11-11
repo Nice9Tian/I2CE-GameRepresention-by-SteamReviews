@@ -1,7 +1,8 @@
 # I2CE — Invariant Game Representation Learning from Steam Reviews
 
-Code, data pipeline and supplementary material for the I-CE representation
-described in the submitted manuscript. A small attention-pooling tower
+Code, data pipeline, appendices and supplement of the paper *Invariant Game
+Representation Learning from Steam Reviews* (AICCC 2026), which introduces
+the I-CE representation. A small attention-pooling tower
 reads cached sentence embeddings of Steam reviews and produces one 128-d
 vector per game. It is trained by a compound objective: a cross-entropy
 term (CE) that classifies each fresh review view against a gallery of
@@ -14,6 +15,16 @@ The tower is about 0.36 M trainable parameters over a frozen
 Qwen3-Embedding-0.6B (1024-d, last-token pooling, no instruction prefix).
 Every review is sentence-split and embedded once; training thereafter
 reads only the cached vectors.
+
+Published with the code, on Hugging Face:
+
+- the cached tensors every experiment reads,
+  [`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data)
+  (Section 4);
+- the trained towers behind the paper's numbers, 204 checkpoints,
+  [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
+  with the script that scores them as the paper does
+  ([`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md)).
 
 ---
 
@@ -210,9 +221,9 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 18 | 193 | 512 – 2,048 |
-| `paperTest` | every experiment the paper body reports, at its own budget | 5 | 52 | 512, 2,048 |
-| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 5 | 52 | 512, 1,024 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 19 | 193 | 512 – 2,048 |
+| `paperTest` | every experiment the paper body reports, at its own budget | 7 | 67 | 512, 2,048 |
+| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 7 | 67 | 512, 1,024 |
 
 ```bash
 python contrast_experiment/w9/Pod/w9_profiles.py     # print the three plans
@@ -228,9 +239,10 @@ as within 0.02 of the full configuration on every reading (Section 4.2,
 Table A2) and which fits a 24 GB desktop GPU.
 
 **`paperTest` and `litePaperTest` train the same number of towers.** They
-differ only in what those towers cost. `fullTest` is nearly four times the
-count; its two largest cells are the anchor ladder (30 towers) and the
-temperature sweep (30 towers).
+differ only in what those towers cost. `fullTest` is nearly three times the
+count; its largest cell is the temperature sweep (30 towers). The body's
+cells include the five-fold towers trained at 512 sentences that Table 2
+tests (CE + anchor-in-I against I-CE and CE), beside the main `pool` block.
 
 **Twenty-two tables are not twenty-two campaigns.** Tables A1, A13, A15 and
 A16 of the appendix are different readouts of one shared five-fold
@@ -418,3 +430,11 @@ Python 3.11+, `numpy`, `torch`, `h5py`, `scikit-learn`, `scipy`,
 sentence splitter), `transformers` and `sentence-transformers` (the local
 Qwen3-Embedding backend), and `pandas` (Kaggle review preparation). A run
 that only trains from prepared assets needs none of that second group.
+
+---
+
+## Citing
+
+*Invariant Game Representation Learning from Steam Reviews.* AICCC 2026.
+The appendices and the supplement the paper cites are the documents of
+Section 1. Code and documents are under the MIT license ([`LICENSE`](LICENSE)).

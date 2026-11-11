@@ -122,7 +122,7 @@ names the run without the tag.
 | `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A14) |
 | `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A18) |
 | `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
-| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12); trains the BYOL stage itself for folds that have no checkpoint |
+| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12); the BYOL stage is fetched from Hugging Face, or trained, for folds that have no checkpoint |
 | `w9_flash*.ipynb` | loss-ladder and structure grids |
 | `w9_scale.ipynb`, `w9_mq.ipynb`, `w9_save_4096_tag.ipynb` | anchor-scale & anchor-supply arms |
 | `w9_packageview.ipynb` | twin-pack `pk{N}` fractal family |
@@ -231,10 +231,12 @@ the ten. `eval/k10_eval.py` does that step.
 
 ```
 eval/
-├── k10_eval.py           # ten-draw encoding, scoring and the table
-├── rank_ckpt_plan.json   # the checkpoint the rank rule picked for each run
-└── i2bce_sel_pool.json   # the I + SimCLR checkpoints, picked by `select`
-Pod/w9_selection.py       # the rank rule (sum of exp(-rank) on validation queries)
+├── k10_eval.py                  # ten-draw encoding, scoring and the table
+├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
+├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
+├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints of Table 3 and Section 6.2
+└── superseded_ckpt_plan.json    # published checkpoints that no number of the paper reads
+Pod/w9_selection.py              # the rank rule (sum of exp(-rank) on validation queries)
 ```
 
 The draws read sentences from the full pool (`full_pool_fp16.npy` +
@@ -245,33 +247,43 @@ game, so any tower can be scored on the same ten packs.
 
 The checkpoints are on Hugging Face at
 [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-199 files and about 305 MiB in all: the 105 runs of `rank_ckpt_plan.json` and
-the five folds of I + SimCLR, and 89 more listed in that repository's own plan
-files, the 512-sentence runs on the corrected anchor packs
-(`docfix512_ckpt_plan.json`, `c2_docfix512_ckpt_plan.json`,
-`c3_docfix512_ckpt_plan.json`) and the five folds with eight latent queries
-(`q8_gpool_ckpt_plan.json`). The 512-sentence entries of
-`rank_ckpt_plan.json` are the earlier runs, on the packs as built before
-2026-11-07 and named without `_d512`; the paper's 512-sentence rows are the
-`_d512` runs of the three `docfix512` plan files.
+204 files and about 320 MiB in all, every one named by a file of `eval/`:
+
+- the 156 five-fold runs of `rank_ckpt_plan.json` and the five folds of
+  I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
+  paper reads, and `cells` takes them all;
+- the five BYOL checkpoints the two-stage runs started from, named by the
+  `init_ckpt` field of those runs in `rank_ckpt_plan.json`;
+- the eight checkpoints of `fixed_split_ckpt_plan.json`: the seven
+  fixed-split runs that train with 512-sentence anchors (Table 3,
+  Section 6.2), one of them with an earlier checkpoint kept. `k10_eval.py`
+  reads the five folds and does not score these;
+- the 30 checkpoints of `superseded_ckpt_plan.json`, which no number of the
+  paper reads: the 512-sentence runs made on the packs as built before
+  2026-11-07, which the `_d512` runs replaced, and one fold of a VICReg arm
+  that used the whole training set as its batch.
 
 ```bash
 export W9_DATA_DIR=/path/to/fusion_cache_w9           # the prebuilt data folder above
 hf download chironYu/latenarray-i2ce-checkpoints --local-dir checkpoints
-python contrast_experiment/w9/eval/k10_eval.py cells  cells.json --ckpt-dir checkpoints contrast_experiment/w9/eval/i2bce_sel_pool.json
+python contrast_experiment/w9/eval/k10_eval.py cells  cells.json --ckpt-dir checkpoints
 python contrast_experiment/w9/eval/k10_eval.py encode cells.json draws.npz      # all towers on 2,020 games x 10 draws
 python contrast_experiment/w9/eval/k10_eval.py score  cells.json draws.npz scores.json
 python contrast_experiment/w9/eval/k10_eval.py table  scores.json               # five-fold mean ± std per run family
 ```
 
-`cells` takes every run of `rank_ckpt_plan.json` plus the runs of each
-selection file given after it, and looks every checkpoint name up in
-`--ckpt-dir`, so your own runs under the same names can stand in for the
-downloaded ones: the five main families are looked up under their `_gpool`
-names, the names a run with `--anchor-cap pool` gets. A run under another
-name is scored when `cells` is given a selection file for it (a JSON of
-`{key: {"ckpt", "fold", "ep"}}`, which `select` writes for one run family).
-I + SimCLR's worker saved a 512-sentence gallery, so its
+`cells` takes every run of `rank_ckpt_plan.json` and of
+`i2bce_sel_pool.json`, plus the runs of each selection file given after it,
+and looks every checkpoint name up in `--ckpt-dir`, so your own runs under
+the same names can stand in for the downloaded ones. The five families of
+the main comparison are scored under the paper's names (`I-CE`, `CE`,
+`SimCLR`, `VICReg`, `BYOL`); they are the `_gpool` runs, the names a run
+with `--anchor-cap pool` gets. `--only <regex>` keeps the cells whose key
+matches, to score the runs of one table: `--only "_d512$"` for the
+512-sentence ones. A run under another name is scored when `cells` is given
+a selection file for it (a JSON of `{key: {"ckpt", "fold", "ep"}}`, which
+`select` writes for one run family); `superseded_ckpt_plan.json` is such a
+file. I + SimCLR's worker saved a 512-sentence gallery, so its
 checkpoints were picked by `select`, which applies the rank rule to every
 saved checkpoint of a run on the gallery the other five-fold runs select on;
 `select` does the same for a run you trained yourself. `encode` resumes from
