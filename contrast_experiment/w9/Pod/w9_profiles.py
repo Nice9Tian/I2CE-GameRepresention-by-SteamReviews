@@ -20,6 +20,8 @@ stays as an extra of this repository, and no profile runs it.
 Three profiles select from it:
 
     fullTest        every cell of the paper, the appendix and the supplement
+                    (every reported run but the view-size sweep of Table A6,
+                    which has no cell)
     paperTest       cells with a body citation, at their own budgets
     litePaperTest   paperTest with every anchor budget clamped to 1024
 

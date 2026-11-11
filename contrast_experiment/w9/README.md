@@ -238,7 +238,7 @@ the ten. `eval/k10_eval.py` does that step.
 eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
 ├── fixed_split_eval.py          # the fixed split in one command: Table 3, Section 6.2, Table A8, Figure A1, Figure 9's towers
-├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
+├── rank_ckpt_plan.json          # every five-fold run the paper reads but Table A6's: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
 ├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Section 6.2, Table A8, Figures 9, A1 and A3, Appendix L)
 └── superseded_ckpt_plan.json    # published checkpoints that no number of the paper reads
@@ -258,7 +258,8 @@ The checkpoints are on Hugging Face at
 - the 157 five-fold runs of `rank_ckpt_plan.json` and the five folds of
   I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
   paper reads, the DINO-style control of Table A1 (fold 0 only) among
-  them, and `cells` takes them all;
+  them, and `cells` takes them all. The exception is the view-size
+  sweep of Table A6, whose nine towers are not published;
 - the five BYOL checkpoints the two-stage runs started from, named by the
   `init_ckpt` field of those runs in `rank_ckpt_plan.json`;
 - the 69 checkpoints of `fixed_split_ckpt_plan.json`, from 15 fixed-split

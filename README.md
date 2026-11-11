@@ -21,7 +21,8 @@ Published with the code, on Hugging Face:
 - the cached tensors every experiment reads,
   [`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data)
   (Section 4);
-- the trained towers behind the paper's numbers, 266 checkpoints,
+- the trained towers behind the paper's numbers, 266 checkpoints (all
+  but the nine view-size towers of Table A6),
   [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
   with the scripts that score them as the paper does, five folds and
   fixed split
