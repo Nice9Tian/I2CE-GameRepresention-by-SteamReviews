@@ -4,8 +4,9 @@
 Single source of truth for w9_a100.ipynb (BIG jobs) and w9_l40.ipynb (SMALL
 jobs). The job LABEL is the compatibility contract shared with the retired
 w9_all.ipynb: it names the claim file (<out>/claims/<label>.claim) and the
-result file (ft4var_<label>{_fp}_best.json), so machines running any of the
-notebooks resume / skip / coordinate each other's work with no migration.
+files a finished run leaves (tower_<label>{_fp}_ep<N>.npz and
+zsbest_<label>{_fp}.json), so machines running any of the notebooks resume /
+skip / coordinate each other's work with no migration.
 
 Class split (is_big): anchor_cap >= 2048, or epdb_* full-population arms.
 Everything else -- all g512 fixed-split arms and ALL CV jobs -- is small.
@@ -234,7 +235,20 @@ def with_tag(label):
     return label + D512
 
 def result_name(label):
+    """the file of the legacy head phase, which a worker writes only with --head"""
     return f"ft4var_{label}{'_fp' if FULL_POOL else ''}_best.json"
+
+def zs_name(label):
+    """the selection record a finished run leaves (zero-shot protocol)"""
+    return f"zsbest_{label}{'_fp' if FULL_POOL else ''}.json"
+
+def job_done(out_dir, label, epochs):
+    """A job is done when its tower reached its epoch budget and its selection
+    record is written. The queue starts the workers without --head, so the
+    head phase's file never appears and cannot mark a job as done."""
+    out = Path(out_dir)
+    return ((out / f"tower_{label}{'_fp' if FULL_POOL else ''}_ep{epochs}.npz").exists()
+            and (out / zs_name(label)).exists())
 
 def is_big(job):
     arm, cap = job[0], job[1]
@@ -338,7 +352,7 @@ def _pending(cls, out_fs, out_cv):
         if cls != "all" and (cls == "big") != is_big(job):
             continue
         nm = fs_label(*job)
-        if (Path(out_fs) / result_name(nm)).exists():
+        if job_done(out_fs, nm, job[7] or FS_EPOCHS):
             print(f"[skip] fs {nm}")
             continue
         items.append(("fs", nm, job))
@@ -346,7 +360,7 @@ def _pending(cls, out_fs, out_cv):
         for r in CV_RECIPES:
             for k in range(N_FOLDS):
                 nm = cv_label(r, k)
-                if (Path(out_cv) / result_name(nm)).exists():
+                if job_done(out_cv, nm, CV_EPOCHS):
                     print(f"[skip] cv {r}/fold{k}")
                     continue
                 items.append(("cv", nm, r, k))
@@ -489,14 +503,14 @@ def extend_fs(job6, epochs, repo, data_dir, out_fs, full_pool_path="", gpu="0"):
 # ---------------- aggregate + audit ----------------
 def aggregate(out_fs, out_cv):
     import numpy as np
-    print("========= fixed-split bests =========")
-    for j in sorted(Path(out_fs).glob("ft4var_*_best*.json")):
+    print("========= fixed split: the selected checkpoint of each run =========")
+    for j in sorted(Path(out_fs).glob("zsbest_*.json")):
         d = json.loads(j.read_text())
-        runs = d["per_seed"]
-        m4 = np.mean([np.mean([r[v]["h1"] for r in runs]) for v in VORD])
-        print(f"{j.stem} (ep{d.get('best_ep','?')}): "
-              + " ".join(f"{v}:{np.mean([r[v]['h1'] for r in runs]):.3f}"
-                         for v in VORD) + f" m4:{m4:.3f}")
+        if any("nm_" + v not in d for v in VORD):
+            continue
+        print(f"{j.stem[len('zsbest_'):]} (ep{d.get('best_ep','?')}): "
+              + " ".join(f"{v}:{d['nm_' + v]:.3f}" for v in VORD)
+              + f" m4:{np.mean([d['nm_' + v] for v in VORD]):.3f}")
     print("\n========= 5-fold CV =========")
     for f in sorted(Path(out_cv).glob("w9cv_frozen_fold*.json")):
         d = json.loads(f.read_text())
@@ -505,11 +519,11 @@ def aggregate(out_fs, out_cv):
     for r in CV_RECIPES:
         per_fold = []
         for k in range(N_FOLDS):
-            j = Path(out_cv) / result_name(cv_label(r, k))
+            j = Path(out_cv) / zs_name(cv_label(r, k))
             if not j.exists():
                 continue
-            runs = json.loads(j.read_text())["per_seed"]
-            row = {v: np.mean([x[v]["h1"] for x in runs]) for v in VORD}
+            d = json.loads(j.read_text())
+            row = {v: d["nm_" + v] for v in VORD}
             row["m4"] = np.mean(list(row.values()))
             per_fold.append(row)
         if not per_fold:
@@ -528,18 +542,18 @@ def audit(out_fs, out_cv, cls="all"):
         if cls != "all" and (cls == "big") != is_big(job):
             continue
         nm = fs_label(*job)
-        if not (Path(out_fs) / result_name(nm)).exists():
+        if not job_done(out_fs, nm, job[7] or FS_EPOCHS):
             missing.append(nm)
     if cls in ("small", "all"):
         for r in CV_RECIPES:
             for k in range(N_FOLDS):
                 nm = cv_label(r, k)
-                if not (Path(out_cv) / result_name(nm)).exists():
+                if not job_done(out_cv, nm, CV_EPOCHS):
                     missing.append(nm)
     if missing:
         print(f"AUDIT({cls}): {len(missing)} job(s) not finished on the volume:")
         for m in missing:
             print("   -", m)
     else:
-        print(f"AUDIT({cls}): class COMPLETE -- every job has its result json.")
+        print(f"AUDIT({cls}): class COMPLETE -- every job has its tower and its selection record.")
     return missing
