@@ -14,7 +14,8 @@ the same vectors and offsets and give the same draws.
 
 Which checkpoint a tower is scored at is NOT decided here: five-fold runs are selected by the rank
 rule (Pod/w9_selection.py) on the gallery their own worker saved.  rank_ckpt_plan.json lists that
-selection for every five-fold run a number of the paper reads: 156 runs, each with its fold, its
+selection for every five-fold run a number of the paper reads, the DINO-style control of Table A1
+(one fold, not published) excepted: 156 runs, each with its fold, its
 epoch and the SHA-256 of its file; the 512-sentence ones are the runs on the current packs, named
 _d512.  `select` re-runs the rule for a run whose worker saved another gallery, on the gallery the
 workers of the main runs build (--anchor-cap pool in Pod/w9_cv_worker.py: store-page prefix plus
@@ -29,7 +30,7 @@ folds).  superseded_ckpt_plan.json: checkpoints no number of the paper reads, th
 on the packs as built before 2026-11-07 and one fold of an arm the paper dropped; it has the format
 of a selection file, so `cells` scores them when it is given the file.
 
-Every command takes --data-dir (or the W9_DATA_DIR environment variable): the folder holding
+`select`, `encode` and `score` take --data-dir (or the W9_DATA_DIR environment variable): the folder holding
 games.npz, wiki_eval.npz, sp_raw_views.npz, tag_labels.npz, wiki_eval_split.json,
 wscan_pool_rev*.npy and full_pool_fp16.npy + full_pool_meta.npz.  From the repository root:
 
@@ -42,9 +43,10 @@ wscan_pool_rev*.npy and full_pool_fp16.npy + full_pool_meta.npz.  From the repos
     python $E/k10_eval.py select <sel.json> <checkpoint dir> <run name with {fold}>
 
 `cells` looks every checkpoint name up in --ckpt-dir (absolute paths are kept), adds the runs of
-each selection file given after it, and with --only keeps the cells whose key matches the regular
-expression (--only "_d512$" for the 512-sentence runs, --only "^I-CE|^CE" for two of the main
-families).
+each selection file given after it, and with --only keeps the cells whose key in the selection
+file, or whose name in the table, matches the regular expression (--only "_d512$" for the
+512-sentence runs, --only "_gpool$" for the runs on pool packs, --only "^I-CE|^CE" for two of the
+main families).
 Needs torch with CUDA, numpy, scikit-learn (the tag probe) and h5py (imported by the tag probe's
 module; `encode` reads embedding_h5.h5 only with --h5).
 """
@@ -219,11 +221,12 @@ def cells(args):
     main = {"%s_fold%d_gpool" % (arm, k): "%s|%d" % (label, k) for label, arm in MAIN_ARMS.items() for k in range(NF)}
     for f in [PLAN, SEL_I2BCE] + [Path(a) for a in args[1:]]:
         for key, v in json.loads(f.read_text(encoding="utf-8")).items():
+            name = main.get(key, key)                              # the five main families go by the paper's names
+            if only and not (re.search(only, key) or re.search(only, name)):
+                continue                                           # --only is tried on the file's key and on that name
             p = Path(v["ckpt"])                                    # a name is looked up in --ckpt-dir
-            c[main.get(key, key)] = dict(ckpt=str(p if p.is_absolute() else ckdir / p), fold=v["fold"], ep=v["ep"])
-    if only:
-        c = {key: v for key, v in c.items() if re.search(only, key)}
-        assert c, "--only %r matches no cell" % only
+            c[name] = dict(ckpt=str(p if p.is_absolute() else ckdir / p), fold=v["fold"], ep=v["ep"])
+    assert c, "--only %r matches no cell" % only
     missing = [k for k, v in c.items() if not Path(v["ckpt"]).exists()]
     if missing:
         print("warning: %d checkpoints not found (first: %s); `encode` needs them all" % (len(missing), c[missing[0]]["ckpt"]))
@@ -396,7 +399,7 @@ def table(args):
 
 if __name__ == "__main__":
     cmd, rest = sys.argv[1], sys.argv[2:]
-    if cmd not in ("check", "table"):
+    if cmd not in ("cells", "check", "table"):
         C = Path(opt(rest, "--data-dir", os.environ.get("W9_DATA_DIR", "")))
         assert str(C) not in ("", ".") and (C / "games.npz").exists(), "--data-dir <fusion cache folder> (or W9_DATA_DIR) is required"
     dict(select=select, cells=cells, encode=encode, check=check, score=score, table=table)[cmd](rest)
