@@ -140,6 +140,27 @@ CELLS = [
          was_in="w9_experiment_5fold_2.ipynb",
          note="the other objective families of Figure 7"),
 
+    # ---- body: the 512-sentence pairs of Table 2, five folds ----------
+    Cell("body.pair.512",
+         arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
+         caps=[512], folds=5, epochs=2000,
+         cites=[TAB2, A2, A3, A10, A14],
+         was_in="w9_final_experiment.ipynb",
+         note="the pair on the 512-sentence packs: the partners of CE + "
+              "anchor-in-I in the paired tests of Table 2, the 512 rows of "
+              "Tables A2 and A14, the recipe row of Table A3 at 512, and, on "
+              "folds 0 to 2, the recipe and lambda = 0 rows of Tables A4 to A6"),
+
+    Cell("body.anchor_in_i.5fold",
+         arms=["wcle_ai2ce_icetf"],
+         caps=[512], folds=5, epochs=2000,
+         cites=[TAB2, SEC62, A14],
+         was_in="w9_anchor_in_i_5fold.ipynb (the fixed-split run is in "
+                "body.decomp.rows)",
+         note="CE + anchor-in-I under the folds, seeds, sampler and schedule "
+              "of body.pair.512; Table 2 and Section 6.2 test it per fold "
+              "against that pair"),
+
     # ---- body: the decomposition ablation, fixed split @512 -----------
     Cell("body.decomp.rows",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf",
@@ -181,11 +202,12 @@ CELLS = [
     # ---- appendix: the anchor-budget ladder ---------------------------
     Cell("apx.ladder",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
-         caps=[512, 1024, 2048], folds=5, epochs=2000,
+         caps=[1024, 2048], folds=5, epochs=2000,
          cites=[A2, A3, A10, A14],
          was_in="w9_final_experiment.ipynb",
-         note="512 and 1,024 are the smaller rows of Tables A2 and A14, whose "
-              "2,048 rows are body.pair. The 2,048 rung here is a second run "
+         note="1,024 is the middle row of Tables A2 and A14, whose 512 rows "
+              "are body.pair.512 and whose 2,048 rows are body.pair. The "
+              "2,048 rung here is a second run "
               "of the pair, capped at 2,048 sentences in total: its I-CE is "
               "the recipe row of Table A3 at 2,048, the seed-paired control "
               "of apx.temperature, and its peak is the 35.0 GiB of Table A10; "
@@ -210,8 +232,9 @@ CELLS = [
               "started from BYOL epochs 450, 700, 450, 450 and 300 (folds 0 "
               "to 4), the picks of the BYOL runs' workers at the time. "
               "The notebook takes those checkpoints from a full BYOL run "
-              "when one is there and trains the BYOL arm to those epochs "
-              "itself when it is not",
+              "when one is there; otherwise it fetches the published files "
+              "from Hugging Face, or trains the BYOL arm to those epochs "
+              "itself",
          extra={"init_from": "wcle_byol_bytf", "name_suffix": "_bw"}),
 
     Cell("apx.swin.window",
@@ -272,12 +295,12 @@ CELLS = [
          cites=[A3],
          was_in="w9_i2ce_t.ipynb",
          note="tau 0.05 / 0.10 / learnable; Table A3 tabulates learnable tau "
-              "at 2,048 only, and its recipe rows are the I-CE of apx.ladder "
-              "at 512 and at 2,048"),
+              "at 2,048 only, and its recipe rows are the I-CE of "
+              "body.pair.512 and of apx.ladder at 2,048"),
 
     # ---- appendix: invariance weight, view count, latent queries ------
     # Folds 0 to 2 at 512 sentences. The recipe rows of Tables A4 to A6 and
-    # the lambda = 0 row of Table A4 are the I-CE and CE towers of apx.ladder
+    # the lambda = 0 row of Table A4 are the I-CE and CE towers of body.pair.512
     # on the same three folds, NOT more training runs.
     Cell("apx.lambda",
          arms=["wcle_ice_icetf",            # lambda = 1
@@ -317,17 +340,6 @@ CELLS = [
          was_in="w9_experiment_5fold_2.ipynb",
          note="Q = 8 on the five folds, seed-paired with the I-CE of "
               "body.pair (the five-fold rows of Table A6)"),
-
-    # ---- appendix: CE + anchor-in-I on the five folds -----------------
-    Cell("apx.anchor_in_i.5fold",
-         arms=["wcle_ai2ce_icetf"],
-         caps=[512], folds=5, epochs=2000,
-         cites=[A14],
-         was_in="w9_anchor_in_i_5fold.ipynb (the fixed-split run is in "
-                "body.decomp.rows)",
-         note="CE + anchor-in-I under the folds, seeds, sampler and schedule "
-              "of the 512-sentence I-CE of apx.ladder. Table 2 and Section "
-              "6.2 of the body quote this five-fold reading"),
 
     # ---- appendix: the teacher must exclude the student's views -------
     Cell("apx.vfa",
