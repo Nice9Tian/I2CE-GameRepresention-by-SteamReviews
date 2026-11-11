@@ -14,9 +14,9 @@ A100 adaptations vs the local (RTX3080) cells:
   * EVERYTHING lives in VRAM: the 2048-sentence review pool (8.5 GB), the
     flat pseudo-queries (8.5 GB), anchors, doc views, eval queries. View
     sampling gathers on-GPU in one indexing kernel (no host copies).
-  * --anchor-cap 2048 rebuilds the FULL-budget anchor (sp_clean prefix +
-    whole reviews to 2048) on the fly from the pool — the design the user
-    wanted originally, affordable on 80 GB.
+  * --anchor-cap 1024 or 2048 builds the anchor on the fly from the pool:
+    the store-page prefix plus whole reviews up to that many sentences in
+    total.
   * --anchor-cap pool takes the prefix plus the game's WHOLE review pool
     (no review left out; packs of up to 2,184 sentences, a median of 2,068).
     These are the packs of the paper's main five-fold runs, and the run
@@ -27,11 +27,11 @@ A100 adaptations vs the local (RTX3080) cells:
     control of the paper's Section 4.3; Table A1, fold 0). It takes
     --anchor-cap pool; the checkpoints keep the EMA teacher's tower under
     "model", the one DINO evaluates, next to the student and both heads.
-Protocol (identical to the local run): fully inductive (train gallery =
-1,613 train games), frozen tower tau=0.02 for CE-family, rejection view
-sampler a(L)=0.2+0.7*(L-Lmin)/(Lmax-Lmin) over WHOLE reviews (no truncation),
-game-level 2:1 doc-gating in the head, selection score
-vsel = max(S(non@1;0.45), S(non@5;0.65)) + S(neu@1;0.85).
+Protocol: fully inductive (the training gallery is the fold's 1,694 or
+1,695 training games), frozen tower tau=0.02 for CE-family, rejection view
+sampler a(L)=0.2+0.7*(L-Lmin)/(Lmax-Lmin) over WHOLE reviews (no truncation).
+The legacy --head phase adds game-level 2:1 doc-gating and its own selection
+score, vsel = max(S(non@1;0.45), S(non@5;0.65)) + S(neu@1;0.85).
 
 Resume: tower checkpoints and every ft4var json are skipped when present.
 Output: <out-dir>/<files mirroring the local naming>.
@@ -105,6 +105,8 @@ ARMS = {
     #   ONLY the loss changes (no anchor softmax). i4=align_w2, i6=align_w3.
     "wcle_bce_cetf": ("bce", "ce"),   # SimCLR-style in-batch NT-Xent over
     # the step's 4*bs view encodings (ring-sibling positives, no anchors)
+    "wcle_i2bce_icetf": ("i2bce", "ice"),   # the same with the invariance
+    # term among the views at weight 2: I + SimCLR (Figure 8)
     "wcle_swin168step84loop2i2ce_icetf": ("swin168step84loop2i2ce", "ice"),
     "wcle_swin84step42loop2i2ce_icetf": ("swin84step42loop2i2ce", "ice"),
     #   20G recipe (user 2026-07-22): W=84 window x cap 2048 -- both proven
@@ -134,7 +136,7 @@ ARMS = {
     # sliding fresh-window i2ce (user): CE field = now-batch 192 anchors +
     # L ring windows of W (fresh, grad, no cache); micro-pass backward.
 }
-_IW = {"ice": 1.0, "i2ce": 2.0, "ma2i2ce": 2.0, "vfai2ce": 2.0, "mq3072i2ce": 2.0, "swin168step84loop2i2ce": 2.0, "swin84step42loop2i2ce": 2.0, "cegate1": 1.0, "cegate2": 2.0, "cegate3": 3.0,
+_IW = {"i2bce": 2.0, "ice": 1.0, "i2ce": 2.0, "ma2i2ce": 2.0, "vfai2ce": 2.0, "mq3072i2ce": 2.0, "swin168step84loop2i2ce": 2.0, "swin84step42loop2i2ce": 2.0, "cegate1": 1.0, "cegate2": 2.0, "cegate3": 3.0,
        "cegate4": 4.0, "cegate1w": 1.0, "cegate2w": 2.0, "igate1": 1.0,
        "igate1w": 1.0, "rgate2": 2.0, "nodoc": 2.0,
        "i4uni2": 4.0, "i6uni2": 6.0, "i2au2": 2.0, "i2au25": 2.0,
@@ -333,7 +335,7 @@ def main():
     mq_m = re.match(r"mq(\d+)(i2ce|ce)$", tower_kind)
     MQ_LEN = int(mq_m.group(1)) if mq_m else 0        # MoCo FIFO ring length
     MQ_M = 0.99                                       # shadow weight-EMA momentum
-    BCE = tower_kind == "bce"          # in-batch views, no gallery
+    BCE = tower_kind in ("bce", "i2bce")   # in-batch views, no gallery
     UNI = tower_kind in ("i4uni2", "i6uni2")   # W&I: batch uniformity, no anchor
     UNI_T = 2.0                        # W&I uniformity Gaussian t (repo default)
     _au = re.match(r"i2au(\d+)$", tower_kind)   # I2CE with CE->align+uniform
@@ -380,6 +382,13 @@ def main():
                          "--anchor-cap pool")
     if args.smoke_steps and not DINO:
         raise SystemExit("--smoke-steps is read by the DINO arm only")
+    if args.init_ckpt and (DINO or tower_kind in ("byol", "mv3")
+                           or tower_kind.startswith("epd")):
+        # only the main loop (train_v4doc) loads it; the BYOL, VICReg and
+        # DINO loops would start from scratch under a name that says _bw
+        raise SystemExit("--init-ckpt warm-starts the arms of the main "
+                         "training loop only; this arm's loop does not "
+                         "read it")
     name = (f"w9cv_{args.arm}_fold{args.fold}"
             + (f"_g{args.anchor_cap}" if args.anchor_cap != 512 else "")
             + ("_nsp" if args.no_sp_view else "")
@@ -1567,8 +1576,9 @@ def main():
         Rows 0..B-1 are view 0, rows B..2B-1 view 1. The game's pool pack
         is the store-page prefix plus its whole review pool; each step the
         reviews are shuffled and dealt greedily ("fits -> goes in", the pack
-        rule) into view 0 up to G sentences, then the remaining reviews into
-        view 1. The store-page prefix opens both views."""
+        rule) into view 0 up to G sentences, then the reviews still unused
+        into view 1, up to G sentences as well. The store-page prefix opens
+        both views and counts toward G."""
         G = args.dino_global
         B = len(gids)
         pidx = np.zeros((2 * B, G), np.int64)
@@ -1675,7 +1685,10 @@ def main():
         freeze = int(args.dino_freeze_last * T)
         RES = OUT / f"resume_{name}.pt"
         start_ep = 0
-        if RES.exists() and not args.smoke_steps:
+        # a smoke or measure run starts from scratch and leaves the folder
+        # as it found it: no resume, no checkpoint, and it stops in the loop
+        dry = bool(args.smoke_steps or args.measure_vram)
+        if RES.exists() and not dry:
             st = torch.load(RES, map_location="cpu", weights_only=False)
             for mod, key in ((s_bb, "student"), (s_hd, "s_head"),
                              (t_bb, "model"), (t_hd, "t_head")):
@@ -1772,7 +1785,7 @@ def main():
                                 prefix_med=int(np.median(gdl)))
                 if args.measure_vram:
                     mv_steps += 1
-                    if mv_steps >= 3:
+                    if mv_steps >= min(3, T):
                         torch.cuda.synchronize()
                         peak = int(torch.cuda.max_memory_allocated())
                         Path(args.measure_vram).write_text(str(peak))
@@ -1783,14 +1796,14 @@ def main():
                     print("  " + json.dumps({k: (round(v, 4) if isinstance(v, float)
                                                  else v) for k, v in diag.items()}),
                           flush=True)
-                    if it + 1 >= args.smoke_steps:
+                    if it + 1 >= min(args.smoke_steps, T):
                         dt = (time.time() - t0) / (it + 1)
                         pk = torch.cuda.max_memory_allocated() / 2**30
                         print(f"[smoke] {it+1} steps, {dt:.2f}s/step, "
                               f"peak {pk:.1f} GiB, est {dt*T/3600:.1f} h for "
                               f"{args.epochs} ep", flush=True)
                         raise SystemExit(0)
-            if (ep + 1) % args.ckpt_every == 0:
+            if (ep + 1) % args.ckpt_every == 0 and not dry:
                 cp = lambda mod: {k: v.detach().cpu().clone()
                                   for k, v in mod.state_dict().items()}
                 core = dict(model=cp(t_bb), student=cp(s_bb), t_head=cp(t_hd),
