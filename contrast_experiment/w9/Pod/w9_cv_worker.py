@@ -17,6 +17,12 @@ A100 adaptations vs the local (RTX3080) cells:
   * --anchor-cap 2048 rebuilds the FULL-budget anchor (sp_clean prefix +
     whole reviews to 2048) on the fly from the pool — the design the user
     wanted originally, affordable on 80 GB.
+  * --anchor-cap pool takes the prefix plus the game's WHOLE review pool
+    (no review left out; packs of up to 2,184 sentences, a median of 2,068).
+    These are the packs of the paper's main five-fold runs, and the run
+    names end in _gpool. A numeric cap above the pool's 2,048 review
+    sentences is refused: the pool cannot fill it, and the run would carry
+    a budget in its name that it did not train at.
 Protocol (identical to the local run): fully inductive (train gallery =
 1,613 train games), frozen tower tau=0.02 for CE-family, rejection view
 sampler a(L)=0.2+0.7*(L-Lmin)/(Lmax-Lmin) over WHOLE reviews (no truncation),
@@ -97,7 +103,7 @@ ARMS = {
     "wcle_swin168step84loop2i2ce_icetf": ("swin168step84loop2i2ce", "ice"),
     "wcle_swin84step42loop2i2ce_icetf": ("swin84step42loop2i2ce", "ice"),
     #   20G recipe (user 2026-07-22): W=84 window x cap 2048 -- both proven
-    #   free (A4 window sweep + A2 saturation); store 8.5G, fits a 20G card.
+    #   free (the window-size sweep + the Table A2 saturation); store 8.5G, fits a 20G card.
     # ---- tau sweep (user 2026-07-19, w9_i2ce_t.ipynb) ----
     "wcle_i2cet05_icetf": ("i2ce", "ice"),   # tau = 0.05 (from ARM name)
     "wcle_i2cet10_icetf": ("i2ce", "ice"),   # tau = 0.10
@@ -136,13 +142,23 @@ ARC_S_T, ARC_M_T = 50.0, 0.2       # tower ArcFace
 K1, K2, S_A, S_B = 1.0, 1.0, 10.0, 1.0   # vsel piecewise score
 
 
+def anchor_cap_arg(s):
+    """--anchor-cap: a sentence count, or `pool` (prefix + the whole review pool)."""
+    return "pool" if s == "pool" else int(s)
+
+
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir", required=True)
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--repo", required=True)
     ap.add_argument("--arm", required=True, choices=sorted(ARMS))
-    ap.add_argument("--anchor-cap", type=int, default=512)
+    ap.add_argument("--anchor-cap", type=anchor_cap_arg, default=512,
+                    help="sentences per anchor pack, store-page prefix "
+                         "included: 512 (the shipped packs), or 1024 / 2048 "
+                         "built from the 2,048-sentence review pool; `pool` = "
+                         "the prefix plus the game's whole review pool, the "
+                         "packs of the paper's main five-fold runs (_gpool)")
     ap.add_argument("--pfc-shards", type=int, default=0,
                     help="distributed sharded softmax (Partial-FC): split "
                          "the ring into K shards, each sweeps a swin window "
@@ -458,10 +474,29 @@ def main():
         print(f"anchors: PREBUILT g{args.anchor_cap} pack, used med "
               f"{int(gal_len.float().median())}", flush=True)
     else:
-        GCAP = args.anchor_cap
-        print(f"building {GCAP}-sentence anchors on GPU "
-              f"(POOL source, caps at {POOL.shape[1] if POOL is not None else '?'} "
-              f"review sentences) ...", flush=True)
+        if args.anchor_cap == "pool":
+            # The store-page prefix plus the game's WHOLE review pool: every
+            # review fits, so the tensor is as wide as the longest such pack.
+            GCAP = max((int(ST["S_len"][sp_row[g]]) if g in sp_row else 0)
+                       + int(plen[g]) for g in range(NG))
+            print(f"building prefix + whole-pool anchors on GPU "
+                  f"(longest pack {GCAP} sentences) ...", flush=True)
+        else:
+            GCAP = args.anchor_cap
+            if GCAP > POOL.shape[1] and not MA_N:
+                # The pool cannot fill a cap above its own size: the cap
+                # would never bind, the packs would be prefix + whole pool
+                # in a tensor padded to the cap, and the run name would
+                # state a budget the tower was not trained at.
+                raise SystemExit(
+                    f"--anchor-cap {GCAP} is above the {POOL.shape[1]} review "
+                    f"sentences the pool holds per game, so it cannot be "
+                    f"met. Pass --anchor-cap pool for the store-page prefix "
+                    f"plus the whole pool (the paper's main five-fold "
+                    f"packs), or a cap of at most {POOL.shape[1]}.")
+            print(f"building {GCAP}-sentence anchors on GPU "
+                  f"(POOL source, caps at {POOL.shape[1]} "
+                  f"review sentences) ...", flush=True)
         SGal = torch.zeros(NG, GCAP, 1024, dtype=torch.float16, device=dev)
         gal_len = torch.zeros(NG, dtype=torch.long, device=dev)
         gal_doc = torch.zeros(NG, dtype=torch.long, device=dev)
@@ -815,7 +850,7 @@ def main():
 
             def _pfc_enc(_wt):
                 # gradient checkpoint: keep only the [W,128] output; the big
-                # [W,4096,1024] activation is recomputed one window at a
+                # [W, pack width, 1024] activation is recomputed one window at a
                 # time in backward, so K shard windows never sit live
                 # simultaneously (the OOM fix). Exact same output.
                 with torch.amp.autocast("cuda"):
@@ -1703,7 +1738,7 @@ def main():
     if not fb.exists():
         with torch.no_grad():
             # CHUNKED: SGal.float() on the whole [NG, cap, 1024] tensor is
-            # 31.6 GiB in one allocation at cap 4096 and OOMs an 80G card
+            # 31.6 GiB in one allocation at a pack width of 4,096 and OOMs an 80G card
             # that already holds the fp16 gallery.
             Zg0 = np.zeros((NG, SGal.shape[-1]), np.float32)
             for _i in range(0, NG, 64):

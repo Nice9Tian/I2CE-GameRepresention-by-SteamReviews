@@ -50,7 +50,7 @@ from main_model import LariceConfig, LariceTower, ice_loss  # noqa: E402
 
 # ----------------------------------------------------------------- settings
 D_IN = 1024          # upstream sentence-embedding width (Qwen3-Embedding-0.6B)
-M_A = 512            # anchor-pack budget in sentences (paper: 512 to 4,096)
+M_A = 512            # anchor-pack budget in sentences (paper: 512 to 2,048)
 VIEW_MIN = 16        # a strong view holds whole reviews until >= 16 sentences
 V = 4                # views per item: V-1 review views + 1 document view
 

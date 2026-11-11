@@ -38,8 +38,8 @@ VARIANTS = ("neutral", "noname", "positive", "negative")
 # Anchor budget: sentences per pack (doc prefix, then whole reviews).
 # Resolution order is --anchor-cap, then --profile, then LARICE_ANCHOR_CAP,
 # then the default profile. It is a parameter rather than a constant
-# because it decides whether the run fits the machine at all: at 4,096
-# this build allocates ~17 GB of host RAM and training peaks near 61 GiB,
+# because it decides whether the run fits the machine at all: at 2,048
+# this build allocates 8.5 GB of host RAM and training peaks at 35.0 GiB,
 # where 1,024 needs 4.2 GB and 22.3 GiB. See dataset_builder/profiles.py.
 GCAP = int(os.environ.get("LARICE_ANCHOR_CAP") or profiles.anchor_cap())
 

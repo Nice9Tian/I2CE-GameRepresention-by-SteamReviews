@@ -194,7 +194,7 @@ def ensure_assets(profile=profiles.DEFAULT_PROFILE):
         print(f"assets: all present, {cap}-sentence anchors in "
               f"{gallery_path(cap).name} — skip", flush=True)
         return
-    else:                                  # e.g. the shipped 512 packs, a 1,024 or 4,096 profile
+    else:                                  # e.g. the shipped 512 packs, a 1,024 or 2,048 profile
         print(f"assets: present, but no {cap}-sentence anchor packs yet ...",
               flush=True)
         steps = ["--step", "3"]
@@ -224,7 +224,7 @@ def main():
                     help="sets the anchor budget the assets are built at "
                          "and therefore trained at: litePaperTest = "
                          f"{profiles.LITE_CAP} sentences (24 GB GPU), "
-                         f"paperTest/fullTest = {profiles.FULL_CAP} (80 GB)")
+                         f"paperTest/fullTest = {profiles.FULL_CAP} (48 GB)")
     ap.add_argument("--arm", choices=["i2ce", "cegate2"], default="i2ce",
                     help="i2ce = the manuscript's objective (default); "
                          "cegate2 = the CE-gated ablation")

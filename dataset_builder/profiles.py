@@ -15,12 +15,11 @@ machine, because the gallery is re-encoded with gradient at every step:
     2,048                8.5 GB                       35.0 GiB
     4,096               16.9 GB                        ~61 GiB
 
-A 24 GB desktop GPU covers budgets to 1,024; 2,048 wants a 48 GB card
-and 4,096 an 80 GB card.
+A 24 GB desktop GPU covers budgets to 1,024; 2,048, the paper's budget,
+wants a 48 GB card. No profile uses 4,096, which wants an 80 GB card.
 That is what `litePaperTest` exists to avoid, so the profile has to reach
-the data build too, not just the trainer -- assets built at 4,096 would
-OOM a desktop card before the first step, and would already have needed
-17 GB of host RAM to write.
+the data build too, not just the trainer: assets built at 2,048 would
+OOM a desktop card before the first step.
 
 `w9/Pod/w9_profiles.py` holds the experiment grid these names select
 from. It imports LITE_CAP from here when the repository is present and
@@ -34,8 +33,8 @@ PROFILES = ("fullTest", "paperTest", "litePaperTest")
 #: reading, Section 4.2 and Table A2), and it fits a 24 GB card.
 LITE_CAP = 1024
 
-#: The manuscript's headline budget.
-FULL_CAP = 4096
+#: The manuscript's budget.
+FULL_CAP = 2048
 
 #: The largest anchor budget each profile trains at, which is what the
 #: packaged data build has to produce.

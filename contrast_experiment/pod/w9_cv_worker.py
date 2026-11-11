@@ -299,6 +299,13 @@ def main():
         gal_doc = torch.tensor(GALd["gal_doc_len"]).to(dev)
     else:
         GCAP = args.anchor_cap
+        if GCAP > POOL.shape[1]:
+            # the pool cannot fill a cap above its own size: the cap would
+            # never bind and the run name would state a budget not trained at
+            raise SystemExit(
+                f"--anchor-cap {GCAP} is above the {POOL.shape[1]} review "
+                f"sentences the pool holds per game, so it cannot be met; "
+                f"use a cap of at most {POOL.shape[1]}.")
         print(f"building {GCAP}-sentence anchors on GPU ...", flush=True)
         SGal = torch.zeros(NG, GCAP, 1024, dtype=torch.float16, device=dev)
         gal_len = torch.zeros(NG, dtype=torch.long, device=dev)
