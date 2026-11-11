@@ -122,6 +122,7 @@ names the run without the tag.
 | `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A14) |
 | `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A18) |
 | `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
+| `w9_dino_control.ipynb` | DINO at its published settings, fold 0 @pool (the control of Section 4.3, Table A1) |
 | `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12); the BYOL stage is fetched from Hugging Face, or trained, for folds that have no checkpoint |
 | `w9_flash*.ipynb` | loss-ladder and structure grids |
 | `w9_scale.ipynb`, `w9_mq.ipynb`, `w9_save_4096_tag.ipynb` | anchor-scale & anchor-supply arms |
@@ -234,7 +235,7 @@ eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
 ├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
-├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints of Table 3 and Section 6.2
+├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Table A7, Figures 9, A1 and A3)
 └── superseded_ckpt_plan.json    # published checkpoints that no number of the paper reads
 Pod/w9_selection.py              # the rank rule (sum of exp(-rank) on validation queries)
 ```
@@ -247,18 +248,25 @@ game, so any tower can be scored on the same ten packs.
 
 The checkpoints are on Hugging Face at
 [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-204 files and about 320 MiB in all, every one named by a file of `eval/`:
+265 files and about 580 MiB in all, every one named by a file of `eval/`:
 
-- the 156 five-fold runs of `rank_ckpt_plan.json` and the five folds of
+- the 157 five-fold runs of `rank_ckpt_plan.json` and the five folds of
   I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
-  paper reads, all but the DINO-style control of Table A1 (one fold, not
-  published), and `cells` takes them all;
+  paper reads, the DINO-style control of Table A1 (fold 0 only) among
+  them, and `cells` takes them all;
 - the five BYOL checkpoints the two-stage runs started from, named by the
   `init_ckpt` field of those runs in `rank_ckpt_plan.json`;
-- the eight checkpoints of `fixed_split_ckpt_plan.json`: the seven
-  fixed-split runs that train with 512-sentence anchors (Table 3,
-  Section 6.2), one of them with an earlier checkpoint kept. `k10_eval.py`
-  reads the five folds and does not score these;
+- the 68 checkpoints of `fixed_split_ckpt_plan.json`, from 15 fixed-split
+  runs: the seven that train with 512-sentence anchors (Table 3,
+  Section 6.2), one of them with an earlier checkpoint kept; a+u @ views
+  (Table 3); the three VICReg weightings of Table A7; and the towers of
+  Figure 9, Figure A3 and Appendix L (CE and I-CE trained at 2,048
+  sentences, the SimCLR-style tower, I + SimCLR). Two runs list more
+  than their selected checkpoint under `trajectory`: all 40 checkpoints
+  of the I-CE run, whose latent queries Figure A1 draws, and the
+  SimCLR-style checkpoints from epoch 1,350 on, whose test curve
+  Appendix L describes. `k10_eval.py` reads the five folds and does not
+  score these;
 - the 30 checkpoints of `superseded_ckpt_plan.json`, which no number of the
   paper reads: the 512-sentence runs made on the packs as built before
   2026-11-07, which the `_d512` runs replaced, and one fold of a VICReg arm

@@ -8,10 +8,8 @@ constants inside twelve notebooks. Nothing said which run produced which
 number. This module is that missing statement.
 
 Every CELL below carries `cites`: the figures and tables it feeds. A cell
-with a body citation (FIG7, FIG8, TAB2, TAB3, SEC*) is reported in the paper
-itself; the rest are appendix- or supplement-only. One reported run has no
-cell: the DINO-style control of Section 4.3 (Table A1, fold 0 only), whose
-training code is not part of this release. Nothing is listed here
+with a body citation (FIG7, FIG8, FIG9, TAB2, TAB3, SEC*) is reported in the
+paper itself; the rest are appendix- or supplement-only. Nothing is listed here
 that the paper, the appendix or the supplement does not mention, so the exploratory families -- twin-pack
 `pk*`, the slot/readout capacity grid, multi-anchor `ma2*`, the async
 simulation, hard-negative `nemesis` -- are deliberately absent. They stay
@@ -52,13 +50,14 @@ outside the standard library, so `w9/` stays copyable to a pod on its own.
 # Body of the manuscript.
 FIG7 = "Figure 7"          # the objective families
 FIG8 = "Figure 8"          # name-stripped hit@1 by genre
+FIG9 = "Figure 9"          # one neighborhood under six encoders (fixed split)
 TAB2 = "Table 2"           # paired tests over the five folds
 TAB3 = "Table 3"           # the decomposition ablation
 SEC61 = "Section 6.1"      # the headline five-fold reading
 SEC62 = "Section 6.2"      # the decomposition sweep
 SEC32 = "Section 3.2"      # the momentum-teacher / memory-bank comparison
 
-BODY = {FIG7, FIG8, TAB2, TAB3, SEC61, SEC62, SEC32}
+BODY = {FIG7, FIG8, FIG9, TAB2, TAB3, SEC61, SEC62, SEC32}
 
 # Online appendix.
 A1 = "Table A1"; A2 = "Table A2"; A3 = "Table A3"; A4 = "Table A4"
@@ -67,7 +66,10 @@ A9 = "Table A9"; A10 = "Table A10"; A11 = "Table A11"; A12 = "Table A12"
 A13 = "Table A13"; A14 = "Table A14"; A15 = "Table A15"; A16 = "Table A16"
 A17 = "Table A17"          # displacement / margin / ratio (Appendix M)
 A18 = "Table A18"
+FIGA1 = "Figure A1"        # the four latent queries over training (Appendix C)
 FIGA2 = "Figure A2"        # UMAP of anchors and queries (Appendix L)
+FIGA3 = "Figure A3"        # Figure 8 on the fixed split (Appendix L)
+APXL = "Appendix L"        # the 201-neighborhood statistics of the fixed split
 # The window-size sweep has no table in the paper; see apx.swin.window.
 WSWEEP = "window-size sweep (no table in the paper)"
 # Supplementary material (Supplements A-C).
@@ -75,7 +77,8 @@ S1 = "Table S1"; S2 = "Table S2"; S3 = "Table S3"; S4 = "Table S4"
 
 POOL = "pool"              # caps: the store-page prefix plus the whole review pool
 FIXED = 0                  # folds=FIXED means the fixed 204/203/407 split
-                           # folds=3 means folds 0 to 2 of the five
+                           # folds=3 means folds 0 to 2 of the five,
+                           # folds=1 fold 0 only
 
 
 class Cell:
@@ -188,7 +191,9 @@ CELLS = [
          caps=[512], folds=FIXED, epochs=2000,
          cites=[TAB3, SEC62],
          was_in="w9_flash.ipynb",
-         note="repulsion target x align:uniformity ratio"),
+         note="repulsion target x align:uniformity ratio. The a+u @ views "
+              "tower (i4uni2) is also read in Appendix L, against the ten "
+              "4,096-sentence draws"),
 
     Cell("body.decomp.projection",
          # The kernel-temperature / projection axis of the same sweep:
@@ -202,6 +207,39 @@ CELLS = [
          was_in="w9_flash.ipynb",
          note="the 'settings in online Appendix H' sweep of Section 6.2; the projection grid "
               "is repository-only detail behind the geometry files of Table A9"),
+
+    # ---- body: the fixed-split towers of Figure 9 ----------------------
+    # Figure 9, Figure A3 and the neighborhood statistics of Appendix L read
+    # six encoders on the fixed split against the ten 4,096-sentence draws:
+    # the frozen embedder and the five towers of the two cells below. Each
+    # checkpoint is the rank rule's choice over the run's 40 (epochs 1,750,
+    # 1,150, 1,350, 1,350 and 100 in the order listed). The three anchor-free
+    # runs were trained 1,000 epochs and then on to 2,000 from the weights of
+    # epoch 1,000 with a fresh optimizer state, so a fresh 2,000-epoch run
+    # reproduces the protocol, not those runs bit for bit.
+    Cell("body.neighborhood.pair",
+         arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
+         caps=[2048], folds=FIXED, epochs=2000,
+         cites=[FIG9, FIGA1, FIGA3, APXL],
+         was_in="w9_jobs.FS_JOBS",
+         note="I-CE and CE on the fixed split at the 2,048-sentence budget. "
+              "Figure A1 draws the four latent queries of the I-CE run at "
+              "each of its 40 checkpoints, all of them published"),
+
+    Cell("body.neighborhood.views",
+         arms=["wcle_bce_cetf",             # SimCLR-style, in-batch views
+               "wcle_i2bce_icetf",          # the same with the invariance term
+               "wcle_epd_v20i10c20_cetf"],  # VICReg, the recipe weights
+         caps=[512], folds=FIXED, epochs=2000,
+         cites=[FIG9, FIGA3, APXL, A7],
+         was_in="w9_jobs.FS_JOBS",
+         note="the towers of those figures that read no anchor in training, "
+              "so the 512 here only names the gallery the worker saved; "
+              "their checkpoints are chosen on a 4,096-sentence pack of the "
+              "split. The VICReg arm is also the recipe-weights row of "
+              "Table A7. Appendix L describes the SimCLR-style run's test "
+              "curve from epoch 1,350 on, and those checkpoints are "
+              "published too"),
 
     # ---- appendix: the anchor-budget ladder ---------------------------
     Cell("apx.ladder",
@@ -284,13 +322,28 @@ CELLS = [
 
     # ---- appendix: VICReg weight sweep --------------------------------
     Cell("apx.vicreg.sweep",
-         arms=["wcle_epd_v25i25c1_cetf", "wcle_epd_v20i10c20_cetf",
+         arms=["wcle_epd_v25i25c1_cetf",
                "wcle_epd_v20i10c15_cetf", "wcle_epdb_v25i25c1_cetf",
                "wcle_epdb_v20i10c20_cetf"],
          caps=[512], folds=FIXED, epochs=2000,
          cites=[A7],
          was_in="w9_jobs.FS_JOBS",
-         note="v/i/c weights; epdb = batch-all variant"),
+         note="v/i/c weights; the recipe-weights row of Table A7 (20/10/20) "
+              "is the VICReg arm of body.neighborhood.views. epdb = the "
+              "batch-all variant, which Table A7 leaves out"),
+
+    # ---- appendix: the DINO-style control -----------------------------
+    Cell("apx.dino",
+         arms=["wcle_dino_dntf"],
+         caps=[POOL], folds=1, epochs=2000,
+         cites=[A1],
+         was_in="w9_dino_control.ipynb",
+         note="the control of Section 4.3: DINO at its published settings, "
+              "none swept, on fold 0 only (recipe in Table A9). The teacher's "
+              "two global views split the store-page prefix and the review "
+              "pool; the student's review views come from the full library. "
+              "The published checkpoint is epoch 1,650, the rank rule's "
+              "choice, and Table A1 gives its spread over the ten draws"),
 
     # ---- appendix: temperature ----------------------------------------
     Cell("apx.temperature",
@@ -430,7 +483,8 @@ if __name__ == "__main__":
         print(f"===== {p}: {len(rows)} cells, {total} towers =====")
         for c, caps, n in rows:
             tag = "body" if c.in_body else "apx "
-            fold = "fixed" if c.folds == FIXED else f"{c.folds}fold"
+            fold = ("fixed" if c.folds == FIXED else "fold0" if c.folds == 1
+                    else f"{c.folds}fold")
             print(f"  [{tag}] {c.key:22s} {len(c.arms)}arm "
                   f"{str(caps):18s} {fold:6s} {c.epochs:>4}ep  {n:>3} towers"
                   f"   {', '.join(c.cites[:3])}")

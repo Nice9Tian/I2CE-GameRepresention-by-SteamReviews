@@ -21,7 +21,7 @@ Published with the code, on Hugging Face:
 - the cached tensors every experiment reads,
   [`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data)
   (Section 4);
-- the trained towers behind the paper's numbers, 204 checkpoints,
+- the trained towers behind the paper's numbers, 265 checkpoints,
   [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
   with the script that scores them as the paper does
   ([`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md)).
@@ -221,9 +221,9 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 19 | 188 | 512 – 2,048 |
-| `paperTest` | every experiment the paper body reports, at its own budget | 7 | 67 | 512, 2,048 |
-| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 7 | 67 | 512, 1,024 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 22 | 193 | 512 – 2,048 |
+| `paperTest` | every experiment the paper body reports, at its own budget | 9 | 72 | 512, 2,048 |
+| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 9 | 72 | 512, 1,024 |
 
 ```bash
 python contrast_experiment/w9/Pod/w9_profiles.py     # print the three plans
@@ -234,17 +234,19 @@ Four things worth knowing before you pick one.
 **The clamp is a ceiling, not a setting.** `litePaperTest` lowers only the
 cells the paper ran above 1,024. A cell the paper ran at 512 stays at 512,
 because rerunning it at 1,024 would not reproduce the published row. What
-moves is the 2,048 five-fold block, to a budget the paper itself measures
-as within 0.02 of the full configuration on every reading (Section 4.2,
+moves is the 2,048 five-fold block, and with it the fixed-split I-CE and CE
+of Figure 9, to a budget the paper itself measures on the five folds as
+within 0.02 of the full configuration on every reading (Section 4.2,
 Table A2) and which fits a 24 GB desktop GPU.
 
 **`paperTest` and `litePaperTest` train the same number of towers.** They
 differ only in what those towers cost. `fullTest` is nearly three times the
 count; its largest cell is the temperature sweep (30 towers). The body's
 cells include the five-fold towers trained at 512 sentences that Table 2
-tests (CE + anchor-in-I against I-CE and CE), beside the main `pool` block.
-One reported run is in no profile: the DINO-style control of Section 4.3
-(Table A1, fold 0 only), whose training code is not part of this release.
+tests (CE + anchor-in-I against I-CE and CE), beside the main `pool` block,
+and the five fixed-split towers that Figure 9 draws. The DINO-style control
+of Section 4.3 (Table A1, fold 0 only) is the appendix cell `apx.dino`, an
+arm of the five-fold worker with its own notebook, `w9_dino_control.ipynb`.
 
 **Twenty-two tables are not twenty-two campaigns.** Tables A1, A13, A15 and
 A16 of the appendix are different readouts of one shared five-fold
@@ -437,6 +439,19 @@ that only trains from prepared assets needs none of that second group.
 
 ## Citing
 
-*Invariant Game Representation Learning from Steam Reviews.* AICCC 2026.
+Zhilong Yu et al. *Invariant Game Representation Learning from Steam Reviews.*
+2026 9th Artificial Intelligence and Cloud Computing Conference (AICCC 2026),
+December 18 to 21, 2026, Tokyo, Japan.
+
+```bibtex
+@inproceedings{yu2026invariant,
+  author    = {Yu, Zhilong and others},
+  title     = {Invariant Game Representation Learning from Steam Reviews},
+  booktitle = {2026 9th Artificial Intelligence and Cloud Computing Conference (AICCC 2026)},
+  address   = {Tokyo, Japan},
+  year      = {2026}
+}
+```
+
 The appendices and the supplement the paper cites are the documents of
 Section 1. Code and documents are under the MIT license ([`LICENSE`](LICENSE)).
