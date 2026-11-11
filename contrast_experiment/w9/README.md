@@ -35,6 +35,10 @@ teacher; the loss token is `ice` (I-CE), `ce`, `by` (BYOL) and so on; the
 final `tf` means the temperature is frozen at 0.02 and `tl` that it is
 learnable (`wcle_i2ce_icetl`). So `wcle_i2ce_icetf` is the published
 recipe itself. Nothing in a suffix denotes a fine-tuning stage.
+`wcle_dino_dntf` is the DINO-style control of Section 4.3, DINO at its
+published settings: an arm of the five-fold worker only, which takes
+`--anchor-cap pool` and stores the teacher's tower as the checkpoint's
+`model`.
 
 ## Data prerequisites
 
@@ -116,7 +120,7 @@ names the run without the tag.
 | `w9_a100.ipynb` | wave-1 fixed-split arms |
 | `w9_final_experiment.ipynb` | CE vs I-CE × {512, 1,024, 2,048, pool} × 5 folds (the paper's scaling table) |
 | `w9_cv.ipynb` | 5-fold base pair |
-| `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style × 5 folds @pool |
+| `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style / I + SimCLR × 5 folds @pool |
 | `w9_i2ce_t.ipynb` | temperature sweep × 5 folds × {512, 2048} |
 | `w9_sweeps_3fold.ipynb` | invariance weight, view count and latent queries × folds 0 to 2 @512 (Tables A4 to A6) |
 | `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A14) |
@@ -235,7 +239,7 @@ eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
 ├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
-├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Table A7, Figures 9, A1 and A3)
+├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Section 6.2, Table A7, Figures 9, A1 and A3, Appendix L)
 └── superseded_ckpt_plan.json    # published checkpoints that no number of the paper reads
 Pod/w9_selection.py              # the rank rule (sum of exp(-rank) on validation queries)
 ```
@@ -248,7 +252,7 @@ game, so any tower can be scored on the same ten packs.
 
 The checkpoints are on Hugging Face at
 [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-265 files and about 580 MiB in all, every one named by a file of `eval/`:
+266 files and about 580 MiB in all, every one named by a file of `eval/`:
 
 - the 157 five-fold runs of `rank_ckpt_plan.json` and the five folds of
   I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
@@ -256,9 +260,9 @@ The checkpoints are on Hugging Face at
   them, and `cells` takes them all;
 - the five BYOL checkpoints the two-stage runs started from, named by the
   `init_ckpt` field of those runs in `rank_ckpt_plan.json`;
-- the 68 checkpoints of `fixed_split_ckpt_plan.json`, from 15 fixed-split
+- the 69 checkpoints of `fixed_split_ckpt_plan.json`, from 15 fixed-split
   runs: the seven that train with 512-sentence anchors (Table 3,
-  Section 6.2), one of them with an earlier checkpoint kept; a+u @ views
+  Section 6.2), two of them with an earlier checkpoint kept; a+u @ views
   (Table 3); the three VICReg weightings of Table A7; and the towers of
   Figure 9, Figure A3 and Appendix L (CE and I-CE trained at 2,048
   sentences, the SimCLR-style tower, I + SimCLR). Two runs list more

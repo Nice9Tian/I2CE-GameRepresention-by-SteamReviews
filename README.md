@@ -21,7 +21,7 @@ Published with the code, on Hugging Face:
 - the cached tensors every experiment reads,
   [`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data)
   (Section 4);
-- the trained towers behind the paper's numbers, 265 checkpoints,
+- the trained towers behind the paper's numbers, 266 checkpoints,
   [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
   with the script that scores them as the paper does
   ([`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md)).
@@ -221,9 +221,9 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 22 | 193 | 512 – 2,048 |
-| `paperTest` | every experiment the paper body reports, at its own budget | 9 | 72 | 512, 2,048 |
-| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 9 | 72 | 512, 1,024 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 24 | 198 | 512 – 2,048 |
+| `paperTest` | every experiment the paper body reports, at its own budget | 10 | 77 | 512, 2,048 |
+| `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 10 | 77 | 512, 1,024 |
 
 ```bash
 python contrast_experiment/w9/Pod/w9_profiles.py     # print the three plans
@@ -240,11 +240,12 @@ within 0.02 of the full configuration on every reading (Section 4.2,
 Table A2) and which fits a 24 GB desktop GPU.
 
 **`paperTest` and `litePaperTest` train the same number of towers.** They
-differ only in what those towers cost. `fullTest` is nearly three times the
-count; its largest cell is the temperature sweep (30 towers). The body's
+differ only in what those towers cost. `fullTest` is about two and a half
+times the count; its largest cell is the temperature sweep (30 towers). The body's
 cells include the five-fold towers trained at 512 sentences that Table 2
 tests (CE + anchor-in-I against I-CE and CE), beside the main `pool` block,
-and the five fixed-split towers that Figure 9 draws. The DINO-style control
+the five-fold I + SimCLR of Figure 8 and the five fixed-split towers that
+Figure 9 draws. The DINO-style control
 of Section 4.3 (Table A1, fold 0 only) is the appendix cell `apx.dino`, an
 arm of the five-fold worker with its own notebook, `w9_dino_control.ipynb`.
 

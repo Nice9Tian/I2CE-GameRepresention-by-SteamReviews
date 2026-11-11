@@ -123,10 +123,12 @@ CELLS = [
     Cell("body.pair",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[POOL], folds=5, epochs=2000,
-         cites=[FIG7, FIG8, TAB2, SEC61, A1, A2, A13, A14, A15, A16, A17, FIGA2,
-                S2, S3, S4],
+         cites=[FIG7, FIG8, TAB2, SEC61, A1, A2, A6, A12, A13, A14, A15, A16,
+                A17, FIGA2, S2, S3, S4],
          was_in="w9_final_experiment.ipynb",
-         note="the headline I-CE vs CE pair, paired per fold. Table A17 and "
+         note="the headline I-CE vs CE pair, paired per fold. Its I-CE is "
+              "also the five-fold recipe row of Table A6 and the first row "
+              "of Table A12. Table A17 and "
               "Figure A2 read the published fold-0 checkpoints of this cell "
               "and of body.families at the Section 5 rank-selected epochs "
               "(rank_ckpt_plan.json: I-CE ep2000, CE ep650, SimCLR ep1100, "
@@ -144,6 +146,20 @@ CELLS = [
                 S2, S3, S4],
          was_in="w9_experiment_5fold_2.ipynb",
          note="the other objective families of Figure 7"),
+
+    Cell("body.i_simclr",
+         arms=["wcle_i2bce_icetf"],         # SimCLR-style + the invariance term
+         caps=[POOL], folds=5, epochs=2000,
+         cites=[FIG8, APXL],
+         was_in="w9_experiment_5fold_2.ipynb",
+         note="I + SimCLR: the SimCLR-style tower of body.families with "
+              "I-CE's invariance term, trained for Figure 8. It reads no "
+              "anchor in training, so the pack only sets the gallery the "
+              "worker saves and selects on. The published runs were made "
+              "at 512 (their files carry no pack in their names) and "
+              "selected afterwards on the pool gallery "
+              "(eval/i2bce_sel_pool.json); a run at pool selects on that "
+              "gallery itself"),
 
     # ---- body: the 512-sentence pairs of Table 2, five folds ----------
     Cell("body.pair.512",
@@ -175,7 +191,10 @@ CELLS = [
          caps=[512], folds=FIXED, epochs=2000,
          cites=[TAB3, SEC62, A7],
          was_in="w9_jobs.FS_JOBS + w9_flash.ipynb",
-         note="the first three rows of Table 3"),
+         note="the first three rows of Table 3. The published CE + "
+              "anchor-in-I run was trained 1,000 epochs and then on to "
+              "2,000 from the weights of epoch 1,000 with a fresh optimizer "
+              "state (eval/fixed_split_ckpt_plan.json, field extended)"),
 
     Cell("body.decomp.sweep",
          # Naming: ai<N> = anchor-aimed align weight N, auni<M> = anchor
@@ -189,11 +208,13 @@ CELLS = [
                "wcle_i4uni2_icetf", "wcle_i6uni2_icetf",
                "wcle_ai6uni2_icetf"],
          caps=[512], folds=FIXED, epochs=2000,
-         cites=[TAB3, SEC62],
+         cites=[TAB3, SEC62, APXL],
          was_in="w9_flash.ipynb",
          note="repulsion target x align:uniformity ratio. The a+u @ views "
               "tower (i4uni2) is also read in Appendix L, against the ten "
-              "4,096-sentence draws"),
+              "4,096-sentence draws. The published runs of ai6auni2, "
+              "ai4auni2, ai2auni25 and i4uni2 were trained 1,000 epochs and "
+              "then on to 2,000 from the weights of epoch 1,000"),
 
     Cell("body.decomp.projection",
          # The kernel-temperature / projection axis of the same sweep:
@@ -244,13 +265,20 @@ CELLS = [
     # ---- appendix: the anchor-budget ladder ---------------------------
     Cell("apx.ladder",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
-         caps=[1024, 2048], folds=5, epochs=2000,
-         cites=[A2, A3, A10, A14],
+         caps=[1024], folds=5, epochs=2000,
+         cites=[A2, A10, A14],
          was_in="w9_final_experiment.ipynb",
-         note="1,024 is the middle row of Tables A2 and A14, whose 512 rows "
-              "are body.pair.512 and whose 2,048 rows are body.pair. The "
-              "2,048 rung here is a second run "
-              "of the pair, capped at 2,048 sentences in total: its I-CE is "
+         note="1,024 is the middle row of Tables A2 (I-CE) and A14, whose "
+              "512 rows are body.pair.512 and whose 2,048 rows are "
+              "body.pair, and the 1,024 row of Table A10"),
+
+    Cell("apx.ladder.2048",
+         arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
+         caps=[2048], folds=5, epochs=2000,
+         cites=[A3, A10],
+         was_in="w9_final_experiment.ipynb",
+         note="a second run of the pair, capped at 2,048 sentences in "
+              "total: its I-CE is "
               "the recipe row of Table A3 at 2,048, the seed-paired control "
               "of apx.temperature, and its peak is the 35.0 GiB of Table A10; "
               "its CE is not printed. Its fold-0 I-CE tower also gives the "
@@ -330,7 +358,9 @@ CELLS = [
          was_in="w9_jobs.FS_JOBS",
          note="v/i/c weights; the recipe-weights row of Table A7 (20/10/20) "
               "is the VICReg arm of body.neighborhood.views. epdb = the "
-              "batch-all variant, which Table A7 leaves out"),
+              "batch-all variant, which Table A7 leaves out. The published "
+              "runs were trained 1,000 epochs and then on to 2,000 from the "
+              "weights of epoch 1,000"),
 
     # ---- appendix: the DINO-style control -----------------------------
     Cell("apx.dino",
@@ -340,8 +370,11 @@ CELLS = [
          was_in="w9_dino_control.ipynb",
          note="the control of Section 4.3: DINO at its published settings, "
               "none swept, on fold 0 only (recipe in Table A9). The teacher's "
-              "two global views split the store-page prefix and the review "
-              "pool; the student's review views come from the full library. "
+              "two global views hold up to 512 sentences each: both open "
+              "with the store-page prefix, and the game's reviews are dealt "
+              "whole to the first until no more fit, then from the rest to "
+              "the second. The student's review views come from the full "
+              "library. "
               "The published checkpoint is epoch 1,650, the rank rule's "
               "choice, and Table A1 gives its spread over the ten draws"),
 
@@ -354,7 +387,7 @@ CELLS = [
          was_in="w9_i2ce_t.ipynb",
          note="tau 0.05 / 0.10 / learnable; Table A3 tabulates learnable tau "
               "at 2,048 only, and its recipe rows are the I-CE of "
-              "body.pair.512 and of apx.ladder at 2,048"),
+              "body.pair.512 and of apx.ladder.2048"),
 
     # ---- appendix: invariance weight, view count, latent queries ------
     # Folds 0 to 2 at 512 sentences. The recipe rows of Tables A4 to A6 and
