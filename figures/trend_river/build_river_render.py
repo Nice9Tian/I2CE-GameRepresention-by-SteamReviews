@@ -26,6 +26,9 @@ def bake(out=OUT, data_js="games_raw.js", extra_tail="", src=SRC):
     # translate the on-canvas y-axis label to English (short enough to fit at 3x font)
     html = html.replace("语 义 聚 类 车 道 · 厚 度 = 发 布 占 比",
                         "release share by semantic cluster")
+    # the page of this repository carries an English label; it gets the same short one
+    html = html.replace("S E M A N T I C   C L U S T E R   L A N E S · thickness = release share",
+                        "release share by semantic cluster")
     # widen margins for the 3x-larger labels
     html = html.replace("PAD={l:86,r:262,t:96,b:64}", "PAD={l:130,r:1060,t:160,b:110}")
 

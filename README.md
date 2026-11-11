@@ -56,16 +56,21 @@ separate line of work the manuscript does not report.
 training run backs which figure or table. Start there when you want to
 reproduce one specific published number.
 
-### Interactive Figure 6 (trend river)
+### Figure 10 (trend river) and its interactive page
 
-[`figures/trend_river/`](figures/trend_river/) holds the interactive
-generator of the paper's content-trend river plus its bundled dataset
-(1,649 games: the paper's 128-d I-CE game vectors from the fold-0 tower at
-the 4,096-sentence anchor budget, plus release times, coarse tags, titles).
-Open `cluster_share_stack.html` in any browser, no build step, or run
-`river_ice_render.py` there to regenerate the paper's PNG headlessly. Its
-README has the data schema, the pressure-driven event model behind the
-stream junctions, and the parameter set of the published figure.
+[`figures/trend_river/`](figures/trend_river/) holds what the paper's
+release-share river is made from: the page that clusters the game vectors
+and paints the canvas, the scripts that render the figure, and the bundled
+dataset (1,649 games: 128-d I-CE game vectors from the fold-0 run
+`i2ce_icetf_fold0_g2048`, plus release times, coarse tags, titles).
+`river_flat_fit.py` fits the levels and transfers the figure draws;
+`river_ice_column.py` and `river_ice_render.py` regenerate the paper's PNG
+headlessly, at one column and at full width. Open
+`cluster_share_stack.html` in any browser, no build step, to explore the
+clusters: there the page paints its own pressure-driven event model, which
+the figure drew until its bands were fitted to the release shares. The
+directory's README has the data schema, the fit, both drawings and the
+commands.
 
 ---
 

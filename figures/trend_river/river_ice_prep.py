@@ -1,15 +1,25 @@
 # -*- coding: utf-8 -*-
-"""Rebuild the Figure 6 content river on top of the paper's I-CE tower.
+"""Build the data file of the Figure 10 river from the paper's I-CE tower.
+
+Included for provenance: this script ran in the paper's own repository and
+records how `games_raw.js` of this directory was built (there the file is
+called games_raw_ice.js). It needs research caches that are not shipped, the
+corpus text_h5.h5 and games.npz, the tower's projection cache and the earlier
+river export that supplies release times, tags and titles, and the paper
+repository's path module, so it does not run here.
 
 Same method as river_dual_prep.py (parse games_raw.js, map river titles to our
 gallery through text_h5.h5, keep RAW_TAU / RAW_TAGS / RAW_TITLES verbatim,
 re-render with the in-browser spherical k-means at K=6); the only change is where
 the 128-d game vectors come from:
 
-    arm      wcle_i2ce_icetf   (I-CE tower, five-fold fold 0, 4096-sentence anchors)
-    ckpt     ep2000            (data/w9/rank_ckpt_plan.json -> i2ce_icetf_fold0_g4096)
-    cache    C:\\runpod_data\\w9_towers\\tower_w9cv_wcle_i2ce_icetf_fold0_g4096_fp_ep2000.npz
+    arm      wcle_i2ce_icetf   (I-CE tower, five-fold fold 0, --anchor-cap 2048)
+    ckpt     ep1750            (rank_ckpt_plan.json -> i2ce_icetf_fold0_g2048)
+    cache    $RUNPOD_DATA\\w9_towers\\tower_w9cv_wcle_i2ce_icetf_fold0_g2048_fp_ep1750.npz
     key      SPg   (2020, 128) gallery/anchor vectors, row i <-> games.npz names[i]
+
+Until 2026-10-28 the figure took the fold-0 run on whole-pool packs (_gpool, ep2000),
+and the data file of this directory held those vectors.
 
 Unlike the dual prep (which used a 1-D PCA for the lane order) this script uses a
 1-D UMAP, matching the ordering in the original games_raw.js.
@@ -22,6 +32,11 @@ Chrome, no CUDA), so this script is only needed when the vectors change.
 
 Run with: C:\\Users\\admin\\anaconda3\\envs\\cuda_Vit\\python.exe figures/river_ice_prep.py
 """
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # repo root
+from aiccc_paths import SQL_ROOT, RUNPOD_DATA  # noqa: E402
+
 import json
 import re
 from collections import Counter
@@ -33,11 +48,11 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 PAP = HERE / "river_assets"
 
-STUDABLE = Path(r"C:\Users\admin\Documents\studable query latent")
+STUDABLE = (SQL_ROOT)
 TH5 = STUDABLE / "game_review_data" / "build_new_gamedata" / "text_h5.h5"
-GAMES_NPZ = Path(r"C:\runpod_data\fusion_cache_w9\games.npz")
-TOWER_NPZ = Path(r"C:\runpod_data\w9_towers"
-                 r"\tower_w9cv_wcle_i2ce_icetf_fold0_g4096_fp_ep2000.npz")
+GAMES_NPZ = (RUNPOD_DATA / "fusion_cache_w9" / "games.npz")
+TOWER_NPZ = (RUNPOD_DATA / "w9_towers"
+             / "tower_w9cv_wcle_i2ce_icetf_fold0_g2048_fp_ep1750.npz")
 TOWER_KEY = "SPg"
 
 # 1-D UMAP for the lane ordering (RAW_U)
@@ -100,8 +115,8 @@ def main():
     out = [
         "// RAW export for in-browser clustering (K adjustable in the HTML).",
         "// VEC: L2-normalised I-CE game vectors, row-major N x 128.",
-        "//   tower  wcle_i2ce_icetf, five-fold fold 0, 4096-sentence anchor budget",
-        f"//   ckpt   ep2000 ({TOWER_NPZ.name}, key {TOWER_KEY})",
+        "//   tower  wcle_i2ce_icetf, five-fold fold 0, 2048-sentence anchor budget",
+        f"//   ckpt   ep1750 ({TOWER_NPZ.name}, key {TOWER_KEY})",
         f"// U: UMAP-1D coordinate (lane ordering), {UMAP_KW}.",
         "// TAU / TAGS / TITLES are verbatim from games_raw.js.",
         f"const RAW_N={len(ok)}, RAW_D=128;",
