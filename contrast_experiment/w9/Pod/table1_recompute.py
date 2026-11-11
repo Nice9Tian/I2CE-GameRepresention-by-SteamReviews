@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
-r"""Recompute the paper's Table 1 (query displacement against nearest-neighbour
-margin) and the encodings behind Figure 5 (the UMAP panels) for the fold-0
-towers at the 4,096-sentence anchor budget, under the paper's checkpoint
-selection rule.
+r"""Recompute the paper's Table A17 (query displacement against nearest-neighbour
+margin) and the encodings behind Figure A2 (the UMAP panels) from the
+published fold-0 checkpoints of the main runs (the `_gpool` files: packs of
+the store-page prefix plus the whole review pool, the paper's 2,048-sentence
+budget), read against one 4,096-sentence anchor draw under the paper's
+checkpoint selection rule. Both are in the online appendix (Appendices M and L); the
+manuscript of September 2026 printed them in its body as Table 1 and
+Figure 5, which is where the file names come from.
 
-What Table 1 measures (Section 6.1)
------------------------------------
+What Table A17 measures (Section 6.1 quotes its key numbers)
+------------------------------------------------------------
 For one encoder, with L2-normalised vectors:
   displacement  mean over the 814 name-stripped wiki rewrites of the fold-0
                 universe (train, validation and test games alike) of
@@ -14,7 +18,7 @@ For one encoder, with L2-normalised vectors:
                 anchor);
   ratio         displacement / margin (means first, then the ratio);
   inside        share of the 814 queries whose displacement is below their
-                own game's margin (Figure 5's "inside own clearance" labels).
+                own game's margin (Figure A2's "inside own clearance" labels).
 The frozen embedder is the masked mean of the sentence embeddings (the
 worker's frozen baseline); the trained towers are SetPoolN(4) checkpoints
 applied to the same single 4,096-sentence anchor draw (wscan_gal_rev_g4096)
@@ -27,7 +31,7 @@ Checkpoint selection
               registers, read from data/w9/rank_ckpt_plan.json (the plan every
               five-fold table uses).
 --plan cvsel  the five-fold worker's online score (v_non + v_non5 + 2*val_tag)
-              that the pre-2026-09-04 Table 1 used; the plan ships as
+              that the table used before 2026-09-04; the plan ships as
               w9_fig3_local/ckpt_plan.json. Reproduces the previously shipped
               fig3_t3_frozen_results.json bit for bit and is the validation
               gate of this script.
@@ -35,11 +39,11 @@ Checkpoint selection
 Inputs (research artefacts, not shipped with the repository)
 ------------------------------------------------------------
   W9_FIG3   C:\runpod_data\w9_fig3_local   wscan_gal_rev_g4096.npz (the anchor
-            draw, fp16, row-normalised), ckpt/ckpt_w9cv_wcle_<arm>_fold0_g4096_fp_ep<N>.pt
+            draw, fp16, row-normalised), ckpt/ckpt_w9cv_wcle_<arm>_fold0_gpool_fp_ep<N>.pt
   W9_CACHE  C:\runpod_data\fusion_cache_w9 games.npz, wiki_eval.npz,
             tag_labels.npz, _tag_splitM.json, wiki_eval_split.json
-  W9_PLAN   the rank plan JSON (default: data/w9/rank_ckpt_plan.json of the
-            paper repository, or Pod/rank_ckpt_plan.json next to this file)
+  W9_PLAN   the rank plan JSON (default: eval/rank_ckpt_plan.json of this
+            repository, or a rank_ckpt_plan.json next to this file)
 Outputs (W9_OUT, default W9_FIG3)
   table1_results.json   per-encoder displacement / margin / ratio / inside,
                         the epochs used and the selection provenance
@@ -82,7 +86,8 @@ ARMS = {
     "VICReg": "epd_v20i10c20_cetf",
     "BYOL": "byol_bytf",
 }
-CAP = 4096
+CAP = 4096            # the anchors the towers are READ against (one draw)
+PACK = "pool"         # the packs they were TRAINED on: run names end in _gpool
 FOLD = 0
 CV_SEED = 20260711
 
@@ -93,8 +98,8 @@ def default_plan(mode):
     cands = []
     if os.environ.get("W9_PLAN"):
         cands.append(Path(os.environ["W9_PLAN"]))
-    cands += [HERE / "rank_ckpt_plan.json",
-              Path(r"C:\Users\admin\Documents\Aiccc_paper\data\w9\rank_ckpt_plan.json")]
+    cands += [HERE.parent / "eval" / "rank_ckpt_plan.json",
+              HERE / "rank_ckpt_plan.json"]
     for cand in cands:
         if cand.is_file():
             return cand
@@ -108,14 +113,14 @@ def epochs_from_plan(mode, plan_path):
         if mode == "cvsel":
             key = f"{arm}_fold{FOLD}"                 # w9_fig3_local/ckpt_plan.json
         else:
-            key = f"{arm}_fold{FOLD}_g{CAP}"          # rank_ckpt_plan.json
+            key = f"{arm}_fold{FOLD}_g{PACK}"         # rank_ckpt_plan.json
         v = plan[key]
         eps[lab] = int(v["ep"] if isinstance(v, dict) else v)
     return eps
 
 
 def ckpt_path(arm, ep):
-    return CKDIR / f"ckpt_w9cv_wcle_{arm}_fold{FOLD}_g{CAP}_fp_ep{ep}.pt"
+    return CKDIR / f"ckpt_w9cv_wcle_{arm}_fold{FOLD}_g{PACK}_fp_ep{ep}.pt"
 
 
 def l2(x):
@@ -225,7 +230,7 @@ def main():
     for lab in t3:
         t3[lab]["epoch"] = None if lab == "Frozen" else eps[lab]
         t3[lab]["arm"] = None if lab == "Frozen" else ARMS[lab]
-    print(f"\n=== Table 1 ({a.plan} fold-{FOLD} @{CAP}) ===")
+    print(f"\n=== Table A17 ({a.plan} fold-{FOLD} @{CAP}) ===")
     for lab in ("Frozen", "BYOL", "VICReg", "CE", "SimCLR", "I-CE"):
         r = t3[lab]
         print(f"{lab:7s} ep {str(r['epoch']):>5}  disp {r['displacement']:.4f}  "
@@ -233,7 +238,7 @@ def main():
               f"inside {100*r['inside_margin']:.1f}%")
 
     res = {"meta": {
-        "table": "Table 1 (displacement / margin / ratio) and Figure 5 clearance labels",
+        "table": "Table A17 (displacement / margin / ratio) and Figure A2 clearance labels",
         "selection_mode": a.plan,
         "selection": ("rank criterion of Section 5: argmax over epochs 50..2000 of "
                       "sum_i exp(-rank_i) over the validation fold's wiki rewrites of "

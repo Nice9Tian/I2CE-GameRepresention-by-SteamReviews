@@ -15,8 +15,9 @@ the same vectors and offsets and give the same draws.
 Which checkpoint a tower is scored at is NOT decided here: five-fold runs are selected by the rank
 rule (Pod/w9_selection.py) on the gallery their own worker saved; rank_ckpt_plan.json lists the
 selections behind the manuscript.  `select` re-runs that rule for a run whose worker saved another
-gallery, on the gallery the 4,096-budget workers built: store-page prefix plus the 2,048-sentence
-review pool (Pod/w9_cv_worker.py; a median of 2,068 sentences, not 4,096).  I + SimCLR was
+gallery, on the gallery the workers of the main runs build (--anchor-cap pool in
+Pod/w9_cv_worker.py: store-page prefix plus the whole 2,048-sentence review pool, a median of
+2,068 sentences; the manuscript's 2,048-sentence budget, run names ending in _gpool).  I + SimCLR was
 selected that way (i2bce_sel_pool.json).  The 110 checkpoints both files name are on Hugging Face,
 chironYu/latenarray-i2ce-checkpoints.
 
@@ -136,8 +137,11 @@ def read_rows(V, uni):
 
 
 # ------------------------------------------------------------------ select
-def pool_plans(F, cap=4096):
-    """the anchors a five-fold worker built at a cap above 512 (Pod/w9_cv_worker.py)"""
+def pool_plans(F, cap=None):
+    """the anchors a five-fold worker builds from the review pool (Pod/w9_cv_worker.py): the
+    store-page prefix plus whole reviews up to `cap` sentences, or, with cap None, the whole pool
+    (--anchor-cap pool, the main runs)"""
+    cap = 10 ** 9 if cap is None else cap
     RID = np.load(C / "wscan_pool_rev_rid.npy"); plen = np.load(C / "wscan_pool_rev_len.npy")
     rng = np.random.default_rng(SPLIT_SEED + 5); plans = []
     for g in range(F.NG):
@@ -199,11 +203,11 @@ def cells(args):
     assert str(ckdir) not in ("", "."), "--ckpt-dir <folder with the ckpt_*.pt files> is required"
     out = Path(args[0]); plan = json.loads(PLAN.read_text(encoding="utf-8")); c = {}
     for key, v in plan.items():
-        if v["cap"] != "_g4096":                                   # trained at 512, 1,024 or 2,048 sentences
+        if v["cap"] != "_gpool":                                   # packs capped at 512, 1,024 or 2,048 sentences
             c[key] = dict(ckpt=str(ckdir / v["ckpt"]), fold=v["fold"], ep=v["ep"])
-    for label, arm in JULY_ARMS.items():                           # the five main arms at the manuscript's 2,048 budget
+    for label, arm in JULY_ARMS.items():                           # the five main arms: prefix + whole pool (_gpool)
         for k in range(NF):
-            v = plan["%s_fold%d_g4096" % (arm, k)]; c["%s|%d" % (label, k)] = dict(ckpt=str(ckdir / v["ckpt"]), fold=k, ep=v["ep"])
+            v = plan["%s_fold%d_gpool" % (arm, k)]; c["%s|%d" % (label, k)] = dict(ckpt=str(ckdir / v["ckpt"]), fold=k, ep=v["ep"])
     for f in args[1:]:
         for key, v in json.loads(Path(f).read_text(encoding="utf-8")).items():
             p = Path(v["ckpt"])                                    # a name is looked up in --ckpt-dir
