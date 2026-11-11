@@ -89,5 +89,396 @@
   "ranksel": 130.45839742717456,
   "protocol": "fixed split (seed 0)",
   "worker": "Pod/w9_a100_worker.py"
+ },
+ "ce_cetf_fixed_g2048": {
+  "arm": "ce_cetf",
+  "fold": null,
+  "cap": "_g2048",
+  "sfx": "",
+  "ep": 1150,
+  "ckpt": "ckpt_w9_wcle_ce_cetf_g2048_fp_ep1150.pt",
+  "sha256": "63af5f9511807e489524dde74556bb6d48dd03d5ef04f66647deea7e3f43279c",
+  "ranksel": 125.32073730529692,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "rank rule on the gallery the worker saved with each of the 40 checkpoints",
+  "reads": "Figure 9, Figure A3, Appendix L"
+ },
+ "i2ce_icetf_fixed_g2048": {
+  "arm": "i2ce_icetf",
+  "fold": null,
+  "cap": "_g2048",
+  "sfx": "",
+  "ep": 1750,
+  "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1750.pt",
+  "sha256": "7459ba39465ed1b79ea6ce3380b7ad82073439dbf390e9c8b659cf41a5f5bb7a",
+  "ranksel": 131.9001247718065,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "rank rule on the gallery the worker saved with each of the 40 checkpoints",
+  "reads": "Figure 9, Figure A1, Figure A3, Appendix L",
+  "trajectory": {
+   "why": "Figure A1 draws the four latent queries of this run at every saved checkpoint",
+   "files": [
+    {
+     "ep": 50,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep50.pt",
+     "sha256": "e56eb29df5fd429d9128b888a372971a8c5f614c9f25ba675f092ac4fc92d448"
+    },
+    {
+     "ep": 100,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep100.pt",
+     "sha256": "33f8c3371dff194c33ef4b2150a7c0249bc0a69c56e8dfc412759c08b4e2073a"
+    },
+    {
+     "ep": 150,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep150.pt",
+     "sha256": "b4f98bce196c6c7fc78ce86934de802bff8dab7696fd5ea06650fbb07b1ab44f"
+    },
+    {
+     "ep": 200,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep200.pt",
+     "sha256": "2b090e9f38c550931ef8ecfcd5c8af9a4fe907eddc4ef97eb03935d6994ef59a"
+    },
+    {
+     "ep": 250,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep250.pt",
+     "sha256": "9cb42878ea46ff079d950faf9b135838ef3a531c28711ef5884fe01b11e46573"
+    },
+    {
+     "ep": 300,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep300.pt",
+     "sha256": "fbe598c032383434a0a2b66bfc2e24d2af01c26d7c6e327a6b7af6569644a110"
+    },
+    {
+     "ep": 350,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep350.pt",
+     "sha256": "a44e39ae4261a080f0db07df749d771cf2164a40deeb6e30238f744dbc32eefb"
+    },
+    {
+     "ep": 400,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep400.pt",
+     "sha256": "7c91b7f01d973664086a7d22efb682ebf1808e7bdd0c19a548f4f03547a3c7c5"
+    },
+    {
+     "ep": 450,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep450.pt",
+     "sha256": "fe07f155470b4a43c08571cc42a9b390771908371877a4c00baab195a317edc2"
+    },
+    {
+     "ep": 500,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep500.pt",
+     "sha256": "5317180a051c479f5b4e11f3dc7a821569e9f514c2b4189934c5b7a8505cdd82"
+    },
+    {
+     "ep": 550,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep550.pt",
+     "sha256": "66dc84cf003e6aaa49cfe4790848da37681ef1b3e7fc945a765a4228b423aa2b"
+    },
+    {
+     "ep": 600,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep600.pt",
+     "sha256": "1f25bb3d58d6e7961fe0ba040dbbc3609f4266c7fadb3876cb6fd425ae409342"
+    },
+    {
+     "ep": 650,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep650.pt",
+     "sha256": "ca65208069744e3804e2eb9e48cf263478eac898bd98ae3f7ed10ebf220894c6"
+    },
+    {
+     "ep": 700,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep700.pt",
+     "sha256": "b0ade9a8fdcca224d611015a7e49d522449494c4a96d2780bfa8f6afd11af981"
+    },
+    {
+     "ep": 750,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep750.pt",
+     "sha256": "28f23c4fc313ed9c22114cf21c84f9ffe42fdb832f5074fe32d114021da09255"
+    },
+    {
+     "ep": 800,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep800.pt",
+     "sha256": "c61a6ca8e291d6b91b79d849918456864a67a352be9db199a43305a59a8737e2"
+    },
+    {
+     "ep": 850,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep850.pt",
+     "sha256": "0ef3f1b31f053648a213aac470e48b61ed17d96fd4ca3a57c1a50876a4da3213"
+    },
+    {
+     "ep": 900,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep900.pt",
+     "sha256": "34e1fa2d7162b16975ac4a563d8834b4490afd06c9c80c1d25b01ae1756edcdb"
+    },
+    {
+     "ep": 950,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep950.pt",
+     "sha256": "86de09e5ded1b04518b5dc14eff31316e53b65ae2b5e1e536962591c534e5436"
+    },
+    {
+     "ep": 1000,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1000.pt",
+     "sha256": "c39bb132f069a6eae8d6946bb7d791de9ed186e78535778cd9165ead73fd8fb6"
+    },
+    {
+     "ep": 1050,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1050.pt",
+     "sha256": "b273de5842aa2e780abf4be0c5c48d98d7ee82a47e455ed20d3fd7af97116da7"
+    },
+    {
+     "ep": 1100,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1100.pt",
+     "sha256": "020117fa883e0b6fac3108e2fd2cd5090da75c66bee8631e4548118f577757ca"
+    },
+    {
+     "ep": 1150,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1150.pt",
+     "sha256": "cba5fe99dec4ddae23f1f52d8927153fbcd7b7b88a160d87a03293718f4f8e77"
+    },
+    {
+     "ep": 1200,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1200.pt",
+     "sha256": "c4f37745b4db8807f4c8c6839d71be4772bcf6e5e760f1c78b66569c10a33071"
+    },
+    {
+     "ep": 1250,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1250.pt",
+     "sha256": "91aa6ff2b96efed869b2d595c159923f594688a53b25aef6500b263cfeb6d247"
+    },
+    {
+     "ep": 1300,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1300.pt",
+     "sha256": "095e4e619b455ef0361a0bf461c4cc7eaf83d1b279f594ff88beaf4fad36804f"
+    },
+    {
+     "ep": 1350,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1350.pt",
+     "sha256": "ee6a4996f0b2afdd46caac3905c6188c7a6939771ab745df175a662ffc470a2b"
+    },
+    {
+     "ep": 1400,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1400.pt",
+     "sha256": "a0c2ef8215111bdd7324d1f8e06f3327d181e1dbed8094cf5f1a4341a0e835cd"
+    },
+    {
+     "ep": 1450,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1450.pt",
+     "sha256": "55a38946f24469ec90ea6d4ab777790636dc277e42e4889d0520e1ff1aaee534"
+    },
+    {
+     "ep": 1500,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1500.pt",
+     "sha256": "8685e395af19c89222a4eac4980db12cd75cb3fe3628db54be3e19ec203c23fe"
+    },
+    {
+     "ep": 1550,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1550.pt",
+     "sha256": "a02f87a0d3986548aec82b7bbe9d6ba2fb79316e3f2efb0aa898359a8118ec34"
+    },
+    {
+     "ep": 1600,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1600.pt",
+     "sha256": "1d3bde984860d4ed1ad6267c1a0c80edf83dd389aba88c33a0fee8eb4dc5d590"
+    },
+    {
+     "ep": 1650,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1650.pt",
+     "sha256": "6c15daa14d292a447f81859b852b7de3dc7e3511f32e7f8b07728f54e9862937"
+    },
+    {
+     "ep": 1700,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1700.pt",
+     "sha256": "a8efe775a14fc9e2d7aec9664cc696404c3c3bc2560087b29de021b2d4d374e8"
+    },
+    {
+     "ep": 1800,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1800.pt",
+     "sha256": "80683f87b8b3d74962cafb878326c8b8c26081b45e627c31615c383f4f4c6972"
+    },
+    {
+     "ep": 1850,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1850.pt",
+     "sha256": "6203fd9e01a8580da3bf179c5c899bd041aae8d4889b096df9bba1cf9917fe65"
+    },
+    {
+     "ep": 1900,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1900.pt",
+     "sha256": "014bd83d0e25f354c89aca26af59f4780cd5202b8f55af675b2636e009c864dc"
+    },
+    {
+     "ep": 1950,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep1950.pt",
+     "sha256": "4dc7b061d43706cfdbff7efd0fbeff3e47e5738e45b6e4858f7f2fd1bbdfef2b"
+    },
+    {
+     "ep": 2000,
+     "ckpt": "ckpt_w9_wcle_i2ce_icetf_g2048_fp_ep2000.pt",
+     "sha256": "283d6e93ed7e5c8728c66dbd2d480bf5edbe7c087e3be441a438cc219871455b"
+    }
+   ]
+  }
+ },
+ "bce_cetf_fixed": {
+  "arm": "bce_cetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "",
+  "ep": 1350,
+  "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1350.pt",
+  "sha256": "6c6d0b45bbf73953c8814b2acdd9dd0f3db604662ab58720570f71f3ce9ec552",
+  "ranksel": 125.57199015010917,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
+  "reads": "Figure 9, Figure A3, Appendix L",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
+  "trajectory": {
+   "why": "Appendix L describes this run's test curve from the selected epoch to the end",
+   "files": [
+    {
+     "ep": 1400,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1400.pt",
+     "sha256": "6fa8497122699d00ec1b19c8cd52d6c02a51dea8551ba4c4ad89f77bebfd49b8"
+    },
+    {
+     "ep": 1450,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1450.pt",
+     "sha256": "1ab0112d469cb167564fde1081d52c9f3dce1d0f2e07a2f8beabbf1da78f2224"
+    },
+    {
+     "ep": 1500,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1500.pt",
+     "sha256": "5806b334a2363dc5ecba3304b24a1eb2f8f3c830164c71f712b839deea644c90"
+    },
+    {
+     "ep": 1550,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1550.pt",
+     "sha256": "dfeef1738d00e07ff6d0a982ec1985df9f6e5c800ccc9db57b1e88c9a95be0f6"
+    },
+    {
+     "ep": 1600,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1600.pt",
+     "sha256": "4fd7f2d74a59f3be11e994f02f28e18f01bc97839ca92408001030466bc491a0"
+    },
+    {
+     "ep": 1650,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1650.pt",
+     "sha256": "d62fa1c8021b893f5e7f29270af3e452aa85e6c3de2e0bcd3b0c3aaa402b4524"
+    },
+    {
+     "ep": 1700,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1700.pt",
+     "sha256": "4819efb4080de836e7f4157398132e2f2eed2abe135ba300583e86e3cd3793a9"
+    },
+    {
+     "ep": 1750,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1750.pt",
+     "sha256": "cb710c792b7c49fce6a9d15fc65fac4e64a721023cd4d58450e18ca9b7b16a1c"
+    },
+    {
+     "ep": 1800,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1800.pt",
+     "sha256": "9d664b78fef3fe8c18afd06b75fd904224da9894e58cd86e9dcfc1dcdf1e29dd"
+    },
+    {
+     "ep": 1850,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1850.pt",
+     "sha256": "36f673a0eb425e57ff39c2fcd5774aea6aec2806ee2764a768617160b19cf3f3"
+    },
+    {
+     "ep": 1900,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1900.pt",
+     "sha256": "5eb5fe4569975293ddbcad1526363ea6f40e8651031cd2741564d939e88eebc6"
+    },
+    {
+     "ep": 1950,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep1950.pt",
+     "sha256": "51b163ca74680536402afcebaada0ec40864a4ded5277de7e8e90a8ede3d55fb"
+    },
+    {
+     "ep": 2000,
+     "ckpt": "ckpt_w9_wcle_bce_cetf_fp_ep2000.pt",
+     "sha256": "d28075a5ebd76b437fbd06f4bc4f9d2830b8887df79ae1951da71fb1a47ad8b8"
+    }
+   ]
+  }
+ },
+ "i2bce_icetf_fixed": {
+  "arm": "i2bce_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "",
+  "ep": 1350,
+  "ckpt": "ckpt_w9_wcle_i2bce_icetf_fp_ep1350.pt",
+  "sha256": "0f3bff568dd396cc473899595237af7a4cdd16e53dcf7e045f2919af9e3eb2b1",
+  "ranksel": 125.44088168563394,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
+  "reads": "Figure 9, Figure A3, Appendix L",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints"
+ },
+ "i4uni2_icetf_fixed": {
+  "arm": "i4uni2_icetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "",
+  "ep": 50,
+  "ckpt": "ckpt_w9_wcle_i4uni2_icetf_fp_ep50.pt",
+  "sha256": "4e11f8876a7cfb3940cedc237a01fa80cb6d7dba358a0aea19ff7046edc9486c",
+  "ranksel": 79.69776134483952,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
+  "reads": "Table 3 (a+u @ views), Section 6.2, Appendix L",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints"
+ },
+ "epd_v25i25c1_cetf_fixed": {
+  "arm": "epd_v25i25c1_cetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "",
+  "ep": 550,
+  "ckpt": "ckpt_w9_wcle_epd_v25i25c1_cetf_fp_ep550.pt",
+  "sha256": "67edd01614389dfca04fc65883e22dcf38dfafe8f38a169178604b63165a3f07",
+  "ranksel": 81.55530680646169,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
+  "reads": "Table A7",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
+  "weights": "v/i/c = 25/25/1"
+ },
+ "epd_v20i10c20_cetf_fixed": {
+  "arm": "epd_v20i10c20_cetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "",
+  "ep": 100,
+  "ckpt": "ckpt_w9_wcle_epd_v20i10c20_cetf_fp_ep100.pt",
+  "sha256": "fc12e85eb88d9b94bf4a406efbc678ef429a59e1e0c88b4f2d9098725edc4642",
+  "ranksel": 106.32286068538902,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
+  "reads": "Table A7, Figure 9, Figure A3, Appendix L",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
+  "weights": "v/i/c = 20/10/20 (recipe weights)"
+ },
+ "epd_v20i10c15_cetf_fixed": {
+  "arm": "epd_v20i10c15_cetf",
+  "fold": null,
+  "cap": "",
+  "sfx": "",
+  "ep": 100,
+  "ckpt": "ckpt_w9_wcle_epd_v20i10c15_cetf_fp_ep100.pt",
+  "sha256": "b87ebec543b7f0adcbb407ecc4fbf3e028d38861325b24f5202301ae977e7e95",
+  "ranksel": 106.19608961574562,
+  "protocol": "fixed split (seed 0)",
+  "worker": "Pod/w9_a100_worker.py",
+  "selected_on": "the run reads no anchor in training: each of its 40 checkpoints encodes the 4,096-sentence anchor pack of the fixed split (wscan_gal_rev_g4096.npz) and the rank rule picks on that",
+  "reads": "Table A7",
+  "extended": "2026-11-08: trained on from 1,000 to 2,000 epochs (weights of ep1000, fresh optimizer, AMP and RNG); rank rule over all 40 checkpoints",
+  "weights": "v/i/c = 20/10/15"
  }
 }

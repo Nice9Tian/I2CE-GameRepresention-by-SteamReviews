@@ -14,19 +14,19 @@ the same vectors and offsets and give the same draws.
 
 Which checkpoint a tower is scored at is NOT decided here: five-fold runs are selected by the rank
 rule (Pod/w9_selection.py) on the gallery their own worker saved.  rank_ckpt_plan.json lists that
-selection for every five-fold run a number of the paper reads, the DINO-style control of Table A1
-(one fold, not published) excepted: 156 runs, each with its fold, its
+selection for every five-fold run a number of the paper reads: 157 runs, each with its fold, its
 epoch and the SHA-256 of its file; the 512-sentence ones are the runs on the current packs, named
-_d512.  `select` re-runs the rule for a run whose worker saved another gallery, on the gallery the
+_d512, and one is the DINO-style control of Table A1, trained on fold 0 only.  `select` re-runs the rule for a run whose worker saved another gallery, on the gallery the
 workers of the main runs build (--anchor-cap pool in Pod/w9_cv_worker.py: store-page prefix plus
 the whole 2,048-sentence review pool, a median of 2,068 sentences; the paper's 2,048-sentence
 budget, run names ending in _gpool).  I + SimCLR was selected that way (i2bce_sel_pool.json, five
-runs).  The 161 checkpoints the two files name are on Hugging Face,
+runs).  The 162 checkpoints the two files name are on Hugging Face,
 chironYu/latenarray-i2ce-checkpoints, and `cells` takes them all.
 
 Two more files list published checkpoints that `cells` leaves out.  fixed_split_ckpt_plan.json: the
-fixed-split towers of Table 3 and Section 6.2, which this script does not score (it reads the five
-folds).  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
+fixed-split towers (Table 3, Section 6.2, Table A7, Figure 9, Figures A1 and A3, Appendix L), which
+this script does not score (it reads the five folds); an entry's `trajectory` lists the other
+checkpoints of its run that the paper reads.  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
 on the packs as built before 2026-11-07 and one fold of an arm the paper dropped; it has the format
 of a selection file, so `cells` scores them when it is given the file.
 
@@ -39,7 +39,7 @@ wscan_pool_rev*.npy and full_pool_fp16.npy + full_pool_meta.npz.  From the repos
     python $E/k10_eval.py encode <cells.json> <draws.npz> [--cap 4096] [--k 10] [--games N] [--h5 <embedding_h5.h5>]
     python $E/k10_eval.py check  <draws.npz> <reference.npz>       max difference against a reference encoding
     python $E/k10_eval.py score  <cells.json> <draws.npz> <out.json>
-    python $E/k10_eval.py table  <out.json>                        five-fold mean ± std per run family
+    python $E/k10_eval.py table  <out.json>                        five-fold mean ± std per run family (one fold: ± over the draws)
     python $E/k10_eval.py select <sel.json> <checkpoint dir> <run name with {fold}>
 
 `cells` looks every checkpoint name up in --ckpt-dir (absolute paths are kept), adds the runs of
@@ -385,7 +385,8 @@ def score(args):
 
 # ------------------------------------------------------------------ table
 def table(args):
-    """five-fold mean ± population std of the per-draw means, a row per run family (the tables' cells)"""
+    """five-fold mean ± population std of the per-draw means, a row per run family (the tables' cells);
+    a family scored on one fold gives its std over the anchor draws instead, as Table A1 does for the DINO-style row"""
     import re
     R = json.loads(Path(args[0]).read_text(encoding="utf-8"))["results"]; fam = {}
     for key, o in R.items():
@@ -394,7 +395,13 @@ def table(args):
     print("%-36s folds  %-15s %-15s %-15s %-15s %-15s" % ("run family", "Name@1", "Name@5", "Stripped@1", "Stripped@5", "tag F1"))
     for name in sorted(fam):
         v = fam[name]
-        print("%-36s %d      %s" % (name, len(v), "   ".join("%.3f ± %.3f" % (np.mean([o[c] for o in v]), np.std([o[c] for o in v])) for c in cols)))
+        if len(v) == 1:
+            vals = ["%.3f ± %.3f" % (v[0][c], v[0][c.replace("pd_", "pdsd_", 1)]) for c in cols]
+        else:
+            vals = ["%.3f ± %.3f" % (np.mean([o[c] for o in v]), np.std([o[c] for o in v])) for c in cols]
+        print("%-36s %d%s     %s" % (name, len(v), "*" if len(v) == 1 else " ", "   ".join(vals)))
+    if any(len(v) == 1 for v in fam.values()):
+        print("* one fold: ± is the standard deviation over the anchor draws")
 
 
 if __name__ == "__main__":

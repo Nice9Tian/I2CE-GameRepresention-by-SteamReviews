@@ -1488,5 +1488,16 @@
   "init_ckpt": "ckpt_w9cv_wcle_byol_bytf_fold4_gpool_fp_ep300.pt",
   "init_ep": 300,
   "init_sha256": "26bbb5d1abe21c43ed3cc9ab0f2bb3d0ade4a726b8e74f078e17baa06518a216"
+ },
+ "dino_dntf_fold0_gpool": {
+  "arm": "dino_dntf",
+  "fold": 0,
+  "cap": "_gpool",
+  "sfx": "",
+  "ep": 1650,
+  "ckpt": "ckpt_w9cv_wcle_dino_dntf_fold0_gpool_fp_ep1650.pt",
+  "sha256": "f2bde75047755c26b713b1d3d31c833bf5cc918dabd742bb7776eecba32d3ffb",
+  "ranksel": 81.45498251422967,
+  "note": "the DINO-style control of Section 4.3 (Table A1), trained on fold 0 only; the file holds the teacher's tower under model, the one read, beside the student and the two prototype heads"
  }
 }
