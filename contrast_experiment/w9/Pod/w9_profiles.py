@@ -208,7 +208,10 @@ CELLS = [
          was_in="w9_twostage_5fold.ipynb",
          note="two-stage: BYOL warm start -> windowed. The published runs "
               "started from BYOL epochs 450, 700, 450, 450 and 300 (folds 0 "
-              "to 4), the picks of the BYOL runs' workers at the time",
+              "to 4), the picks of the BYOL runs' workers at the time. "
+              "The notebook takes those checkpoints from a full BYOL run "
+              "when one is there and trains the BYOL arm to those epochs "
+              "itself when it is not",
          extra={"init_from": "wcle_byol_bytf", "name_suffix": "_bw"}),
 
     Cell("apx.swin.window",
