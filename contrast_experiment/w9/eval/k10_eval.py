@@ -24,9 +24,12 @@ runs).  The 162 checkpoints the two files name are on Hugging Face,
 chironYu/latenarray-i2ce-checkpoints, and `cells` takes them all.
 
 Two more files list published checkpoints that `cells` leaves out.  fixed_split_ckpt_plan.json: the
-fixed-split towers (Table 3, Section 6.2, Table A7, Figure 9, Figures A1 and A3, Appendix L), which
-this script does not score (it reads the five folds); an entry's `trajectory` lists the other
-checkpoints of its run that the paper reads.  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
+fixed-split towers (Table 3, Section 6.2, Table A7, Figure 9, Figures A1 and A3, Appendix L); an
+entry's `trajectory` lists the other checkpoints of its run that the paper reads.  Its entries have
+no fold: given the file, `cells` takes them and `score` reads them on the fixed split (the 204 test
+games of wiki_eval_split.json), the frozen embedder with them as `frozen|fixed`.  That is the
+ten-draw reading of Figure 9, Figure A3 and Appendix L; fixed_split_eval.py runs it together with
+the one-draw tables of the fixed split (Table 3, Table A7).  superseded_ckpt_plan.json: checkpoints no number of the paper reads, the 512-sentence runs
 on the packs as built before 2026-11-07 and one fold of an arm the paper dropped; it has the format
 of a selection file, so `cells` scores them when it is given the file.
 
@@ -133,6 +136,9 @@ class Fixtures:
         return ((self.SA.float() * w).sum(1) / w.sum(1).clamp(min=1)).cpu().numpy()
 
     def fold_games(self, k):
+        """(test games, validation games) of fold k; k = None is the fixed split of wiki_eval_split.json"""
+        if k is None:
+            return ({self.appid2name[a] for a in self.split["test"]}, {self.appid2name[a] for a in self.split["val"]})
         test = {self.appid2name[self.universe[i]] for i in self.folds[k]}
         val = {self.appid2name[self.universe[i]] for i in self.folds[(k + 1) % NF]}
         return test, val
@@ -348,9 +354,12 @@ def score(args):
     targs = SimpleNamespace(tag_text_train_frac=0.7, tag_text_val_frac=0.15, tag_text_split_seed=42, seed=42, tag_text_threshold_steps=33)
     l2 = lambda x: x / (np.linalg.norm(x, axis=-1, keepdims=True) + 1e-8)
     res = {}
+    # the frozen embedder is scored on every split the cells use: the five folds, the fixed split (fold null), or both
+    frozen_on = ([k for k in range(NF)] if any(v["fold"] is not None for v in cell.values()) else []) \
+        + ([None] if any(v["fold"] is None for v in cell.values()) else [])
     for key in list(cell) + ["frozen"]:
         Zk, Za = d[key], d["Q|" + key]; K = Zk.shape[1]; gzk = l2(Zk); flat = gzk.reshape(F.NG * K, -1); gmean = l2(Zk.mean(1))
-        for f in (range(NF) if key == "frozen" else [cell[key]["fold"]]):
+        for f in (frozen_on if key == "frozen" else [cell[key]["fold"]]):
             test_g, val_g = F.fold_games(f)
             ctag = {"train": [n for n in F.names if n not in test_g | val_g], "val": sorted(val_g), "test": sorted(test_g)}
             o = {}
@@ -376,9 +385,10 @@ def score(args):
                 sc, rg, _, th, _ = train_anchor_ridge(targs, Zk[:, kk], y, F.n2i, ctag)
                 tags.append(float(micro_prf(lab, rg.predict(sc.transform(Xq)), th)["micro_f1"]))
             o["pd_test_tag"], o["pdsd_test_tag"] = float(np.mean(tags)), float(np.std(tags))
-            res[key if key != "frozen" else "frozen|%d" % f] = o
-            print("  %-34s fold %d: name %.3f  stripped %.3f (max over packs %.3f)  tag %.3f"
-                  % (key, f, o["pd_nm_neutral"], o["pd_nm_noname"], o["mx_nm_noname"], o["pd_test_tag"]))
+            where = "fixed split" if f is None else "fold %d" % f
+            res[key if key != "frozen" else "frozen|%s" % ("fixed" if f is None else f)] = o
+            print("  %-34s %s: name %.3f  stripped %.3f (max over packs %.3f)  tag %.3f"
+                  % (key, where, o["pd_nm_neutral"], o["pd_nm_noname"], o["mx_nm_noname"], o["pd_test_tag"]))
     out.write_text(json.dumps(dict(cap=int(d["cap"]), k=int(d["k"]), cells=cell, results=res), indent=1), encoding="utf-8")
     print("wrote", out)
 

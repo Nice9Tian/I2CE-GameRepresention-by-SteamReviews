@@ -191,7 +191,9 @@ CELLS = [
          caps=[512], folds=FIXED, epochs=2000,
          cites=[TAB3, SEC62, A7],
          was_in="w9_jobs.FS_JOBS + w9_flash.ipynb",
-         note="the first three rows of Table 3. The published CE + "
+         note="the first three rows of Table 3 (eval/fixed_split_eval.py "
+              "reads this cell and the other fixed-split ones from the "
+              "published checkpoints). The published CE + "
               "anchor-in-I run was trained 1,000 epochs and then on to "
               "2,000 from the weights of epoch 1,000 with a fresh optimizer "
               "state (eval/fixed_split_ckpt_plan.json, field extended)"),

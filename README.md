@@ -23,7 +23,8 @@ Published with the code, on Hugging Face:
   (Section 4);
 - the trained towers behind the paper's numbers, 266 checkpoints,
   [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-  with the script that scores them as the paper does
+  with the scripts that score them as the paper does, five folds and
+  fixed split
   ([`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md)).
 
 ---

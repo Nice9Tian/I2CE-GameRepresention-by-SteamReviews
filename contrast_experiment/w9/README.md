@@ -237,6 +237,7 @@ the ten. `eval/k10_eval.py` does that step.
 ```
 eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
+├── fixed_split_eval.py          # the fixed split in one command: Table 3, Section 6.2, Table A7, Figure A1, Figure 9's towers
 ├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
 ├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Section 6.2, Table A7, Figures 9, A1 and A3, Appendix L)
@@ -269,8 +270,7 @@ The checkpoints are on Hugging Face at
   than their selected checkpoint under `trajectory`: all 40 checkpoints
   of the I-CE run, whose latent queries Figure A1 draws, and the
   SimCLR-style checkpoints from epoch 1,350 on, whose test curve
-  Appendix L describes. `k10_eval.py` reads the five folds and does not
-  score these;
+  Appendix L describes. `fixed_split_eval.py` reads them (below);
 - the 30 checkpoints of `superseded_ckpt_plan.json`, which no number of the
   paper reads: the 512-sentence runs made on the packs as built before
   2026-11-07, which the `_d512` runs replaced, and one fold of a VICReg arm
@@ -301,3 +301,33 @@ checkpoints were picked by `select`, which applies the rank rule to every
 saved checkpoint of a run on the gallery the other five-fold runs select on;
 `select` does the same for a run you trained yourself. `encode` resumes from
 its `.part.npz` if interrupted.
+
+The fixed split has its own command, which reads every run of
+`fixed_split_ckpt_plan.json` at its selected checkpoint and prints each
+reading beside the number the paper prints:
+
+```bash
+python contrast_experiment/w9/eval/fixed_split_eval.py --ckpt-dir checkpoints   # --data-dir, or W9_DATA_DIR as above
+```
+
+- Table 3, the four gallery-aimed settings of Section 6.2 and Table A7, on
+  the one 4,096-sentence anchor draw the fixed split is read on
+  (`wscan_gal_rev_g4096.npz` of the data folder): mean pairwise cosine,
+  nearest-neighbor margin, centroid distance, Name and Stripped hit@1 over
+  the 204 test games, and the test-set tag F1;
+- the SimCLR-style tower's test curve from epoch 1,350 on (Appendix L) and
+  the four latent queries of the I-CE run over its 40 checkpoints
+  (Figure A1; `--plot` draws it);
+- the towers of Figure 9, Figure A3 and Appendix L against the ten
+  4,096-sentence draws, by calling `k10_eval.py` on the plan file: a cell
+  without a fold is scored on the fixed split's 204 test games, the frozen
+  embedder with it. This step takes about 40 minutes on one GPU and needs
+  the full pool; `--skip-draws` leaves it out.
+
+The readings agree with the printed ones to the third decimal except where
+a near tie between two anchors decides one query differently on another
+machine (one query of 204 is 0.005), and in the collapsed a+u @ gallery
+row, whose Stripped hit@1 is a matter of floating-point ties. The script
+reads the published selections; it does not repeat them, since only the
+selected checkpoints are published. It does not draw Figures 9 and A3 or
+compute the neighborhood statistics of Appendix L.
