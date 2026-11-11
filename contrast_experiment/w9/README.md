@@ -110,6 +110,11 @@ prefix. To reproduce them bit for bit, leave out the `--exclude`, then put
 | `w9_cv.ipynb` | 5-fold base pair |
 | `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style × 5 folds @pool |
 | `w9_i2ce_t.ipynb` | temperature sweep × 5 folds × {512, 2048} |
+| `w9_sweeps_3fold.ipynb` | invariance weight, view count and latent queries × folds 0 to 2 @512 (Tables A4 to A6) |
+| `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A14) |
+| `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A18) |
+| `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
+| `w9_twostage_5fold.ipynb` | BYOL warm start, then the windowed teacher × 5 folds @pool (Table A12) |
 | `w9_flash*.ipynb` | loss-ladder and structure grids |
 | `w9_scale.ipynb`, `w9_mq.ipynb`, `w9_save_4096_tag.ipynb` | anchor-scale & anchor-supply arms |
 | `w9_packageview.ipynb` | twin-pack `pk{N}` fractal family |

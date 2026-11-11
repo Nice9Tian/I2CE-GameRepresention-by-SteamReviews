@@ -205,8 +205,10 @@ CELLS = [
          arms=["wcle_swin168step84loop2i2ce_icetf"],
          caps=[POOL], folds=5, epochs=600,
          cites=[A12, S2, S3, S4],
-         was_in="(not shipped before; --init-ckpt was stripped)",
-         note="two-stage: BYOL warm start -> windowed",
+         was_in="w9_twostage_5fold.ipynb",
+         note="two-stage: BYOL warm start -> windowed. The published runs "
+              "started from BYOL epochs 450, 700, 450, 450 and 300 (folds 0 "
+              "to 4), the picks of the BYOL runs' workers at the time",
          extra={"init_from": "wcle_byol_bytf", "name_suffix": "_bw"}),
 
     Cell("apx.swin.window",
@@ -236,15 +238,15 @@ CELLS = [
          arms=["wcle_i2ce_icetf", "wcle_nodoc_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
          cites=[A18, S1],
-         was_in="w9_jobs.FS_JOBS (fixed split only; the five-fold cells "
-                "had no job definition)",
+         was_in="w9_docview_5fold.ipynb (the arm without a document view; "
+                "the recipe is a row of w9_final_experiment.ipynb)",
          note="document view present vs absent"),
 
     Cell("apx.docview.llm",
          arms=["wcle_i2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
          cites=[A18],
-         was_in="w9_jobs.FS_JOBS (fixed split only)",
+         was_in="w9_docview_5fold.ipynb",
          note="the LLM rewrite instead of raw wiki (Table A18, the "
               "LLM-rewritten row)",
          extra={"wiki_src": "llm"}),
@@ -280,7 +282,7 @@ CELLS = [
                "wcle_i4ce_icetf"],          # lambda = 4
          caps=[512], folds=3, epochs=2000,
          cites=[A4],
-         was_in="w9_cv_worker.py (arms only; no job definition, no notebook)",
+         was_in="w9_sweeps_3fold.ipynb",
          note="the invariance weight, folds 0 to 2"),
 
     Cell("apx.views",
@@ -291,7 +293,7 @@ CELLS = [
                "wcle_d1r5_i3ce_icetf"],     # V = 6 with lambda = 3
          caps=[512], folds=3, epochs=2000,
          cites=[A5],
-         was_in="w9_cv_worker.py (arms only; w9_viewgrid.ipynb is the "
+         was_in="w9_sweeps_3fold.ipynb (w9_viewgrid.ipynb is the "
                 "fixed-split grid)",
          note="the number of strong views, one document view and V - 1 "
               "review views, folds 0 to 2"),
@@ -301,7 +303,7 @@ CELLS = [
                "wcle_slot8i2cemean_icetf", "wcle_slot16i2cemean_icetf"],
          caps=[512], folds=3, epochs=2000,
          cites=[A6],
-         was_in="w9_cv_worker.py (arms only; w9_scale_query.ipynb is the "
+         was_in="w9_sweeps_3fold.ipynb (w9_scale_query.ipynb is the "
                 "fixed-split grid)",
          note="the number of latent queries, Q = 1, 2, 8 and 16, folds 0 to 2"),
 
@@ -318,7 +320,7 @@ CELLS = [
          arms=["wcle_ai2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
          cites=[A14],
-         was_in="w9_cv_worker.py (arm only; the fixed-split run is in "
+         was_in="w9_anchor_in_i_5fold.ipynb (the fixed-split run is in "
                 "body.decomp.rows)",
          note="CE + anchor-in-I under the folds, seeds, sampler and schedule "
               "of the 512-sentence I-CE of apx.ladder. Table 2 and Section "
@@ -329,8 +331,8 @@ CELLS = [
          arms=["wcle_vfai2ce_icetf"],
          caps=[512], folds=5, epochs=2000,
          cites=[S1],
-         was_in="w9_cv_worker.py (arm wcle_vfai2ce_icetf; vfa_packs builds "
-                "the views-first anchors)",
+         was_in="w9_vfa.ipynb (arm wcle_vfai2ce_icetf; vfa_packs in the "
+                "worker builds the views-first anchors)",
          note="views-first anchors: the teacher becomes a superset of "
               "the student's evidence"),
 ]
