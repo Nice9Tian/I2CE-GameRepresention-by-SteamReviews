@@ -14,14 +14,13 @@ the same vectors and offsets and give the same draws.
 
 Which checkpoint a tower is scored at is NOT decided here: five-fold runs are selected by the rank
 rule (Pod/w9_selection.py) on the gallery their own worker saved.  rank_ckpt_plan.json lists that
-selection for every five-fold run a number of the paper reads but the nine of Table A6 (the
-view-size sweep, not published): 157 runs, each with its fold, its
+selection for every five-fold run a number of the paper reads: 166 runs, each with its fold, its
 epoch and the SHA-256 of its file; the 512-sentence ones are the runs on the current packs, named
 _d512, and one is the DINO-style control of Table A1, trained on fold 0 only.  `select` re-runs the rule for a run whose worker saved another gallery, on the gallery the
 workers of the main runs build (--anchor-cap pool in Pod/w9_cv_worker.py: store-page prefix plus
 the whole 2,048-sentence review pool, a median of 2,068 sentences; the paper's 2,048-sentence
 budget, run names ending in _gpool).  I + SimCLR was selected that way (i2bce_sel_pool.json, five
-runs).  The 162 checkpoints the two files name are on Hugging Face,
+runs).  The 171 checkpoints the two files name are on Hugging Face,
 chironYu/latenarray-i2ce-checkpoints, and `cells` takes them all.
 
 Two more files list published checkpoints that `cells` leaves out.  fixed_split_ckpt_plan.json: the
@@ -73,7 +72,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_bufferin
 from Pod.w9_cv_worker import SetPoolN, rown  # noqa: E402
 from w9_selection import rank_score, validation_rows  # noqa: E402
 
-PLAN = HERE / "rank_ckpt_plan.json"          # every five-fold run the paper reads but Table A6's
+PLAN = HERE / "rank_ckpt_plan.json"          # every five-fold run the paper reads
 SEL_I2BCE = HERE / "i2bce_sel_pool.json"     # I + SimCLR, selected by `select`
 # the five families of the main comparison, scored under the paper's names
 MAIN_ARMS = {"I-CE": "i2ce_icetf", "CE": "ce_cetf", "SimCLR": "bce_cetf", "VICReg": "epd_v20i10c20_cetf", "BYOL": "byol_bytf"}

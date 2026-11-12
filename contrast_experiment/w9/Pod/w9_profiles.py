@@ -20,8 +20,6 @@ stays as an extra of this repository, and no profile runs it.
 Three profiles select from it:
 
     fullTest        every cell of the paper, the appendix and the supplement
-                    (every reported run but the view-size sweep of Table A6,
-                    which has no cell)
     paperTest       cells with a body citation, at their own budgets
     litePaperTest   paperTest with every anchor budget clamped to 1024
 
@@ -65,7 +63,7 @@ BODY = {FIG7, FIG8, FIG9, TAB2, TAB3, SEC61, SEC62, SEC32}
 # Online appendix.
 A1 = "Table A1"; A2 = "Table A2"; A3 = "Table A3"; A4 = "Table A4"
 A5 = "Table A5"
-A6 = "Table A6"            # the size of a review view (Appendix C); read by body.pair.512 only, see below
+A6 = "Table A6"            # the size of a review view (Appendix C)
 A7 = "Table A7"; A8 = "Table A8"; A9 = "Table A9"; A10 = "Table A10"
 A11 = "Table A11"; A12 = "Table A12"; A13 = "Table A13"; A14 = "Table A14"
 A15 = "Table A15"; A16 = "Table A16"; A17 = "Table A17"
@@ -396,15 +394,12 @@ CELLS = [
               "at 2,048 only, and its recipe rows are the I-CE of "
               "body.pair.512 and of apx.ladder.2048"),
 
-    # ---- appendix: invariance weight, view count, latent queries ------
+    # ---- appendix: invariance weight, view count, view size, latent queries ------
     # Folds 0 to 2 at 512 sentences. The recipe rows of Tables A4 to A7 and
     # the lambda = 0 row of Table A4 are the I-CE and CE towers of body.pair.512
     # on the same three folds, NOT more training runs.
-    # Table A6, the size of a review view, has no cell: its three floors are the
-    # five-fold worker run with --view-w 8, 32 and 64 (the recipe draws a review
-    # view to at least 16 sentences) on folds 0 to 2 at 512 sentences, runs named
-    # w9cv_wcle_i2ce_icetf_fold<k>_w<W>_d512_fp. No profile lists them and their
-    # checkpoints are not on Hugging Face.
+    # The view size is a worker flag, not an arm, so each floor is a cell of its
+    # own, as the LLM-rewritten documents are (apx.docview.llm).
     Cell("apx.lambda",
          arms=["wcle_ice_icetf",            # lambda = 1
                "wcle_i3ce_icetf",           # lambda = 3
@@ -426,6 +421,36 @@ CELLS = [
                 "fixed-split grid)",
          note="the number of strong views, one document view and V - 1 "
               "review views, folds 0 to 2"),
+
+    Cell("apx.viewsize.8",
+         arms=["wcle_i2ce_icetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="review views drawn until they hold at least 8 sentences, "
+              "where the recipe stops at 16 (worker flag --view-w 8; runs "
+              "named ..._fold<k>_w8_d512), folds 0 to 2",
+         extra={"view_w": 8}),
+
+    Cell("apx.viewsize.32",
+         arms=["wcle_i2ce_icetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="review views drawn until they hold at least 32 sentences, "
+              "where the recipe stops at 16 (worker flag --view-w 32; runs "
+              "named ..._fold<k>_w32_d512), folds 0 to 2",
+         extra={"view_w": 32}),
+
+    Cell("apx.viewsize.64",
+         arms=["wcle_i2ce_icetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="review views drawn until they hold at least 64 sentences, "
+              "where the recipe stops at 16 (worker flag --view-w 64; runs "
+              "named ..._fold<k>_w64_d512), folds 0 to 2",
+         extra={"view_w": 64}),
 
     Cell("apx.queries",
          arms=["wcle_slot1i2cemean_icetf", "wcle_slot2i2cemean_icetf",

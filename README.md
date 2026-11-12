@@ -21,8 +21,7 @@ Published with the code, on Hugging Face:
 - the cached tensors every experiment reads,
   [`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data)
   (Section 4);
-- the trained towers behind the paper's numbers, 266 checkpoints (all
-  but the nine view-size towers of Table A6),
+- the trained towers behind the paper's numbers, 275 checkpoints,
   [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
   with the scripts that score them as the paper does, five folds and
   fixed split
@@ -238,7 +237,7 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports, but for the view-size sweep of Table A6 | 24 | 198 | 512 – 2,048 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 27 | 207 | 512 – 2,048 |
 | `paperTest` | every experiment the paper body reports, at its own budget | 10 | 77 | 512, 2,048 |
 | `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 10 | 77 | 512, 1,024 |
 
@@ -291,13 +290,6 @@ the supplement mentions them: the twin-pack `pk*` family, the slot/readout capac
 grid, multi-anchor `ma2*`, the async simulation, and hard-negative
 `nemesis`. They remain reachable through `w9_jobs.FS_JOBS` and the
 notebooks.
-
-The view-size sweep of Table A6 is the one reported experiment no profile
-lists. Its three floors are the five-fold worker run with `--view-w 8`,
-`32` and `64` in place of the recipe's 16, on folds 0 to 2 at 512
-sentences (runs named `w9cv_wcle_i2ce_icetf_fold<k>_w<W>_d512_fp`); the
-recipe row of the table is the I-CE of `body.pair.512` on those folds.
-Their checkpoints are not on Hugging Face.
 
 ### Hardware
 

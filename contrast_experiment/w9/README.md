@@ -122,7 +122,7 @@ names the run without the tag.
 | `w9_cv.ipynb` | 5-fold base pair |
 | `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style / I + SimCLR × 5 folds @pool |
 | `w9_i2ce_t.ipynb` | temperature sweep × 5 folds × {512, 2048} |
-| `w9_sweeps_3fold.ipynb` | invariance weight, view count and latent queries × folds 0 to 2 @512 (Tables A4, A5 and A7) |
+| `w9_sweeps_3fold.ipynb` | invariance weight, view count, view size and latent queries × folds 0 to 2 @512 (Tables A4 to A7) |
 | `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A15) |
 | `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A19) |
 | `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
@@ -238,7 +238,7 @@ the ten. `eval/k10_eval.py` does that step.
 eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
 ├── fixed_split_eval.py          # the fixed split in one command: Table 3, Section 6.2, Table A8, Figure A1, Figure 9's towers
-├── rank_ckpt_plan.json          # every five-fold run the paper reads but Table A6's: fold, epoch, file, SHA-256
+├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
 ├── fixed_split_ckpt_plan.json   # the fixed-split checkpoints (Table 3, Section 6.2, Table A8, Figures 9, A1 and A3, Appendix L)
 └── superseded_ckpt_plan.json    # published checkpoints that no number of the paper reads
@@ -253,13 +253,12 @@ game, so any tower can be scored on the same ten packs.
 
 The checkpoints are on Hugging Face at
 [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-266 files and about 580 MiB in all, every one named by a file of `eval/`:
+275 files and about 593 MiB in all, every one named by a file of `eval/`:
 
-- the 157 five-fold runs of `rank_ckpt_plan.json` and the five folds of
+- the 166 five-fold runs of `rank_ckpt_plan.json` and the five folds of
   I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
   paper reads, the DINO-style control of Table A1 (fold 0 only) among
-  them, and `cells` takes them all. The exception is the view-size
-  sweep of Table A6, whose nine towers are not published;
+  them, and `cells` takes them all;
 - the five BYOL checkpoints the two-stage runs started from, named by the
   `init_ckpt` field of those runs in `rank_ckpt_plan.json`;
 - the 69 checkpoints of `fixed_split_ckpt_plan.json`, from 15 fixed-split
