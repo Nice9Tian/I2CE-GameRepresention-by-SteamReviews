@@ -1,7 +1,7 @@
 """Reassemble streamed embedding shards into a final embedding H5.
 
 Usage:
-    python game_review_data/combine_shard.py --shard-dir <drive-dir> --text-h5 <text_h5.h5> --output <embedding_h5.h5>
+    python dataset_builder/reviews/combine_shard.py --shard-dir <drive-dir> --text-h5 <text_h5.h5> --output <embedding_h5.h5>
 """
 
 from __future__ import annotations
@@ -39,7 +39,10 @@ except ImportError:  # pragma: no cover - direct script execution
         replace_with_retry,
     )
 
-from game_review_data.embedding_incloud import STREAM_MANIFEST_SCHEMA, stream_manifest_path
+try:
+    from game_review_data.embedding_incloud import STREAM_MANIFEST_SCHEMA, stream_manifest_path
+except ImportError:  # pragma: no cover - direct script execution
+    from embedding_incloud import STREAM_MANIFEST_SCHEMA, stream_manifest_path
 
 
 def decode_text(value) -> str:

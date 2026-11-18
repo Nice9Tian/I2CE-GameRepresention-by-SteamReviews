@@ -232,7 +232,8 @@ CELLS = [
          cites=[SEC62],
          was_in="w9_flash.ipynb",
          note="the 'settings in online Appendix H' sweep of Section 6.2; the projection grid "
-              "is repository-only detail behind the geometry files of Table A10"),
+              "is repository-only detail behind the align + uniformity row of Table A10 "
+              "(eval/fixed_split_eval.py reads the sweep's four gallery arms)"),
 
     # ---- body: the fixed-split towers of Figure 9 ----------------------
     # Figure 9, Figure A3 and the neighborhood statistics of Appendix L read

@@ -3,7 +3,7 @@
 manuscript's own I-CE arm — steam_reviews_framework/run.py; this one trains
 everything else, baselines and ablations).
 
-    python contrast_experiment/run.py                    # 18 arms, fixed split
+    python contrast_experiment/run.py                    # 19 arms, fixed split
     python contrast_experiment/run.py --arms ce byol     # a subset
     python contrast_experiment/run.py --cv               # + 6 recipes x 5 folds
     python contrast_experiment/run.py --cv --folds 0 1   # some folds only

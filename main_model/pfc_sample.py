@@ -35,8 +35,12 @@ with an all-reduce of their window logits. With K = 1 this is the windowed
 teacher of the appendix (w = 168, S = 84, T = 2); the research
 implementation is the `--pfc-shards K --pfc-window w` path of
 contrast_experiment/w9/Pod/w9_cv_worker.py on a swin arm such as
-`wcle_swin168step84loop2i2ce_icetf`, with `--full-pool-path` supplying the
-memory-mapped store.
+`wcle_swin168step84loop2i2ce_icetf`. That path runs one micro-pass per
+shard and step (so K = 1 there is not the T = 2 teacher) and keeps the
+anchor packs resident on the device; its memory-mapped file
+(`--full-pool-path`) is the review pool the views are drawn from. The
+supply as described above, T micro-passes over a memory-mapped pack store,
+is this file.
 
 This file is a self-contained CPU-runnable illustration on synthetic
 embeddings:

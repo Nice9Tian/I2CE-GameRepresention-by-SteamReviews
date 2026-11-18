@@ -8,7 +8,8 @@ doc views, I-CE head). This is the w9 campaign's `wcle_i2ce_icetf` arm.
 `--arm cegate2` switches to the CE-gated ablation instead, where CE fires
 only on games carrying a document view. That arm was this script's default
 until it was made explicit; it is not what the manuscript reports. The
-README's Protocol table lists every remaining packaged-vs-manuscript gap.
+README's table "Where the packaged entry points depart from the manuscript"
+lists every remaining packaged-vs-manuscript gap.
 
 Prerequisite: data assets built (see dataset_builder/rebuild_data.py) or
 linked via LARICE_* environment variables (dataset_builder/paths.py).

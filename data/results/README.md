@@ -7,7 +7,7 @@ suite); aggregated by `contrast_experiment/report.py`. Naming conventions
 
 | File | Structure | Meaning |
 |---|---|---|
-| `ckpt_{arm}_ep{K}.pt` | torch state_dict | tower checkpoint, one every 50 ep (1,000 ep, no early stop) |
+| `ckpt_{arm}_ep{K}.pt` | torch state_dict | tower checkpoint, one every 50 ep (2,000 ep by default, no early stop) |
 | `tower_{arm}_ep{K}.npz` | `SPg` (2020,128) anchor projections; `SPg_nd` reviews-only-anchor projections; `SPa` eval-query projections; `SPq` pseudo-query projections; `SPd` + `SPd_gidx` family-doc projections | ALL projections of the frozen tower at that checkpoint — the head stage consumes only this file and never touches the tower again |
 | `zs_traj_{arm}.json` | `{ep50: {nm_neutral, nm_noname, tag_neutral, tag_noname}, …}` | bare-tower zero-shot trajectory across checkpoints |
 | `ft4var_{arm}_ep{K}{head}.json` | `{per_seed: [{neutral:{h1,h5,med,tag}, noname:…, positive:…, negative:…, vscore, v_neu, v_non, v_non5}, …]}` | head results at that checkpoint (pass 1 = 3 seeds); `{head}` empty = main head, `_p1ce` / `_ce` / `_cetf` = ablation heads |

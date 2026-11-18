@@ -5,8 +5,9 @@ scikit-learn
 scipy
 wtpsplit          # SaT sentence splitter (data_pipeline only)
 transformers      # local Qwen3-Embedding backend (data_pipeline only)
-sentence-transformers
-pandas            # kaggle review preparation (data_pipeline only)
+pandas            # review metadata and kaggle review preparation (data_pipeline only)
 requests
+huggingface_hub   # the `hf download` commands of the READMEs
 matplotlib        # figures/neighborhoods
+Pillow            # figures/trend_river
 umap-learn        # figures/neighborhoods/layout_check.py only

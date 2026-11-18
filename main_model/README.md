@@ -30,6 +30,12 @@ mask : [B, V, S]         bool    True = padding
 out  : [B, V, out_dim]           L2-normalised
 ```
 
+The tower has no input normalization of its own. The Steam binding and
+the campaign feed every sentence embedding standardized per row (mean 0,
+std 1 over its 1,024 dimensions; `rown` in
+`steam_reviews_framework/data.py`), and the published checkpoints expect
+their inputs prepared that way.
+
 Single-view tasks use `V = 1` (a rank-3 `[B, S, D_in]` input is accepted
 and treated as `V = 1`). Loss semantics follow the axes: `invariance_loss`
 reduces along **view**, `ce_loss` reduces along **data**. Any task whose
@@ -37,14 +43,14 @@ samples can be laid out this way can use the tower unchanged.
 
 ## Readout
 
-Default output is the **concat** of the `N` query slots
-(`out_dim = Q × dim_model`) — the general-purpose representation; each
-slot is a deployable sub-space of its own.
+Default output is the **pooled** readout (`readout="pool"`: mean over the
+`N` query slots → MLP → L2, `out_dim = dim_model`), the one the paper uses:
+for retrieval-style tasks where the query must hit one specific item (name
+recall) it consistently outperforms concat in our experiments.
 
-> **Note — name/identity recall:** for retrieval-style tasks where the
-> query must hit one specific item (name recall), the **pooled** readout
-> (`readout="pool"`: mean over slots → MLP → L2) consistently outperforms
-> concat in our experiments. Use `LariceConfig(readout="pool")` there.
+`LariceConfig(readout="concat")` returns the `N` slots side by side instead
+(`out_dim = Q × dim_model`), a general-purpose representation in which each
+slot is a sub-space of its own.
 
 ## Usage
 
@@ -108,6 +114,9 @@ of their window logits. Per-step compute is Θ(T·(G + K·w)·m_a·Q·d), equati
 (I.3) of Appendix I (which writes the shard count κ), and `K = 1` is the
 windowed teacher of the appendix (`w = 168`, `S = 84`, `T = 2`). `pfc_sample.py` is the self-contained CPU
 walk-through (`ShardedRing`, `encode_window`, `pfc_step`); the research
-implementation is `--pfc-shards K --pfc-window w --full-pool-path <mmap>`
-on a swin arm (`wcle_swin168step84loop2i2ce_icetf`, `w = 168`, `S = 84`,
-`T = 2`) of `contrast_experiment/w9/Pod/w9_cv_worker.py`.
+implementation is `--pfc-shards K --pfc-window w` on a swin arm
+(`wcle_swin168step84loop2i2ce_icetf`, `w = 168`, `S = 84`) of
+`contrast_experiment/w9/Pod/w9_cv_worker.py`. That path runs one
+micro-pass per shard and step, so its `K = 1` is not the `T = 2` teacher,
+and it keeps the anchor packs resident on the device; the memory-mapped
+pack store and the `T` micro-passes are in `pfc_sample.py`.

@@ -85,9 +85,9 @@ TABLE3 = [("I-CE (ours)", "i2ce_icetf_fixed_d512", dict(cos=0.376, marg=0.168, s
 # align : uniformity in the paper's units; Section 6.2 quotes the margin, the centroid distance and the rank-1 count
 SEC62 = [("12.5 : 1 (ai25auni2, Table 3's a+u @ gallery)", "ai25auni2_icetf_fixed_d512", "distance 0.001, Stripped 0.172"),
          ("2 : 1 (ai4auni2)", "ai4auni2_icetf_fixed_d512", "margin below 0.001, distance 0.002 or less, no query at rank one"),
-         ("1 : 1, kernel temperature 25 (ai2auni25)", "ai2auni25_icetf_fixed_d512", "margin below 0.001, distance 0.002 or less, no query at rank one"),
+         ("1 : 4, kernel temperature 25 (ai2auni25, whose uniformity term is summed over the four views)", "ai2auni25_icetf_fixed_d512", "margin below 0.001, distance 0.002 or less, no query at rank one"),
          ("3 : 1 (ai6auni2)", "ai6auni2_icetf_fixed_d512", "distance 0.998, margin 0.045, Stripped 0.275")]
-TABLEA7 = [("v/i/c = 25/25/1", "epd_v25i25c1_cetf_fixed", dict(ep=550, name=0.618, strip=0.363, tag=0.708)),
+TABLEA8 = [("v/i/c = 25/25/1", "epd_v25i25c1_cetf_fixed", dict(ep=550, name=0.618, strip=0.363, tag=0.708)),
            ("v/i/c = 20/10/20 (recipe weights)", "epd_v20i10c20_cetf_fixed", dict(ep=100, name=0.814, strip=0.451, tag=0.725)),
            ("v/i/c = 20/10/15", "epd_v20i10c15_cetf_fixed", dict(ep=100, name=0.799, strip=0.456, tag=0.718)),
            ("I-CE (Table 3)", "i2ce_icetf_fixed_d512", dict(ep=2000, name=0.946, strip=0.725, tag=0.677)),
@@ -249,7 +249,7 @@ def one_draw(a, data, ckdir, out, plan):
         print("  %-46s ep%-5d margin %.5f  centroid %.3f  Stripped %.3f  rank-1 %3d of %d   paper: %s"
               % (label, c["ep"], c["marg"], c["centroid"], c["strip"], c["n_rank1"], len(q_non), quote))
     print("\nTable A8: the VICReg weight sweep, computed (paper)")
-    for label, key, ref in TABLEA7:
+    for label, key, ref in TABLEA8:
         c = col[key]
         print("  %-34s epoch %d (%d)   " % (label, c["ep"], ref["ep"]) + versus(c, ref, ["name", "strip", "tag"]))
     curve = {plan[CURVE]["ep"]: col[CURVE]["strip"]}
@@ -257,7 +257,7 @@ def one_draw(a, data, ckdir, out, plan):
     print("\nAppendix L: the SimCLR-style tower's test Stripped hit@1 from its selected epoch on (paper: 0.59 to 0.65)")
     print("  " + "  ".join("%d:%.3f" % (ep, curve[ep]) for ep in sorted(curve)))
     print("  lowest %.3f, highest %.3f" % (min(curve.values()), max(curve.values())))
-    other = [k for k in plan if k not in {r[1] for r in TABLE3 + SEC62 + TABLEA7}]
+    other = [k for k in plan if k not in {r[1] for r in TABLE3 + SEC62 + TABLEA8}]
     print("\nThe other fixed-split towers on this one draw (the paper reads them on ten draws, below)")
     for key in other:
         c = col[key]

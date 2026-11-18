@@ -156,11 +156,25 @@ in the catalog size (Section 8 of the paper; Appendix I, equation (I.3)).
 [`main_model/pfc_sample.py`](main_model/pfc_sample.py) is the
 self-contained CPU walk-through and
 [`main_model/README.md`](main_model/README.md) documents it; the research
-implementation is `--pfc-shards K --pfc-window w --full-pool-path <mmap>`
-on a swin arm of
-[`contrast_experiment/w9/Pod/w9_cv_worker.py`](contrast_experiment/w9/Pod/w9_cv_worker.py).
+implementation is `--pfc-shards K --pfc-window w` on a swin arm of
+[`contrast_experiment/w9/Pod/w9_cv_worker.py`](contrast_experiment/w9/Pod/w9_cv_worker.py),
+which runs one micro-pass per shard and step and keeps the anchor packs on
+the device (the walk-through is the full supply).
 [`main_model/gallery_sample.py`](main_model/gallery_sample.py) shows how the
 anchor packs of the published recipe are built.
+
+### The game index
+
+[`index/i2ce_index_128d.npz`](index/i2ce_index_128d.npz) is the 128-d index
+over the 2,020 games: one unit vector per game (`Z`, with `names` and
+`appids` in the order of `games.npz`), the encoding of the game's
+4,096-sentence anchor pack by the fixed-split I-CE tower of Figure 9
+(`i2ce_icetf_fixed_g2048`, epoch 1,750). Cosine similarity to a query is
+`Z @ q`, the query encoded by the same tower.
+[`contrast_experiment/w9/eval/export_index.py`](contrast_experiment/w9/eval/export_index.py)
+writes the file from the published checkpoint and data, and with `--check`
+reads its test-set hit@1 on the fixed split: 0.956 for name-intact
+rewrites and 0.716 for name-stripped ones against this one pack.
 
 ### Training on the Steam corpus
 
@@ -183,11 +197,21 @@ python contrast_experiment/run.py [--cv]
 Every step is resume-safe: rerunning skips whatever already exists, so an
 interrupted run continues where it stopped.
 
-Fixed throughout, and identical to the manuscript:
+These packaged entry points train the manuscript's objective on a small
+data footprint. They are not how the paper's numbers were produced: those
+come from the campaign in `contrast_experiment/w9/` (Section 3 below), and
+the table after this list says where the two differ.
+
+Shared by the packaged entry points and the campaign:
 
 - **Corpus.** 2,020 games, reviews crawled 2020-2024, 6.6 M reviews, 73 M
   sentences. A game enters only if at least 500 of its reviews survive a
-  300-character floor.
+  300-character floor. Each game's review list opens with its three
+  store-page text fields (detailed description, about, short description;
+  `dataset_builder/reviews/build_metadata.py`), stored as entries 0 to 2:
+  6,060 of the 6,649,325 entries and 0.14% of the sentences. They are
+  counted in the totals above and can be drawn into a review view like any
+  review.
 - **Fully inductive.** No text of a held-out game reaches any training
   stage: not its reviews, its documents, its pseudo-queries, nor a
   gallery-negative gradient. The training-time gallery covers train games
@@ -202,7 +226,8 @@ Fixed throughout, and identical to the manuscript:
 - **Anchor pack (the weak view).** Store-page prefix, then whole reviews
   to a sentence budget, re-encoded with gradient at every step.
 - **Tower.** 4 latent queries, 128-d, 4 heads, one cross-attention layer
-  over the raw 1024-d sentence embeddings, mean-pooled over slots
+  over the 1024-d sentence embeddings (each standardized per row before it
+  reaches the tower), mean-pooled over slots
   (`readout="pool"`), then a two-layer MLP to an L2-normalized vector.
 - **Optimizer.** AdamW, lr 5e-4, weight decay 1e-4, batch 192 games,
   16 steps per epoch, gradient clipping at 5.0, AMP. Frozen `tau = 0.02`,
@@ -220,6 +245,24 @@ Fixed throughout, and identical to the manuscript:
   held-out games leave a 1,613-game training gallery. `--cv-fold k` and `--cv` permute
   the same 814 games into five folds (fold k = test, fold k+1 = val, the
   other three = train), which leaves 1,694 or 1,695 per fold.
+
+### Where the packaged entry points depart from the manuscript
+
+| | Packaged (`steam_reviews_framework/`, `contrast_experiment/run.py`) | The manuscript's campaign (`contrast_experiment/w9/`) |
+|---|---|---|
+| Review views are drawn from | the shipped 2,048-sentence review pool of each game (`wscan_pool_rev.npy`) | the game's full review pool, 73 M sentences in all (`--full-pool`, `full_pool_fp16.npy`) |
+| A view against its own anchor pack | the packs are cut from that same pool, so at the 2,048 budget nearly every sentence of a view also sits in its game's anchor pack | about 14% of a median game's sentences sit in the pack (Supplement A, which shows what an anchor built from the views' own sentences costs) |
+| Evaluation gallery | the packs the tower trained on, one per game | ten fresh 4,096-sentence draws per game, scores averaged (`eval/k10_eval.py`); the 4,096-sentence pack on the fixed split (`eval/fixed_split_eval.py`) |
+| Checkpoint selection | `vsel` on the name-recall head (`ft4var_*_best*.json`) | the rank criterion of Section 5 on the bare tower (`zsbest_*`, `Pod/w9_selection.py`) |
+| What the summary reports | `contrast_experiment/report.py` tabulates the head's results (`ft4var_*`); the bare tower's zero-shot readings are in `zs_traj_*.json` (test-set hit@1 and tags per checkpoint) | zero-shot cosine retrieval only |
+| Tag probe | a ridge fit on a random 70 / 15 / 15 split of all 2,020 games (`_tag_split.json`), so it sees the anchors of most held-out games | fit on the training games' anchors, thresholded on validation anchors, scored on test queries (Section 5; the `test_tag` reading) |
+| Five-fold epochs | `contrast_experiment/run.py --cv` trains 600 epochs per fold unless `--cv-epochs` says otherwise | 2,000 |
+| Five-fold anchor budget | `train_champion.py --cv-fold k` run on its own reads the shipped 512-sentence packs; set `LARICE_ANCHOR_CAP` (as `run.py` does from `--profile`) for another budget | per job (`--anchor-cap`) |
+| Roster | `contrast_models/roster.py`: 19 arms (the CE-gate and I-dose ladders, CE, ArcFace, BYOL, leak controls) | the paper's baselines (SimCLR-style, VICReg, DINO, EMA memory bank, CE + anchor-in-I, align + uniformity) are arms of the w9 workers only |
+
+To reproduce a number the paper prints, use the campaign and its
+evaluation scripts; `contrast_experiment/w9/Pod/w9_profiles.py` names the
+run behind each table and figure.
 
 ---
 
@@ -244,6 +287,11 @@ profiles select from it:
 ```bash
 python contrast_experiment/w9/Pod/w9_profiles.py     # print the three plans
 ```
+
+`w9_profiles.py` is the map, not a launcher: it prints the plans, and each
+cell names the notebook that runs it (`was_in`). No script takes a profile
+name and trains its towers; for `litePaperTest`, run the notebooks of the
+plan with the anchor budget the plan prints.
 
 Four things worth knowing before you pick one.
 
@@ -277,9 +325,10 @@ cells train on `pool` packs: the store-page prefix plus the game's whole
 sentences, the longest 2,184). Their runs and checkpoints are named
 `_gpool`; these are the towers of Figure 7 and of the tables that read
 them. A cap of 2,048 stops at 2,048 sentences in total, prefix included (a
-median of 2,046), and names its runs `_g2048`; the 2,048 rung of the anchor
-ladder and the temperature sweep use it. No profile trains above this
-budget. The towers are scored against 4,096-sentence anchors, which costs
+median of 2,046), and names its runs `_g2048`; the temperature sweep of
+Table A3, its recipe row at 2,048 and the cost measurement of Table A11 use
+it, while the 2,048 row of Table A2 is the `pool` towers. No profile trains
+above this budget. The towers are scored against 4,096-sentence anchors, which costs
 no training memory, and the window-size sweep, the one cell on
 4,096-sentence packs, is not in the paper and in no profile.
 [`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md) has
@@ -365,7 +414,11 @@ Building from scratch instead:
    `steam_reviews_framework/corpora_bundles/` and unpack into
    `data/corpora/`. The bundled texts always win: Wikipedia is never
    re-scraped and the LLM is never re-run, so results cannot drift with
-   live wiki edits or non-deterministic rewrites.
+   live wiki edits or non-deterministic rewrites. The scripts in
+   `dataset_builder/corpora/` are the record of how those texts were made,
+   not a second route to them: the wiki scrape imports a collection module
+   that is not part of this repository, and the rewrites call a paid LLM
+   endpoint.
 2. **Review files.** The 73-million-sentence embedding h5 and the
    text/tag h5 are downloaded when `LARICE_EMBED_H5_URL` /
    `LARICE_TEXT_H5_URL` are set, or rebuilt once from the Kaggle dump via
@@ -447,10 +500,14 @@ and which stage writes it.
 ### Requirements
 
 Python 3.11+, `numpy`, `torch`, `h5py`, `scikit-learn`, `scipy`,
-`requests`. The data pipeline additionally needs `wtpsplit` (the SaT
-sentence splitter), `transformers` and `sentence-transformers` (the local
-Qwen3-Embedding backend), and `pandas` (Kaggle review preparation). A run
-that only trains from prepared assets needs none of that second group.
+`requests`, and `huggingface_hub` for the `hf download` commands above. The
+data pipeline additionally needs `wtpsplit` (the SaT sentence splitter),
+`transformers` (the local Qwen3-Embedding backend), `pandas` (review
+metadata and Kaggle review preparation) and, for the Kaggle download,
+`kagglehub`. A run that only trains from prepared assets needs none of that
+second group. The figure scripts need `matplotlib` (neighborhoods), `Pillow`
+and a Chrome or Chromium binary (trend river), and `umap-learn` for the
+layout check alone.
 
 ---
 
