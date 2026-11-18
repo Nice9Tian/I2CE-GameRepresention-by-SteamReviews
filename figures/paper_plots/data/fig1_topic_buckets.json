@@ -1,0 +1,35 @@
+{
+  "_provenance": {
+    "source_topics": "data/w9/fig1_bertopic_topics.md (BERTopic tuned run, seed 42, 127 topics over a 100k-sentence sample of 2,000 games)",
+    "anchor_sets": "the 49 content-topic assignments in the training filter (VICReg_review/build_content_filter.py: GAMEPLAY 37, NARRATIVE 6, AESTHETIC 6) are kept verbatim; the remaining 77 topics were assigned by their top words in 2026-08 when the original figure mapping could not be recovered",
+    "excluded": "topic 0 (15,006 docs, generic catch-all: bug/boss/npc/steam/spoiler) and topic -1 (54,898 outliers); the share denominator is the sum over the 126 mapped topics",
+    "consumer": "figures/fig1_review_composition.py"
+  },
+  "buckets": {
+    "gameplay_mechanics": [3, 11, 16, 17, 19, 21, 24, 25, 26, 28, 30, 31, 34, 38, 39, 43, 44, 53, 54, 55, 59, 60, 63, 64, 68, 77, 78, 80, 81, 87, 90, 92, 99, 101, 103, 104, 109, 110, 113, 117, 121],
+    "story_narrative": [29, 37, 57, 69, 86, 120],
+    "aesthetics_audio": [6, 13, 72, 74, 106, 111, 125],
+    "sentiment_verdict": [1, 2, 5, 7, 14, 20, 22, 35, 40, 41, 45, 49, 56, 61, 65, 66, 96, 97, 122, 123, 124],
+    "platform_community": [4, 12, 18, 27, 36, 46, 48, 50, 52, 71, 85, 88, 100, 119],
+    "technical_state": [10, 33, 42, 51, 58, 62, 67, 70, 91, 102],
+    "game_specific_other": [8, 9, 15, 23, 32, 47, 73, 75, 76, 79, 82, 83, 84, 89, 93, 94, 95, 98, 105, 107, 108, 112, 114, 115, 116, 118, 126]
+  },
+  "labels": {
+    "gameplay_mechanics": "Gameplay & mechanics",
+    "story_narrative": "Story & narrative",
+    "aesthetics_audio": "Aesthetics & audio",
+    "sentiment_verdict": "Sentiment & verdict",
+    "platform_community": "Platform & community",
+    "technical_state": "Technical state",
+    "game_specific_other": "Game-specific / other"
+  },
+  "kinds": {
+    "gameplay_mechanics": "content",
+    "story_narrative": "content",
+    "aesthetics_audio": "content",
+    "sentiment_verdict": "sentiment",
+    "platform_community": "noncontent",
+    "technical_state": "noncontent",
+    "game_specific_other": "noncontent"
+  }
+}
