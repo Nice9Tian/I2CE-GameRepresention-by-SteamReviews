@@ -53,7 +53,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SPACES = ["Frozen", "I-CE", "VICReg", "BYOL"]
 TITLE = {"Frozen": ("Frozen embedder", "(mean pool)"),
-         "I-CE": ("I-CE @4096, fold 0", "(ours)"),
+         "I-CE": ("I-CE @2,048, fold 0", "(ours)"),
          "VICReg": ("VICReg", "(epd 20/10/20)"),
          "BYOL": ("BYOL", None)}
 SIX = ["Card Game", "Sports/Rhythm", "Racing/Driving", "Fighting/Melee", "Platformer", "Puzzle"]
