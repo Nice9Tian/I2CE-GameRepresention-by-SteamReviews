@@ -8,6 +8,12 @@ never re-scraped and the LLM is never re-run** (wiki pages get edited and
 LLM rewrites are non-deterministic; re-collecting would make results
 drift).
 
+**Licence.** These texts are not under the repository's MIT licence: the
+wiki files are Wikipedia text and its rewrites, under CC BY-SA 4.0; the
+store-page files are the publishers' descriptions and their rewrites,
+included only to reproduce the paper. The root README's section "Licence"
+has the details.
+
 All files are UTF-8. `<appid>` is the Steam appid, matching the game-name
 prefix in `assets/games.npz` (`<appid>_<GameName>`).
 

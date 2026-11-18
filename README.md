@@ -561,4 +561,26 @@ December 18 to 21, 2026, Tokyo, Japan.
 ```
 
 The appendices and the supplement the paper cites are the documents of
-Section 1. Code and documents are under the MIT license ([`LICENSE`](LICENSE)).
+Section 1.
+
+## Licence
+
+- **Code and documents**, everything in this repository except the two
+  corpus bundles below, are under the MIT licence ([`LICENSE`](LICENSE)).
+- **`steam_reviews_framework/corpora_bundles/wikipage.zip`** is text from
+  English Wikipedia and is under
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), not MIT.
+  `wiki_clean/` holds each article's text with the markup removed and only
+  the sections `wiki_clean_manifest.json` lists as kept; the article is the
+  manifest's `source_title`, and its authors are listed in that article's
+  history on en.wikipedia.org. `wiki_llm/` and `wiki_variants/` are LLM
+  rewrites of that text, adaptations shared under the same licence.
+- **`steam_reviews_framework/corpora_bundles/storepage.zip`** holds Steam
+  store-page descriptions (`sp_raw/`) and LLM rewrites of them (the other
+  five folders). The descriptions belong to the games' developers and
+  publishers; neither the MIT licence nor any other licence from us covers
+  them, and they are included only so that the paper's experiments can be
+  reproduced. A rights holder who wants a description removed can open an
+  issue.
+- The Hugging Face data folder holds sentence vectors, offsets and
+  identifiers, no text.

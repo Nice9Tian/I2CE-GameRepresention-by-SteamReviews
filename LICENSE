@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+This licence covers the code and documents of this repository. It does not
+cover the corpus bundles in steam_reviews_framework/corpora_bundles/:
+wikipage.zip is Wikipedia text under CC BY-SA 4.0, and storepage.zip holds
+Steam store-page descriptions that belong to their publishers. See the
+section "Licence" of README.md.
