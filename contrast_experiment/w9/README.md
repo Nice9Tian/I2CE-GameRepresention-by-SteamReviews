@@ -59,8 +59,11 @@ cd fusion_cache_w9 && python join_full_pool.py   # joins the full pool, checks S
 ```
 
 Point `DATA_SRC` (or `W9_DATA_DIR` below) at that folder. The data
-pipeline in `dataset_builder/` produces the same files from the raw
-reviews.
+pipeline in `dataset_builder/` rebuilds the packaged path's assets from the
+raw reviews, and the one-time cell of `Pod/w9_a100.ipynb` builds the full
+pool and `full_pool_meta.npz` from the embedding h5; `tag_labels.npz` and
+the prebuilt `wscan_gal_rev_g*.npz` galleries have no builder here, so take
+them from the Hugging Face folder.
 
 The folder also holds `wscan_gal_rev_g1024.npz` and
 `wscan_gal_rev_g4096.npz`, the fixed split's anchor packs drawn from the
@@ -110,7 +113,11 @@ names the run without the tag.
    `pool`; 4,096 needs 80 GB and no profile asks for it).
 2. Open a notebook under `Pod/` and run its cells top to bottom. Each
    notebook is one experiment: it stages data, launches its workers, and
-   prints the readout table at the end.
+   prints the readout table at the end. Staging copies the data folder into
+   shared memory (`DATA_RAM`, default `/dev/shm/fusion_cache_w9`): about
+   22 GB, and 44 GB in the notebooks that also stage the two prebuilt
+   `wscan_gal_rev_g*.npz` galleries. On a host or container with a smaller
+   `/dev/shm`, point `DATA_RAM` at a local disk.
 3. Multiple machines may run the same notebook against a shared volume:
    atomic claim files make them split the job queue safely; a tower's done
    marker is its final projection `.npz`.
@@ -201,7 +208,10 @@ checkpoint, and scores the Section 5 test-set tag probe (ridge on the
 1,613 training-gallery anchors, threshold on the 203 validation games,
 micro-F1 on the 204 test games' name-intact rewrites). Point it at the
 result directory and the cache with `LARICE_RESULTS` (or `W9_OUT`) and
-`W9_CACHE`; it writes `Pod/table_a9_results.json` and prints the table.
+`W9_CACHE`, and at a tree that provides `VICReg_review` with `W9_REPO`; it
+writes `Pod/table_a9_results.json` and prints the table. The four arms'
+per-checkpoint projection files it reads are not published, so without a
+rerun of the four arms this is the record of how the table was made.
 
 ```bash
 python contrast_experiment/w9/Pod/table_a9_recompute.py
@@ -219,12 +229,16 @@ nearest-neighbour margin over the 2,020 anchors, their ratio, and the share
 of queries inside their own margin (Figure A2's clearance labels). It writes
 `table1_results.json` and `fig5_encodings.npz`; `--plan cvsel --check`
 scores the older worker-selected checkpoints instead and compares against
-the shipped numbers. Needs a CUDA interpreter and the research caches
-(`W9_FIG3`, `W9_CACHE`); the paper repository's `figures/fig5_umap.py` draws
-Figure A2 from the encodings.
+the shipped numbers. `--plan rank` needs a CUDA interpreter and the two
+published folders (`--ckpt-dir`, `--data-dir`); `--plan cvsel --check`
+reads research files that are not published. Figure A2 itself was drawn
+from `fig5_encodings.npz` by a UMAP script that is not part of this
+repository; the percentages printed in its panels are the `inside` column
+this script recomputes.
 
 ```bash
-python contrast_experiment/w9/Pod/table1_recompute.py --plan rank
+python contrast_experiment/w9/Pod/table1_recompute.py --plan rank \
+    --ckpt-dir checkpoints --data-dir /path/to/data
 ```
 
 ## From trained towers to the manuscript's numbers

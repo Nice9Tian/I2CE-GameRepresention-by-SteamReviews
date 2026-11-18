@@ -1,7 +1,8 @@
 # contrast_experiment — the full contrast suite
 
-Trains **the baselines and ablations** and produces the comparison (the
-manuscript's own I-CE arm is path 1: `steam_reviews_framework/run.py`).
+Trains **the baselines and ablations** of the packaged path and produces
+their comparison (the I-CE arm of that path is `steam_reviews_framework/run.py`;
+the runs the manuscript reports are in `w9/`, see the root README).
 The declarative arm roster lives in `contrast_models/roster.py` (19 arms:
 I-CE family / pure CE / ArcFace / BYOL / the CE-gate I-dose ladder / the
 I-gate mirror / random-gate and nodoc controls / wiki_llm leak ablations);
@@ -43,11 +44,21 @@ volume):
 - **Self-stop**: when the queue is empty and the audit passes,
   `pod_selfstop` shuts the pod down — no idle burn.
 
-Usage: open one copy of `pod/w9_all.ipynb` per machine and run it top to
-bottom. The cheapest pattern is to let the FIRST machine finish the
+Usage: open one copy of `pod/w9_a100.ipynb` (jobs at anchor budgets of
+2,048 and above) or `pod/w9_l40.ipynb` (the 512-sentence arms and the
+cross-validation folds) per machine, set its `REPO` and `URL` to your own
+clone, and run it top to bottom; `pod/w9_all.ipynb` is retired and holds
+no code. The cheapest pattern is to let the FIRST machine finish the
 "ONE-TIME asset preparation" cell before starting the others. The job
-list sits in the notebook's first cell (the same arm definitions as this
-layer's roster).
+table is `pod/w9_jobs.py` (the same arm definitions as this layer's
+roster).
+
+`pod/` belongs to this packaged layer: its workers follow the protocol of
+`steam_reviews_framework/train.py` (per-checkpoint name-recall heads, the
+`vsel` pick, 1,000 epochs on the fixed split and 600 per fold). The
+campaign behind the manuscript is a different set of files with the same
+names, `w9/Pod/`; the table in the root README lists how the two
+protocols differ.
 
 ## Dependency direction
 
