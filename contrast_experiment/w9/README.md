@@ -246,7 +246,12 @@ python contrast_experiment/w9/Pod/table1_recompute.py --plan rank \
 A worker's own readout scores each checkpoint against the gallery it trained
 with. The manuscript scores every five-fold tower differently: against ten
 independent 4,096-sentence anchor packs per game, and reports the mean over
-the ten. `eval/k10_eval.py` does that step.
+the ten. `eval/k10_eval.py` does that step. The tag columns differ as well:
+the `tag_neutral` and `tag_noname` a notebook prints at its end come from a
+probe fitted on a random split of all 2,020 games, which sees most held-out
+anchors; the paper's tag F1 is the probe of Section 5 (fit on the training
+games' anchors, threshold on validation, scored on test), the `test_tag`
+that `k10_eval.py` reports.
 
 ```
 eval/
