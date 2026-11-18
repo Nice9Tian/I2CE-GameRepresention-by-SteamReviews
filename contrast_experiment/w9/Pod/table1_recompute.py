@@ -36,22 +36,32 @@ Checkpoint selection
               fig3_t3_frozen_results.json bit for bit and is the validation
               gate of this script.
 
-Inputs (research artefacts, not shipped with the repository)
-------------------------------------------------------------
-  W9_FIG3   C:\runpod_data\w9_fig3_local   wscan_gal_rev_g4096.npz (the anchor
-            draw, fp16, row-normalised), ckpt/ckpt_w9cv_wcle_<arm>_fold0_gpool_fp_ep<N>.pt
-  W9_CACHE  C:\runpod_data\fusion_cache_w9 games.npz, wiki_eval.npz,
-            tag_labels.npz, _tag_splitM.json, wiki_eval_split.json
+Inputs
+------
+From the two Hugging Face folders (everything --plan rank needs is published):
+  --ckpt-dir  a download of chironYu/latenarray-i2ce-checkpoints: the flat
+              ckpt_w9cv_wcle_<arm>_fold0_gpool_fp_ep<N>.pt files
+  --data-dir  a download of chironYu/latenarray-i2ce-data: wscan_gal_rev_g4096.npz
+              (the anchor draw, fp16, row-normalised), games.npz, wiki_eval.npz,
+              tag_labels.npz, _tag_splitM.json, wiki_eval_split.json
+Or, as the tables were first made, from two environment variables (the
+defaults when neither flag is given; --plan cvsel needs this layout, its plan
+and reference files are research artefacts that are not published):
+  W9_FIG3   C:\runpod_data\w9_fig3_local   wscan_gal_rev_g4096.npz and
+            ckpt/ckpt_w9cv_wcle_<arm>_fold0_gpool_fp_ep<N>.pt
+  W9_CACHE  C:\runpod_data\fusion_cache_w9 the other data files
   W9_PLAN   the rank plan JSON (default: eval/rank_ckpt_plan.json of this
             repository, or a rank_ckpt_plan.json next to this file)
-Outputs (W9_OUT, default W9_FIG3)
+Outputs (--out; default W9_OUT, else W9_FIG3, else ./table1_out with the flags)
   table1_results.json   per-encoder displacement / margin / ratio / inside,
                         the epochs used and the selection provenance
   fig5_encodings.npz    Zg_<enc> (2020 x d) anchors and Za_<enc> (3256 x d)
-                        wiki rewrites, plus gA / variants, for figures/fig5_umap.py
+                        wiki rewrites, plus gA / variants: what Figure A2 was
+                        drawn from (its drawing script is not in this repository)
 Run with a CUDA interpreter (the gallery is 16.9 GB fp16 on the CPU, anchors
 are chunked to the GPU):
-    python contrast_experiment/w9/Pod/table1_recompute.py --plan rank
+    python contrast_experiment/w9/Pod/table1_recompute.py --plan rank \
+        --ckpt-dir checkpoints --data-dir /path/to/data
     python contrast_experiment/w9/Pod/table1_recompute.py --plan cvsel --check
 """
 import argparse
@@ -151,8 +161,22 @@ def main():
     ap.add_argument("--frozen-tag", action="store_true",
                     help="also recompute the frozen embedder's five-fold test tag F1")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--ckpt-dir", default=None,
+                    help="folder of the published checkpoints, flat as on "
+                         "Hugging Face (default: W9_FIG3/ckpt)")
+    ap.add_argument("--data-dir", default=None,
+                    help="the data folder as on Hugging Face: the 4,096-sentence "
+                         "anchor draw and the corpus assets (default: W9_FIG3 "
+                         "and W9_CACHE)")
     a = ap.parse_args()
-    out = Path(a.out) if a.out else OUT
+    global CKDIR, GALPACK, CACHE
+    if a.ckpt_dir:
+        CKDIR = Path(a.ckpt_dir)
+    if a.data_dir:
+        CACHE = Path(a.data_dir)
+        GALPACK = CACHE / "wscan_gal_rev_g4096.npz"
+    published = bool(a.ckpt_dir or a.data_dir) and "W9_OUT" not in os.environ
+    out = Path(a.out) if a.out else (Path("table1_out") if published else OUT)
     out.mkdir(parents=True, exist_ok=True)
     plan_path = Path(a.plan_file) if a.plan_file else default_plan(a.plan)
     eps = epochs_from_plan(a.plan, plan_path)

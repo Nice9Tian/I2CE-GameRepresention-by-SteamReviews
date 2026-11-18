@@ -53,7 +53,9 @@ class LariceTower(nn.Module):
     @property
     def inv_tau(self) -> torch.Tensor:
         if self.cfg.tau_mode == "learnable":
-            return self.log_inv_tau.exp()
+            # tau kept in [0.005, 0.2], as the learnable-temperature rows of
+            # the paper's Appendix C were trained
+            return self.log_inv_tau.exp().clamp(5.0, 200.0)
         return torch.tensor(1.0 / self.cfg.tau)
 
     def encode_set(self, x, mask=None):
@@ -120,6 +122,11 @@ def ice_loss(z, gallery, targets, cfg: LariceConfig, gate=None,
 
     With gate=None this is the objective the manuscript reports. Pass a
     gate only to reproduce a gated ablation arm.
+
+    Each term is averaged over the items of the step, so the value is
+    Equation (1) of the paper divided by the batch size. The temperature is
+    the frozen cfg.tau unless inv_tau is given: with tau_mode="learnable",
+    pass inv_tau=tower.inv_tau or the learnable temperature is not used.
     """
     it = inv_tau if inv_tau is not None else 1.0 / cfg.tau
     loss = ce_loss(z, gallery, targets, it, gate)

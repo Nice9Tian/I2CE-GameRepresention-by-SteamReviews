@@ -132,14 +132,16 @@ Options:
                                 the script's own directory in the release bundle)
     --meta FILE                 JSON of the exported flows / lanes / labels
                                 (default <png>.meta.json next to the PNG)
-Needs only the standard library and Chrome at
+Needs only the standard library and Chrome: on Windows at
     C:\Program Files\Google\Chrome\Application\chrome.exe
+elsewhere $CHROME, else google-chrome or chromium on the PATH.
 """
 import argparse
 import base64
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -158,7 +160,19 @@ DEFAULT_ASSETS = HERE / "river_assets" if (HERE / "river_assets").exists() else 
 DEFAULT_DATA = "games_raw_ice.js" if (DEFAULT_ASSETS / "games_raw_ice.js").exists() else "games_raw.js"
 DEFAULT_FIT = "shift_fit_ice.json"
 
-CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+def find_chrome():
+    """On Windows the default install; elsewhere $CHROME, else Chrome or Chromium on the PATH."""
+    win = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+    if os.name == "nt" or win.exists():
+        return win
+    for c in (os.environ.get("CHROME"),
+              *map(shutil.which, ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"))):
+        if c:
+            return Path(c)
+    return win
+
+
+CHROME = find_chrome()
 
 # published parameter set (what build_river_render.bake writes into the page)
 PUB = dict(K=6, TAU=0.45, BETA=0.3, THR=0.0066, WARM_A=2, WARM_B=0.5,

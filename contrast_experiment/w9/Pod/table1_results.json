@@ -1,6 +1,6 @@
 {
  "meta": {
-  "table": "Table 1 (displacement / margin / ratio) and Figure 5 clearance labels",
+  "table": "Table A18 (displacement / margin / ratio) and Figure A2 clearance labels (the manuscript of September 2026 printed them as Table 1 and Figure 5)",
   "selection_mode": "rank",
   "selection": "rank criterion of Section 5: argmax over epochs 50..2000 of sum_i exp(-rank_i) over the validation fold's wiki rewrites of both registers against all 2,020 anchors; plan = C:\\Users\\admin\\Documents\\Aiccc_paper\\data\\w9\\rank_ckpt_plan.json",
   "fold": 0,
