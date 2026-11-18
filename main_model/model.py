@@ -123,8 +123,8 @@ def ice_loss(z, gallery, targets, cfg: LariceConfig, gate=None,
     With gate=None this is the objective the manuscript reports. Pass a
     gate only to reproduce a gated ablation arm.
 
-    Each term is averaged over the items of the step, so the value is
-    Equation (1) of the paper divided by the batch size. The temperature is
+    Each term is averaged over the B games of the step (CE summed over the
+    views), which is Equation (1) of the paper as written. The temperature is
     the frozen cfg.tau unless inv_tau is given: with tau_mode="learnable",
     pass inv_tau=tower.inv_tau or the learnable temperature is not used.
     """
