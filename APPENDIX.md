@@ -8,7 +8,7 @@ Appendices A–N
 
 Tables A14 and A15 in online Appendix J give the fold-level detail behind Tables A1 and A2, and Table A13 in online Appendix I tabulates the EMA + memory-bank variant.
 
-**Table A1:** The self-supervision families in full, the five-fold account behind the body’s Figure 7 (test-set queries (ts), five-fold mean ± std, protocol as in Figure 7). Rows are sorted by Stripped hit@1, worst first; “epd” marks VICReg wired on the expander outputs, $v/i/c=20/10/20$. The DINO-style row is the control of Section 4.3, DINO at its published settings (online Appendix H, Table A10), trained on fold 0 only; its ± is over the ten anchor draws, and I-CE on the same fold reads 0.970, 1.000, 0.728, 0.920 and 0.689.
+**Table A1:** The self-supervision families in full, the five-fold account behind the body’s Figure 7 (test-set queries (ts), five-fold mean ± std, protocol as in Figure 7). Rows are sorted by Stripped hit@1, worst first; “epd” marks VICReg wired on the expander outputs, with variance, invariance and covariance weights $v/i/c=20/10/20$. The DINO-style row is the control of Section 4.3, DINO at its published settings (online Appendix H, Table A10), trained on fold 0 only; its ± is over the ten anchor draws, and I-CE on the same fold reads 0.970, 1.000, 0.728, 0.920 and 0.689.
 
 | Objective | Name hit@1 | Name hit@5 | Stripped hit@1 | Stripped hit@5 | Test-set tag F1 |
 | --- | --- | --- | --- | --- | --- |
@@ -418,7 +418,7 @@ Every trained baseline shares the full scaffolding of Section 4: the same 4-quer
 
 ## APPENDIX I: COST AT SCALE
 
-Write $R$ for the number of resident anchor packs (the fold gallery of Section 4.1, so $R=n=1,694$ here; the whole catalog, and so $R=N$, at deployment scale), $m_{a}$ for the anchor-pack cap in sentences (the budget of Section 4.1), $d=1,024$ for the embedding width, $G=192$ for the games in a step, and $w=168$, $S=84$, $T=2$ for the window, stride and micro-passes of the teacher in Appendix C. The tower reads one pack with $Q=4$ latent queries, so encoding a pack costs $\Theta (m_{a}\cdot Q\cdot d)$ work and holds $\Theta (m_{a}\cdot d)$ activation.
+Write $R$ for the number of resident anchor packs (the fold gallery of Section 4.1, so $R=n=1,694$ here; the whole catalog, and so $R=N$, at deployment scale), $m_{a}$ for the anchor-pack cap in sentences (the budget of Section 4.1), $d=1,024$ for the embedding width, $G=192$ for the games in a step (the B of Section 4.3), and $w=168$, $S=84$, $T=2$ for the window, stride and micro-passes of the teacher in Appendix C. The tower reads one pack with $Q=4$ latent queries, so encoding a pack costs $\Theta (m_{a}\cdot Q\cdot d)$ work and holds $\Theta (m_{a}\cdot d)$ activation.
 
 The fully coupled teacher re-encodes every pack with gradient at every step, so its step time and its peak activation are
 
