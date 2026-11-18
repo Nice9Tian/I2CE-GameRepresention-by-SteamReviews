@@ -98,6 +98,39 @@ the figure drew until its bands were fitted to the release shares. The
 directory's README has the data schema, the fit, both drawings and the
 commands.
 
+### Figures 1, 6, 7 and A2
+
+[`figures/paper_plots/`](figures/paper_plots/) holds the scripts that drew
+Figure 1 (the composition of review sentences), Figure 6 (the gradient
+envelopes of Section 4.3), Figure 7 (the six objectives as grouped bars)
+and Figure A2 (the UMAP of anchors and queries), with the frozen inputs of
+the first three. One command draws them:
+
+```bash
+python figures/paper_plots/run_all.py --out paper_plots_out
+```
+
+Figures 1, 6 and 7 come out byte for byte as printed. Figure 1's topic
+table is shipped rather than rebuilt, because the BERTopic fit behind it
+read review text that is not published; Figure A2 needs the encodings that
+`contrast_experiment/w9/Pod/table1_recompute.py` writes, and its UMAP
+layout differs from the printed one. The directory's README has the
+details.
+
+### Tables 2, A16, A17, S3 and S4
+
+`contrast_experiment/w9/eval/paired_tests.py` prints Table 2, the paired
+five-fold tests, from the per-fold readings the paper prints (shipped
+under `eval/paper_readings/`) or from a `k10_eval.py score` output.
+`contrast_experiment/w9/eval/k10_readouts.py` reads the ten-draw encodings
+of `k10_eval.py encode` for the in-domain tag readout and register offset
+of Tables A16 and A17, the merged-index tag column of Table S3 and the
+training-set queries of Table S4; its output on the paper's encodings is
+shipped, so `tables` prints the four tables without a GPU. The section
+"Tables 2, A16, A17, S3 and S4" of
+[`contrast_experiment/w9/README.md`](contrast_experiment/w9/README.md) has
+the commands.
+
 ---
 
 ## 2. Using the I2CE model

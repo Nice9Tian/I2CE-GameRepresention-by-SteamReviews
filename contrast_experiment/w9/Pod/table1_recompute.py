@@ -57,7 +57,7 @@ Outputs (--out; default W9_OUT, else W9_FIG3, else ./table1_out with the flags)
                         the epochs used and the selection provenance
   fig5_encodings.npz    Zg_<enc> (2020 x d) anchors and Za_<enc> (3256 x d)
                         wiki rewrites, plus gA / variants: what Figure A2 was
-                        drawn from (its drawing script is not in this repository)
+                        drawn from (figures/paper_plots/figA2_umap.py draws it)
 Run with a CUDA interpreter (the gallery is 16.9 GB fp16 on the CPU, anchors
 are chunked to the GPU):
     python contrast_experiment/w9/Pod/table1_recompute.py --plan rank \

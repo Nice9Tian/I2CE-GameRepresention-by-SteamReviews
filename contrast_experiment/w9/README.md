@@ -231,10 +231,12 @@ of queries inside their own margin (Figure A2's clearance labels). It writes
 scores the older worker-selected checkpoints instead and compares against
 the shipped numbers. `--plan rank` needs a CUDA interpreter and the two
 published folders (`--ckpt-dir`, `--data-dir`); `--plan cvsel --check`
-reads research files that are not published. Figure A2 itself was drawn
-from `fig5_encodings.npz` by a UMAP script that is not part of this
-repository; the percentages printed in its panels are the `inside` column
-this script recomputes.
+reads research files that are not published. `figures/paper_plots/figA2_umap.py`
+draws Figure A2 from `fig5_encodings.npz`; the percentages printed in its
+panels are the `inside` column this script recomputes. The printed figure
+came from an earlier UMAP script that did not survive, so the redrawn
+panels follow the same rules but place the clouds differently
+(`figures/paper_plots/README.md`).
 
 ```bash
 python contrast_experiment/w9/Pod/table1_recompute.py --plan rank \
@@ -256,6 +258,9 @@ that `k10_eval.py` reports.
 ```
 eval/
 ├── k10_eval.py                  # ten-draw encoding, scoring and the table
+├── k10_readouts.py              # more readouts of the same draws: Tables A16, A17, S3 (tag column) and S4
+├── paired_tests.py              # Table 2, the paired five-fold tests
+├── paper_readings/              # the per-fold readings the paper prints (Table 2's input) and k10_readouts.py's output
 ├── fixed_split_eval.py          # the fixed split in one command: Table 3, Section 6.2, Table A8, Figure A1, Figure 9's towers
 ├── rank_ckpt_plan.json          # every five-fold run the paper reads: fold, epoch, file, SHA-256
 ├── i2bce_sel_pool.json          # the I + SimCLR checkpoints, picked by `select`
@@ -352,3 +357,51 @@ selected checkpoints are published. Figures 8, 9 and A3 and the
 neighborhood statistics of Appendix L are made from these readings by
 [`figures/neighborhoods/`](../../figures/neighborhoods/), which has its own
 one-command driver.
+
+### Tables 2, A16, A17, S3 and S4
+
+Two scripts read the five-fold towers further than `k10_eval.py score`
+does.
+
+`eval/k10_readouts.py` takes the cells and draws files of `cells` and
+`encode` above and adds four readouts per tower and fold: the in-domain
+tag F1 (the cross-register ridge and threshold of one draw scored on the
+test games' anchors instead of their rewrites), the register offset (the
+norm of the mean anchor-to-query displacement over the fold's training
+games, name-intact rewrites), the tag F1 of the merged index (the ridge
+fitted on the ten draws averaged into one anchor), and hit@1 and hit@5 on
+the rewrites of the fold's training games next to its test games. Its
+`tables` step prints Tables A16 and A17 (the margin column of Table A16 is
+Table A18, read from `Pod/table1_results.json`), Table S3 and Table S4.
+The rows of Tables S3 and S4 include the EMA + memory-bank, windowed and
+two-stage towers, so their cells must be in the cells file:
+`cells --only "^(I-CE|CE|SimCLR|VICReg|BYOL)\||^(mq3072|swin168step84loop2)i2ce_icetf_fold\d_gpool"`
+selects the 40 cells the four tables read.
+
+```bash
+E=contrast_experiment/w9/eval
+python $E/k10_readouts.py score  cells.json draws.npz readouts.json   # CPU, about five minutes
+python $E/k10_readouts.py tables readouts.json
+python $E/k10_readouts.py tables $E/paper_readings/k10_readouts_4096.json   # the shipped reading, no GPU or pool
+```
+
+`paper_readings/k10_readouts_4096.json` is the output of `score` on the
+ten draws the paper read (the five main families as `encode` writes them,
+the other three from the July encoding the tables were first computed on,
+which `encode` reproduces to 1.2e-7 for the main families); its `tables`
+are every cell of the four tables as printed. Table A17's in-domain cell
+for the EMA + memory-bank tower, which the paper reports as not measured,
+is printed only with `--all`.
+
+`eval/paired_tests.py` gives Table 2 (`--all` adds every other pair and the
+tests behind Table A19). It reads per-fold readings: by default the two
+files the paper prints from, `paper_readings/multianchor_rank_K10.json` for
+the towers of Figure 7 and `paper_readings/scores_c2cv_cap4096_k10.json`
+for the towers trained at 512 sentences; `--main` and `--d512` take a
+`k10_eval.py score` output instead (cells `I-CE|k`, ... and the `_d512`
+runs of `rank_ckpt_plan.json`). Fed the shipped files it prints every cell
+of Table 2.
+
+```bash
+python contrast_experiment/w9/eval/paired_tests.py
+```
