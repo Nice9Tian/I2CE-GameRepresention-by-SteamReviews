@@ -58,12 +58,32 @@ def load_shares(data):
     denom = sum(counts[t] for t in mapped)
     share = {k: 100.0 * sum(counts[t] for t in ts) / denom for k, ts in buckets.items()}
     gshare = {g: sum(s for k, s in share.items() if kinds[k] == g) for g in GROUPS}
+    pshare, pgshare = printed_shares(share, gshare, kinds)
     print("denominator (assignable sentences): %d" % denom)
     for g in GROUPS:
-        subs = ", ".join("%s %.1f%%" % (labels[k], share[k])
+        subs = ", ".join("%s %.1f%%" % (labels[k], pshare[k])
                          for k in sorted(share, key=share.get, reverse=True) if kinds[k] == g)
-        print("  %-10s %5.1f%%   (%s)" % (g, gshare[g], subs))
+        print("  %-10s %5.1f%%   (%s)" % (g, pgshare[g], subs))
     return share, gshare, labels, kinds
+
+
+def tenths(values, total):
+    """Percentages rounded to tenths so that they add up to `total` tenths (largest remainder)."""
+    floor = {k: int(v * 10) for k, v in values.items()}
+    rest = sorted(values, key=lambda k: values[k] * 10 - floor[k], reverse=True)
+    for k in rest[:total - sum(floor.values())]:
+        floor[k] += 1
+    return {k: n / 10 for k, n in floor.items()}
+
+
+def printed_shares(share, gshare, kinds):
+    """The shares as the figure prints them: the kinds add up to 100.0 and the categories of a
+    kind to the kind's printed total (rounded one by one, 31.2 + 6.0 + 3.5 stood beside 40.6)."""
+    pg = tenths(gshare, 1000)
+    pk = {}
+    for g in GROUPS:
+        pk.update(tenths({k: s for k, s in share.items() if kinds[k] == g}, round(pg[g] * 10)))
+    return pk, pg
 
 
 def inch_axes(fig, width, height):
@@ -85,6 +105,7 @@ def stacked_col(gshare, out):
     ax = inch_axes(fig, width, height)
     left = pad
     scale = (width - 2 * pad) / 100.0
+    printed = tenths(gshare, 1000)
     for g in GROUPS:
         w = gshare[g] * scale
         ax.add_patch(Rectangle((left, bar_top - bar_h), w, bar_h, facecolor=COLOR[g],
@@ -99,7 +120,7 @@ def stacked_col(gshare, out):
                 x = x[x < left + w - 0.026]
                 ax.scatter(x, [mid + dy] * len(x), s=1.1, marker="o", color="#8c8c8c",
                            zorder=3, linewidths=0)
-        label = ax.text(left + w / 2, mid, "%.1f%%" % gshare[g], ha="center", va="center",
+        label = ax.text(left + w / 2, mid, "%.1f%%" % printed[g], ha="center", va="center",
                         fontsize=PT, color=TEXTC[g], zorder=4)
         if g == "noncontent":
             label.set_path_effects([pe.withStroke(linewidth=2.5, foreground=COLOR[g])])
@@ -116,8 +137,9 @@ def bars_col(share, gshare, labels, kinds, out):
 
     The three kinds keep the stacked bar's fills (the dotted texture for the non-content kind),
     and each kind of several categories is named once, with its total, in the room its own short
-    bars leave.
+    bars leave. The printed shares of a kind's categories add up to its printed total.
     """
+    pshare, pgshare = printed_shares(share, gshare, kinds)
     order = [k for g in GROUPS
              for k in sorted((k for k in share if kinds[k] == g), key=share.get, reverse=True)]
     ink = {"content": "#1f4e79", "sentiment": "#a5650a", "noncontent": "#404040"}
@@ -133,7 +155,7 @@ def bars_col(share, gshare, labels, kinds, out):
             g = kinds[k]
             ax.barh(y, share[k], height=0.72, color=COLOR[g], hatch=hatch[g], edgecolor=EDGE[g],
                     linewidth=0.6)
-            ax.text(share[k] + 0.6, y, "%.1f%%" % share[k], va="center", fontsize=PT)
+            ax.text(share[k] + 0.6, y, "%.1f%%" % pshare[k], va="center", fontsize=PT)
         ax.set_yticks(ys)
         ax.set_yticklabels([labels[k] for k in order], fontsize=PT)
         ax.set_xlabel("Share of categorized sentences (%)", fontsize=PT, labelpad=2)
@@ -151,7 +173,7 @@ def bars_col(share, gshare, labels, kinds, out):
             if len(rows) < 2:
                 continue
             y = (y_of[rows[-1]] + y_of[rows[-2]]) / 2
-            ax.text(39.5, y, "%s\n%.1f%% in all" % (NAME[g], gshare[g]), ha="right", va="center",
+            ax.text(39.5, y, "%s\n%.1f%% in all" % (NAME[g], pgshare[g]), ha="right", va="center",
                     fontsize=PT, color=ink[g], linespacing=1.25)
         fig.savefig(out)
         plt.close(fig)
@@ -163,6 +185,7 @@ def stacked_word(gshare, out):
     with plt.rc_context({"hatch.color": "#404040"}):
         fig, ax = plt.subplots(figsize=(6.6, 0.62), dpi=200)
         left = 0.0
+        printed = tenths(gshare, 1000)
         for g in GROUPS:
             w = gshare[g]
             ax.barh(0.5, w, left=left, height=0.72, color=COLOR[g], edgecolor=EDGE[g], linewidth=1.0)
@@ -175,7 +198,7 @@ def stacked_word(gshare, out):
                     x = x[x < left + w - 0.55]
                     ax.scatter(x, [row] * len(x), s=2.2, marker="o", color="#8c8c8c", zorder=3,
                                clip_on=False)
-            label = ax.text(left + w / 2, 0.5, "%.1f%%" % w, ha="center", va="center",
+            label = ax.text(left + w / 2, 0.5, "%.1f%%" % printed[g], ha="center", va="center",
                             fontsize=10.1, color=TEXTC[g], zorder=4)
             if g == "noncontent":
                 label.set_path_effects([pe.withStroke(linewidth=3.6, foreground=COLOR[g])])
