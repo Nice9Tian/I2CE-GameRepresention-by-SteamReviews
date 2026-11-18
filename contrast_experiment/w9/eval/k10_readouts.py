@@ -238,5 +238,8 @@ def opt(args, name, default):
 
 
 if __name__ == "__main__":
-    cmd, rest = sys.argv[1], sys.argv[2:]
-    dict(score=score, tables=tables)[cmd](rest)
+    COMMANDS = dict(score=score, tables=tables)
+    if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
+        print(__doc__)
+        sys.exit(0 if sys.argv[1:2] in (["-h"], ["--help"]) else 2)
+    COMMANDS[sys.argv[1]](sys.argv[2:])
