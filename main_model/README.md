@@ -30,6 +30,12 @@ mask : [B, V, S]         bool    True = padding
 out  : [B, V, out_dim]           L2-normalised
 ```
 
+The tower has no input normalization of its own. The Steam binding and
+the campaign feed every sentence embedding standardized per row (mean 0,
+std 1 over its 1,024 dimensions; `rown` in
+`steam_reviews_framework/data.py`), and the published checkpoints expect
+their inputs prepared that way.
+
 Single-view tasks use `V = 1` (a rank-3 `[B, S, D_in]` input is accepted
 and treated as `V = 1`). Loss semantics follow the axes: `invariance_loss`
 reduces along **view**, `ce_loss` reduces along **data**. Any task whose

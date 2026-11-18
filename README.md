@@ -226,7 +226,8 @@ Shared by the packaged entry points and the campaign:
 - **Anchor pack (the weak view).** Store-page prefix, then whole reviews
   to a sentence budget, re-encoded with gradient at every step.
 - **Tower.** 4 latent queries, 128-d, 4 heads, one cross-attention layer
-  over the raw 1024-d sentence embeddings, mean-pooled over slots
+  over the 1024-d sentence embeddings (each standardized per row before it
+  reaches the tower), mean-pooled over slots
   (`readout="pool"`), then a two-layer MLP to an L2-normalized vector.
 - **Optimizer.** AdamW, lr 5e-4, weight decay 1e-4, batch 192 games,
   16 steps per epoch, gradient clipping at 5.0, AMP. Frozen `tau = 0.02`,
