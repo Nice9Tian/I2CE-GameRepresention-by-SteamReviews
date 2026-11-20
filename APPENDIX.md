@@ -166,12 +166,12 @@ with equality when the other views are aligned with each other and orthogonal to
 **The ceiling.** The descent step of Equation (E.9) is $(1- p_{g})/\tau$ times the difference between $a_{g}$ and the weighted centroid of the competitors, both in the unit ball and so at most 2 apart,
 
 $$
-\Vert \nabla_{z_{v}}\ell_{\mathrm{CE}}\Vert \le \frac{2(1- p_{g})}{\tau }\le \frac{2}{\tau }=100 \qquad (\text{D.2})
+\Vert \nabla_{z_{v}}\mathcal L_{\mathrm{CE}}\Vert \le \frac{2(1- p_{g})}{\tau }\le \frac{2}{\tau }=100 \qquad (\text{D.2})
 $$
 
 so $\tau$ sets the ceiling, a bound the tangential projection can only tighten, which the coupling of Appendix E spends linearly as $p_{g}\to 1$.
 
-**Read as forces.** With $u_{v}$ of Equation (9), the mean of the game’s other $V- 1$ strong views, and $\varphi$ its angle to $z_{v}$, $- \nabla_{z_{v}}(\lambda I)=(2\lambda /V)(u_{v}- \langle z_{v},u_{v}\rangle z_{v})$ is the tangential component of $(2\lambda /V)(u_{v}- z_{v})$, a spring of stiffness $2\lambda /V=1$ toward $u_{v}$: a restoring force along the sphere of size $(2\lambda /V)\Vert u_{v}\Vert \sin \varphi$. Writing $a_{- g}=\sum_{h\neq g} p_{h}a_{h}/(1- p_{g})$ for the softmax-weighted competitor centroid above, Equation (E.9), before the tangential projection, is $- \nabla_{z_{v}}\ell_{\mathrm{CE}}=((1- p_{g})/\tau )(a_{g}- a_{- g})$, pulling the view toward $a_{g}$ and away from $a_{- g}$ with weight $(1- p_{g})/\tau$.
+**Read as forces.** With $u_{v}$ of Equation (9), the mean of the game’s other $V- 1$ strong views, and $\varphi$ its angle to $z_{v}$, $- \nabla_{z_{v}}(\lambda I)=(2\lambda /V)(u_{v}- \langle z_{v},u_{v}\rangle z_{v})$ is the tangential component of $(2\lambda /V)(u_{v}- z_{v})$, a spring of stiffness $2\lambda /V=1$ toward $u_{v}$: a restoring force along the sphere of size $(2\lambda /V)\Vert u_{v}\Vert \sin \varphi$. Writing $a_{- g}=\sum_{h\neq g} p_{h}a_{h}/(1- p_{g})$ for the softmax-weighted competitor centroid above, Equation (E.9), before the tangential projection, is $- \nabla_{z_{v}}\mathcal L_{\mathrm{CE}}=((1- p_{g})/\tau )(a_{g}- a_{- g})$, pulling the view toward $a_{g}$ and away from $a_{- g}$ with weight $(1- p_{g})/\tau$.
 
 **The handover.** Writing ${p}^{\ast }$ for the value of $p_{g}$ at which the CE envelope falls to the invariance envelope, the recipe values $V=4$, $\lambda =2$, $\tau =0.02$ give
 
@@ -204,7 +204,7 @@ Two approximations sit here. Different draw laws and the anchor’s store-page p
 **Why sample-to-sample repulsion aims along noise.** In the free-variable convention, with one negative view per competing game in the batch, Equation (11) reads
 
 $$
-\nabla_{z_{v}}\ell_{\mathrm{SimCLR}}=\frac{1}{\tau }\sum_{h\neq g} q_{h}(z_{h}- z_{v' }) \qquad (\text{E.3})
+\nabla_{z_{v}}\mathcal L_{\mathrm{SimCLR}}=\frac{1}{\tau }\sum_{h\neq g} q_{h}(z_{h}- z_{v' }) \qquad (\text{E.3})
 $$
 
 with the in-batch weight
@@ -236,13 +236,13 @@ so the push aims predominantly along noise. Hard pairs are selected by encoded s
 **Why anchor-mediated repulsion does not.** Still free-variable, Equation (6) pushes a view against the anchor gallery,
 
 $$
-\nabla_{z_{v}}\ell_{\mathrm{CE}}=\frac{1}{\tau }\sum_{h\neq g} p_{h}(a_{h}- a_{g}),\ \sum_{h\neq g} p_{h}=1- p_{g} \qquad (\text{E.8})
+\nabla_{z_{v}}\mathcal L_{\mathrm{CE}}=\frac{1}{\tau }\sum_{h\neq g} p_{h}(a_{h}- a_{g}),\ \sum_{h\neq g} p_{h}=1- p_{g} \qquad (\text{E.8})
 $$
 
 so the descent step is one pull and $n- 1$ pushes,
 
 $$
-{}- \nabla_{z_{v}}\ell_{\mathrm{CE}}=\frac{1}{\tau }[(1- p_{g})a_{g}- \sum_{h\neq g} p_{h}a_{h}] \qquad (\text{E.9})
+{}- \nabla_{z_{v}}\mathcal L_{\mathrm{CE}}=\frac{1}{\tau }[(1- p_{g})a_{g}- \sum_{h\neq g} p_{h}a_{h}] \qquad (\text{E.9})
 $$
 
 Write $p_{h|g}$ for the softmax weight of anchor $h$ under a view $z_{g}$ of game $g$. Call $(g,\ h)$ symmetrically confused when $p_{h|g}=p_{g|h}$ and $p_{k|g}=p_{k|h}$ for every other anchor $k$, which by normalization forces $p_{g|g}=p_{h|h}$ ; subtracting the descent steps of the views $z_{g}$ and $z_{h}$, $z_{g}- z_{h}$ moves along
@@ -334,13 +334,13 @@ up to the drift $t_{g}$ absorbed into $f(c_{g})$ and the static anchor residual 
 **The softmax coupling.** Differentiating Equation (2) against the anchors, again free-variable,
 
 $$
-\nabla_{a_{g}}\ell_{\mathrm{CE}}=- \frac{1- p_{g}}{\tau }z_{v},\ \nabla_{a_{h}}\ell_{\mathrm{CE}}=\frac{p_{h}}{\tau }z_{v} \qquad (\text{E.23})
+\nabla_{a_{g}}\mathcal L_{\mathrm{CE}}=- \frac{1- p_{g}}{\tau }z_{v},\ \nabla_{a_{h}}\mathcal L_{\mathrm{CE}}=\frac{p_{h}}{\tau }z_{v} \qquad (\text{E.23})
 $$
 
-so pull and pushes carry the weights of one distribution and vanish together as classification succeeds. Decomposing into alignment and uniformity [26] loses the coupling: with $\ell_{\mathrm{align}}=- \langle z_{v},a_{g}\rangle$, the inner-product form (on the sphere the squared-distance alignment of [26] differs by a factor of two, which the direction claim does not use), at weight $\alpha$, the align-to-uniformity ratio of Appendix H with the uniformity weight normalized to one,
+so pull and pushes carry the weights of one distribution and vanish together as classification succeeds. Decomposing into alignment and uniformity [26] loses the coupling: with $\mathcal L_{\mathrm{align}}=- \langle z_{v},a_{g}\rangle$, the inner-product form (on the sphere the squared-distance alignment of [26] differs by a factor of two, which the direction claim does not use), at weight $\alpha$, the align-to-uniformity ratio of Appendix H with the uniformity weight normalized to one,
 
 $$
-\nabla_{a_{g}}(\alpha \ell_{\mathrm{align}})=- \alpha z_{v} \qquad (\text{E.24})
+\nabla_{a_{g}}(\alpha \mathcal L_{\mathrm{align}})=- \alpha z_{v} \qquad (\text{E.24})
 $$
 
 leaving a constant-weight attraction, $\alpha$ against the $(1- p_{g})/\tau$ of (E.23), that pulls the low-variance anchor toward the high-variance view after the games separate. In the arms as run (Appendix H) the alignment is the invariance term I′ of (E.25) at weight 2α, the mean over its ten pairs, so the constant per view is 4α/(V(V + 1)) = α/5. Extending the invariance term of Equation (3) to the anchor, I′ over the ten pairs among the four strong views and the anchor in place of the six among views, leaves the softmax whole and adds a pull of the same kind, written like (E.23) and (E.24) before the tangential projection at a<sub>g</sub>, which scales the per-view weights of both alike,
