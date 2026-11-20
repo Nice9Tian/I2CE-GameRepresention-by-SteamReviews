@@ -239,12 +239,13 @@ Shared by the packaged entry points and the campaign:
 
 - **Corpus.** 2,020 games, reviews crawled 2020-2024, 6.6 M reviews, 73 M
   sentences. A game enters only if at least 500 of its reviews survive a
-  300-character floor. Each game's review list opens with its three
-  store-page text fields (detailed description, about, short description;
-  `dataset_builder/reviews/build_metadata.py`), stored as entries 0 to 2:
-  6,060 of the 6,649,325 entries and 0.14% of the sentences. They are
-  counted in the totals above and can be drawn into a review view like any
-  review.
+  300-character floor. Each game's review list opens with its store-page
+  text fields (detailed description, about, short description;
+  `dataset_builder/reviews/build_metadata.py`), stored as entries 0 to 2,
+  an empty field left out: all three for 2,008 games, one or two for 12,
+  none for one. They are 6,040 of the 6,649,325 entries and 0.14% of the
+  sentences (100,739), counted in the totals above, and can be drawn into
+  a review view like any review.
 - **Fully inductive.** No text of a held-out game reaches any training
   stage: not its reviews, its documents, its pseudo-queries, nor a
   gallery-negative gradient. The training-time gallery covers train games
