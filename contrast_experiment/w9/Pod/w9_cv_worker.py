@@ -105,6 +105,9 @@ ARMS = {
     #   ONLY the loss changes (no anchor softmax). i4=align_w2, i6=align_w3.
     "wcle_bce_cetf": ("bce", "ce"),   # SimCLR-style in-batch NT-Xent over
     # the step's 4*bs view encodings (ring-sibling positives, no anchors)
+    "wcle_bcefull_cetf": ("bcefull", "ce"),   # the same NT-Xent with the whole
+    # training set as the batch: the 4 views of EVERY training-set game, drawn
+    # fresh and encoded with grad at every step (Table A6, continued)
     "wcle_i2bce_icetf": ("i2bce", "ice"),   # the same with the invariance
     # term among the views at weight 2: I + SimCLR (Figure 8)
     "wcle_swin168step84loop2i2ce_icetf": ("swin168step84loop2i2ce", "ice"),
@@ -188,6 +191,15 @@ def parse_args():
                     help="STUDENT view size: soft sentence-stop threshold for "
                          "each small view (whole reviews never split). fs "
                          "worker default 16; sweep for student scaling.")
+    ap.add_argument("--view-ws", default="",
+                    help="one floor per review view, comma-separated (e.g. "
+                         "16,32,64: review view v draws whole reviews until "
+                         "it holds at least the v-th floor); empty = every "
+                         "review view uses --view-w (Table A6, continued)")
+    ap.add_argument("--doc-fallback-w", type=int, default=0,
+                    help="floor of the review view that stands in for the "
+                         "doc view of a game without one; 0 = --view-w "
+                         "(Table A6, continued)")
     ap.add_argument("--fold", type=int, required=True)
     ap.add_argument("--n-folds", type=int, default=5)
     ap.add_argument("--cv-seed", type=int, default=20260711)
@@ -335,7 +347,8 @@ def main():
     mq_m = re.match(r"mq(\d+)(i2ce|ce)$", tower_kind)
     MQ_LEN = int(mq_m.group(1)) if mq_m else 0        # MoCo FIFO ring length
     MQ_M = 0.99                                       # shadow weight-EMA momentum
-    BCE = tower_kind in ("bce", "i2bce")   # in-batch views, no gallery
+    BCE = tower_kind in ("bce", "i2bce", "bcefull")   # in-batch views, no gallery
+    BCEFULL = tower_kind == "bcefull"  # the batch is the whole training set
     UNI = tower_kind in ("i4uni2", "i6uni2")   # W&I: batch uniformity, no anchor
     UNI_T = 2.0                        # W&I uniformity Gaussian t (repo default)
     _au = re.match(r"i2au(\d+)$", tower_kind)   # I2CE with CE->align+uniform
@@ -389,6 +402,17 @@ def main():
         raise SystemExit("--init-ckpt warm-starts the arms of the main "
                          "training loop only; this arm's loop does not "
                          "read it")
+    VIEW_WS = ([int(x) for x in args.view_ws.split(",")] if args.view_ws
+               else [args.view_w] * N_REV)    # one floor per review view
+    DOC_FB_W = args.doc_fallback_w or args.view_w    # the doc slot's review fallback
+    if args.view_ws and (len(VIEW_WS) != N_REV or min(VIEW_WS) < 1):
+        raise SystemExit(f"--view-ws needs {N_REV} positive floors, got {args.view_ws!r}")
+    if (args.view_ws or args.doc_fallback_w) and (
+            VFA or DINO or tower_kind in ("byol", "mv3") or tower_kind.startswith("epd")):
+        raise SystemExit("--view-ws / --doc-fallback-w are read only by train_v4doc "
+                         "without views-first anchors")
+    if BCEFULL and (N_DOC != 1 or not args.full_pool):
+        raise SystemExit("wcle_bcefull_cetf runs with one doc view and --full-pool")
     name = (f"w9cv_{args.arm}_fold{args.fold}"
             + (f"_g{args.anchor_cap}" if args.anchor_cap != 512 else "")
             + ("_nsp" if args.no_sp_view else "")
@@ -399,6 +423,8 @@ def main():
                 + (f"w{args.pfc_window}" if args.pfc_window else ""))
                if args.pfc_shards else "")
             + (f"_w{args.view_w}" if args.view_w != 16 else "")
+            + ("_ws" + "-".join(map(str, VIEW_WS)) if args.view_ws else "")
+            + (f"_df{DOC_FB_W}" if DOC_FB_W != args.view_w else "")
             + (f"_dg{args.dino_global}"
                if DINO and args.dino_global != 512 else "")
             + (f"_k{args.dino_k}" if DINO and args.dino_k != 65536 else "")
@@ -409,7 +435,9 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     print(f"[{name}] tower={tower_kind} ft={FT} IW={IW} anchor_cap={args.anchor_cap}",
           flush=True)
-    print(f"view plan: {N_REV}R+{N_DOC}D nv={NV_ARM} slots={NSLOT}", flush=True)
+    print(f"view plan: {N_REV}R+{N_DOC}D nv={NV_ARM} slots={NSLOT}"
+          f" review floors={VIEW_WS} doc fallback floor={DOC_FB_W}"
+          + (" batch=whole train pool" if BCEFULL else ""), flush=True)
 
     # ---------------- corpus: ALL of it onto the GPU ----------------
     G = np.load(C / "games.npz", allow_pickle=True)
@@ -740,8 +768,19 @@ def main():
             a = np.full(len(lens), 0.9)
         REV_TAB.append((starts, lens, a))
 
-    def sample_views(gids, W, rng):
-        idx_rows, lens = [], []
+    # the review draw is split out of sample_views (draw_rows) so the full-pool arm can draw
+    # ahead of the GPU; the full-pool standardisation can run on W9_FILL_THREADS threads (per-row
+    # arithmetic, so the values are those of one thread) or, for bcefull, on the GPU (gpu_views)
+    import os
+    from concurrent.futures import ThreadPoolExecutor
+    FILL_THREADS = int(os.environ.get("W9_FILL_THREADS", "1"))
+    _FILL = ThreadPoolExecutor(FILL_THREADS) if (args.full_pool and FILL_THREADS > 1) else None
+    if _FILL is not None:
+        print(f"full-pool fill on {FILL_THREADS} threads", flush=True)
+
+    def draw_rows(gids, W, rng):
+        """sample_views' rejection draw: for each game, the pool rows of one review view"""
+        idx_rows = []
         for g in gids:
             st, ln, a = REV_TAB[int(g)]
             n = len(ln)
@@ -757,20 +796,72 @@ def main():
                     tot += int(ln[i])
             seg = np.concatenate([np.arange(st[i], st[i] + ln[i]) for i in chosen])
             idx_rows.append(seg)
-            lens.append(len(seg))
+        return idx_rows
+
+    def _fill_std(X, idx_rows, k0):
+        """sample_views' full-pool arithmetic for the games k0, k0 + 1, ... of X"""
+        flat = np.concatenate(idx_rows)
+        order = np.argsort(flat, kind="stable")          # sorted reads
+        vec = np.empty((len(flat), 1024), np.float32)
+        vec[order] = FULLV[flat[order]].astype(np.float32)
+        vec = (vec - vec.mean(-1, keepdims=True)) / \
+            (vec.std(-1, keepdims=True) + 1e-6)          # rown on the fly
+        pos = 0
+        for k, seg in enumerate(idx_rows):
+            X[k0 + k, :len(seg)] = vec[pos:pos + len(seg)]
+            pos += len(seg)
+
+    def _std_flat(out, idx_rows, r0):
+        """the same arithmetic for a run of games, written as flat fp16 rows of out from row r0 (the
+        float32 -> float16 assignment X[k, :n] = vec makes, so the rows are those of X bit for bit)"""
+        flat = np.concatenate(idx_rows)
+        order = np.argsort(flat, kind="stable")          # sorted reads
+        vec = np.empty((len(flat), 1024), np.float32)
+        vec[order] = FULLV[flat[order]].astype(np.float32)
+        vec = (vec - vec.mean(-1, keepdims=True)) / \
+            (vec.std(-1, keepdims=True) + 1e-6)          # rown on the fly
+        out[r0:r0 + len(flat)] = vec
+
+    def gather_raw(idx_rows):
+        """the drawn rows as the pool stores them (fp16), in draw order"""
+        flat = np.concatenate(idx_rows)
+        order = np.argsort(flat, kind="stable")          # sorted reads
+        raw = np.empty((len(flat), 1024), np.float16)
+        raw[order] = FULLV[flat[order]]
+        return raw
+
+    def gpu_views(idx_rows, raw):
+        """sample_views' full-pool views with the row standardisation and the padding on the GPU
+        (bcefull): the same rows and float32 formula; only the order of the row reductions differs"""
+        lens = [len(s) for s in idx_rows]
+        x = torch.from_numpy(raw).to(dev).float()
+        x = (x - x.mean(-1, keepdim=True)) / (x.std(-1, keepdim=True, unbiased=False) + 1e-6)
         LM = max(lens)
+        L = torch.as_tensor(lens, device=dev)
+        m = torch.arange(LM, device=dev)[None, :] >= L[:, None]
+        S = torch.zeros(len(lens), LM, 1024, dtype=torch.float16, device=dev)
+        S[~m] = x.half()
+        return S, m
+
+    def sample_views(gids, W, rng):
+        idx_rows = draw_rows(gids, W, rng)
+        lens = [len(s) for s in idx_rows]
+        LM = max(lens)
+        if args.full_pool and _FILL is not None:
+            # threaded fill: the standardised rows go to the GPU flat and are padded there, so no padded
+            # host array is built or copied; the same fp16 values in the same places as X (bit for bit)
+            flat16 = np.empty((sum(lens), 1024), np.float16)
+            offs = np.concatenate([[0], np.cumsum(lens)])
+            parts = [p for p in np.array_split(np.arange(len(gids)), FILL_THREADS) if len(p)]
+            list(_FILL.map(lambda p: _std_flat(flat16, [idx_rows[k] for k in p], int(offs[p[0]])), parts))
+            L = torch.as_tensor(lens, device=dev)
+            m = torch.arange(LM, device=dev)[None, :] >= L[:, None]
+            S = torch.zeros(len(gids), LM, 1024, dtype=torch.float16, device=dev)
+            S[~m] = torch.from_numpy(flat16).to(dev)
+            return S, m
         if args.full_pool:
-            flat = np.concatenate(idx_rows)
-            order = np.argsort(flat, kind="stable")          # sorted reads
-            vec = np.empty((len(flat), 1024), np.float32)
-            vec[order] = FULLV[flat[order]].astype(np.float32)
-            vec = (vec - vec.mean(-1, keepdims=True)) / \
-                (vec.std(-1, keepdims=True) + 1e-6)          # rown on the fly
             X = np.zeros((len(gids), LM, 1024), np.float16)
-            pos = 0
-            for k, seg in enumerate(idx_rows):
-                X[k, :len(seg)] = vec[pos:pos + len(seg)]
-                pos += len(seg)
+            _fill_std(X, idx_rows, 0)
             S = torch.from_numpy(X).to(dev, non_blocking=True)
             L = torch.as_tensor(lens, device=dev)
             m = torch.arange(LM, device=dev)[None, :] >= L[:, None]
@@ -860,7 +951,7 @@ def main():
                           phi, cos_t - ARC_M_T * math.sin(ARC_M_T))
         return F.cross_entropy(logits.scatter(1, tgt[:, None], phi) * ARC_S_T, tgt)
 
-    def assemble_doc_view(model, gids, W, rng, bs):
+    def assemble_doc_view(model, gids, W, rng, bs, fallback=None):
         Zlast = torch.empty(bs, DM, device=dev, dtype=torch.float16)
         assigned = np.zeros(bs, bool)
         for g2x, Sx, mx in tiers:
@@ -871,7 +962,9 @@ def main():
                 assigned |= msk
         rest = ~assigned
         if rest.any():
-            Zlast[torch.tensor(rest).to(dev)] = model(*sample_views(gids[rest], W, rng)).half()
+            Zlast[torch.tensor(rest).to(dev)] = model(*(
+                fallback(gids[rest]) if fallback is not None
+                else sample_views(gids[rest], W, rng))).half()
         return Zlast
 
     _TIER_LENS = [(~mx).sum(1).cpu().numpy() for _, __, mx in tiers]
@@ -1053,10 +1146,43 @@ def main():
         mv_steps = 0
         if args.measure_vram and dev.type == "cuda":
             torch.cuda.reset_peak_memory_stats()
+        if BCEFULL:
+            # the whole train pool in chunks of 128 games; the next step's draws run on a thread while
+            # this step trains, never across an epoch boundary
+            _BF_CH = [np.asarray(train_pool_games)[_i:_i + 128]
+                      for _i in range(0, len(train_pool_games), 128)]
+            _DOC_LESS = np.array([all(g not in g2x for g2x, _, __ in tiers) for g in range(NG)])
+            _BF_POOL = ThreadPoolExecutor(1)
+
+            def bf_draw(rws, wdoc):
+                """one step's draws in the direct order: each review slot over every chunk, then each
+                chunk's doc-less games for the doc slot; the rows gathered raw (fp16)"""
+                rev = []
+                for Wv in rws:
+                    slot = []
+                    for c in _BF_CH:
+                        r = draw_rows(c, Wv, rng)
+                        slot.append((r, gather_raw(r)))
+                    rev.append(slot)
+                doc = []
+                for c in _BF_CH:
+                    rest = c[_DOC_LESS[c]]
+                    r = draw_rows(rest, wdoc, rng) if len(rest) else None
+                    doc.append((r, gather_raw(r)) if r is not None else None)
+                return rev, doc
+
+            def bf_fallback(d):
+                def f(rest):
+                    assert d is not None and len(rest) == len(d[0]), "doc-less games and draws differ"
+                    return gpu_views(*d)
+                return f
+        _steps = per_epoch // bs
         for ep in range(start_ep, args.epochs):
             model.train()
-            for _ in range(per_epoch // bs):
-                gids = rng.choice(train_pool_games, bs, replace=False)
+            _bf_next = None
+            for _step in range(_steps):
+                gids = (np.asarray(train_pool_games) if BCEFULL
+                        else rng.choice(train_pool_games, bs, replace=False))
                 tgt = pos_of_g_t[gids].to(dev)
                 if AS_M:
                     # scheduled worker computes THIS step at the weights it
@@ -1091,10 +1217,22 @@ def main():
                         Zs = [model(Sv, mv) for (Sv, mv) in vraw]
                         Zs.append(encode_doc_rows(model, dparts))
                     else:
-                        Zs = [model(*sample_views(gids, W, rng))
-                              for _ in range(N_REV)]
-                        for _ in range(N_DOC):
-                            Zs.append(assemble_doc_view(model, gids, W, rng, bs))
+                        _rws = VIEW_WS if args.view_ws else [W] * N_REV
+                        _wdoc = args.doc_fallback_w or W
+                        if BCEFULL:
+                            _rev, _doc = (_bf_next.result() if _bf_next is not None
+                                          else bf_draw(_rws, _wdoc))
+                            _bf_next = (_BF_POOL.submit(bf_draw, _rws, _wdoc)
+                                        if _step + 1 < _steps else None)
+                            Zs = [torch.cat([model(*gpu_views(r, raw)) for r, raw in _rev[v]])
+                                  for v in range(N_REV)]
+                            Zs.append(torch.cat([
+                                assemble_doc_view(model, c, _wdoc, rng, len(c), fallback=bf_fallback(d))
+                                for c, d in zip(_BF_CH, _doc)]))
+                        else:
+                            Zs = [model(*sample_views(gids, Wv, rng)) for Wv in _rws]
+                            for _ in range(N_DOC):
+                                Zs.append(assemble_doc_view(model, gids, _wdoc, rng, bs))
                     if MQ_LEN:
                         # current keys enter the ring head and ARE this
                         # step's positives; the rest of the ring = negatives;
@@ -1124,15 +1262,16 @@ def main():
                         # masked (false negatives). Ported verbatim from the
                         # fs worker.
                         keys = torch.cat([Z.float() for Z in Zs])
-                        _ar = torch.arange(bs, device=dev)
+                        _nb = Zs[0].shape[0]           # bs; the whole train pool for bcefull
+                        _ar = torch.arange(_nb, device=dev)
                         loss = 0.0
                         for v in range(NV):
                             lg = Zs[v].float() @ keys.T * _invt()
                             for u in range(NV):
                                 if u != (v + 1) % NV:
-                                    lg[_ar, u * bs + _ar] = -1e4
+                                    lg[_ar, u * _nb + _ar] = -1e4
                             loss = loss + F.cross_entropy(
-                                lg, ((v + 1) % NV) * bs + _ar)
+                                lg, ((v + 1) % NV) * _nb + _ar)
                     elif AU:
                         # I2CE with CE replaced by Wang&Isola align+uniformity
                         # on the anchor field (view-view I stays, IW block).
@@ -1306,12 +1445,17 @@ def main():
                             _pk.data.mul_(MQ_M).add_(_pq.data, alpha=1 - MQ_M)
                 if args.measure_vram:
                     mv_steps += 1
-                    if mv_steps >= 3:
+                    if mv_steps == 1:
+                        torch.cuda.synchronize()
+                        _mv_t1 = time.time()
+                    if mv_steps >= int(os.environ.get("MEASURE_STEPS", "3")):
                         torch.cuda.synchronize()
                         peak = int(torch.cuda.max_memory_allocated())
                         Path(args.measure_vram).write_text(str(peak))
                         print(f"[measure-vram] cap={args.anchor_cap} "
-                              f"peak={peak / 2**30:.2f}GiB", flush=True)
+                              f"peak={peak / 2**30:.2f}GiB "
+                              f"step={(time.time() - _mv_t1) / max(mv_steps - 1, 1):.3f}s "
+                              f"(mean of steps 2-{mv_steps})", flush=True)
                         raise SystemExit(0)
             if (ep + 1) % args.ckpt_every == 0:
                 sd = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}

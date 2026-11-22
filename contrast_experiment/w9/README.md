@@ -39,6 +39,15 @@ recipe itself. Nothing in a suffix denotes a fine-tuning stage.
 published settings: an arm of the five-fold worker only, which takes
 `--anchor-cap pool` and stores the teacher's tower as the checkpoint's
 `model`.
+`wcle_bcefull_cetf` is the SimCLR-style objective with the whole training
+set as its batch (Table A6, continued): at every step four fresh views of
+each training-set game, all encoded with gradient; it takes `--full-pool`.
+A run's name also carries the view flags of the five-fold worker:
+`_w<N>` for `--view-w N` (every review view drawn until it holds at least
+N sentences; the recipe's 16 adds nothing), `_ws<F1>-<F2>-<F3>` for
+`--view-ws F1,F2,F3` (one floor per review view) and `_df<N>` for
+`--doc-fallback-w N`, the floor of the review view that stands in for a
+missing document view, when it differs from `--view-w`.
 
 ## Data prerequisites
 
