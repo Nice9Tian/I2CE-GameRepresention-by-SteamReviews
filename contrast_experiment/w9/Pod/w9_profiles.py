@@ -64,6 +64,8 @@ BODY = {FIG7, FIG8, FIG9, TAB2, TAB3, SEC61, SEC62, SEC32}
 A1 = "Table A1"; A2 = "Table A2"; A3 = "Table A3"; A4 = "Table A4"
 A5 = "Table A5"
 A6 = "Table A6"            # the size of a review view (Appendix C)
+A6C = "Table A6, continued"   # the SimCLR-style arm's view size and batch
+                          # (Appendix C, online only; no number of its own)
 A7 = "Table A7"; A8 = "Table A8"; A9 = "Table A9"; A10 = "Table A10"
 A11 = "Table A11"; A12 = "Table A12"; A13 = "Table A13"; A14 = "Table A14"
 A15 = "Table A15"; A16 = "Table A16"; A17 = "Table A17"
@@ -145,10 +147,12 @@ CELLS = [
                "wcle_epd_v20i10c20_cetf",  # VICReg, expander 20/10/20
                "wcle_mq3072i2ce_icetf"],    # EMA teacher + 3,072-key bank
          caps=[POOL], folds=5, epochs=2000,
-         cites=[FIG7, FIG8, TAB2, SEC32, A1, A13, A16, A17, A18, FIGA2,
+         cites=[FIG7, FIG8, TAB2, SEC32, A1, A6C, A13, A16, A17, A18, FIGA2,
                 S2, S3, S4],
          was_in="w9_experiment_5fold_2.ipynb",
-         note="the other objective families of Figure 7"),
+         note="the other objective families of Figure 7. Its SimCLR-style "
+              "towers are also the in-batch row at the recipe's floor in "
+              "Table A6, continued, read there on folds 0 to 2"),
 
     Cell("body.i_simclr",
          arms=["wcle_i2bce_icetf"],         # SimCLR-style + the invariance term
@@ -168,14 +172,15 @@ CELLS = [
     Cell("body.pair.512",
          arms=["wcle_i2ce_icetf", "wcle_ce_cetf"],
          caps=[512], folds=5, epochs=2000,
-         cites=[TAB2, A2, A3, A4, A5, A6, A7, A11, A15, A19, S1],
+         cites=[TAB2, A2, A3, A4, A5, A6, A6C, A7, A11, A15, A19, S1],
          was_in="w9_final_experiment.ipynb",
          note="the pair on the 512-sentence packs: the partners of CE + "
               "anchor-in-I in the paired tests of Table 2, the 512 rows of "
               "Tables A2 (I-CE) and A15, the recipe row of Table A3 at 512, "
               "the raw-document rows of Table A19, the reference row of "
               "Table S1 and, on folds 0 to 2, the recipe rows of Tables A4 "
-              "to A7 and the lambda = 0 row of Table A4"),
+              "to A7, the lambda = 0 row of Table A4 and the I-CE and CE "
+              "rows of Table A6, continued"),
 
     Cell("body.anchor_in_i.5fold",
          arms=["wcle_ai2ce_icetf"],
@@ -400,7 +405,9 @@ CELLS = [
     # the lambda = 0 row of Table A4 are the I-CE and CE towers of body.pair.512
     # on the same three folds, NOT more training runs.
     # The view size is a worker flag, not an arm, so each floor is a cell of its
-    # own, as the LLM-rewritten documents are (apx.docview.llm).
+    # own, as the LLM-rewritten documents are (apx.docview.llm). So are the
+    # SimCLR-style floors of Table A6, continued; its whole-set batch is an arm
+    # of its own (wcle_bcefull_cetf).
     Cell("apx.lambda",
          arms=["wcle_ice_icetf",            # lambda = 1
                "wcle_i3ce_icetf",           # lambda = 3
@@ -452,6 +459,93 @@ CELLS = [
               "where the recipe stops at 16 (worker flag --view-w 64; runs "
               "named ..._fold<k>_w64_d512), folds 0 to 2",
          extra={"view_w": 64}),
+
+    Cell("apx.viewsize.simclr.32",
+         arms=["wcle_bce_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the SimCLR-style tower with review views drawn until they hold "
+              "at least 32 sentences (worker flag --view-w 32; runs named "
+              "..._fold<k>_w32_d512), folds 0 to 2",
+         extra={"view_w": 32}),
+
+    Cell("apx.viewsize.simclr.64",
+         arms=["wcle_bce_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the SimCLR-style tower with review views of at least 64 "
+              "sentences (--view-w 64; ..._fold<k>_w64_d512), folds 0 to 2",
+         extra={"view_w": 64}),
+
+    Cell("apx.viewsize.simclr.128",
+         arms=["wcle_bce_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the SimCLR-style tower with review views of at least 128 "
+              "sentences (--view-w 128; ..._fold<k>_w128_d512), folds 0 "
+              "to 2",
+         extra={"view_w": 128}),
+
+    Cell("apx.viewsize.simclr.mixed",
+         arms=["wcle_bce_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the SimCLR-style tower with " + "one review view drawn to at least 16 sentences, one to 32 and one "
+              "to 64, the document view as in the recipe and, for a game "
+              "without a document, a review view drawn to at least 128 in "
+              "its place (worker flags --view-ws 16,32,64 --doc-fallback-w "
+              "128; runs named ..._fold<k>_ws16-32-64_df128_d512), folds 0 to 2",
+         extra={"view_ws": "16,32,64", "doc_fallback_w": 128}),
+
+    Cell("apx.viewsize.mixed",
+         arms=["wcle_i2ce_icetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="I-CE with " + "one review view drawn to at least 16 sentences, one to 32 and one "
+              "to 64, the document view as in the recipe and, for a game "
+              "without a document, a review view drawn to at least 128 in "
+              "its place (worker flags --view-ws 16,32,64 --doc-fallback-w "
+              "128; runs named ..._fold<k>_ws16-32-64_df128_d512), folds 0 to 2",
+         extra={"view_ws": "16,32,64", "doc_fallback_w": 128}),
+
+    Cell("apx.viewsize.wholeset",
+         arms=["wcle_bcefull_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the SimCLR-style objective with the whole training set as its "
+              "batch: at every step four fresh views of each of the fold's "
+              "1,694 or 1,695 training-set games, all encoded with "
+              "gradient, 16 steps an epoch as the in-batch arm takes; "
+              "review views of at least 16 sentences (runs named "
+              "..._fold<k>_d512), folds 0 to 2",
+         extra={}),
+
+    Cell("apx.viewsize.wholeset.32",
+         arms=["wcle_bcefull_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the whole-set arm with review views of at least 32 sentences "
+              "(--view-w 32; ..._fold<k>_w32_d512), folds 0 to 2",
+         extra={"view_w": 32}),
+
+    Cell("apx.viewsize.wholeset.mixed",
+         arms=["wcle_bcefull_cetf"],
+         caps=[512], folds=3, epochs=2000,
+         cites=[A6C],
+         was_in="w9_sweeps_3fold.ipynb",
+         note="the whole-set arm with " + "one review view drawn to at least 16 sentences, one to 32 and one "
+              "to 64, the document view as in the recipe and, for a game "
+              "without a document, a review view drawn to at least 128 in "
+              "its place (worker flags --view-ws 16,32,64 --doc-fallback-w "
+              "128; runs named ..._fold<k>_ws16-32-64_df128_d512), folds 0 to 2",
+         extra={"view_ws": "16,32,64", "doc_fallback_w": 128}),
 
     Cell("apx.queries",
          arms=["wcle_slot1i2cemean_icetf", "wcle_slot2i2cemean_icetf",

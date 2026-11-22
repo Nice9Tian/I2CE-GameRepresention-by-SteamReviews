@@ -21,7 +21,7 @@ Published with the code, on Hugging Face:
 - the cached tensors every experiment reads,
   [`chironYu/latenarray-i2ce-data`](https://huggingface.co/datasets/chironYu/latenarray-i2ce-data)
   (Section 4);
-- the trained towers behind the paper's numbers, 275 checkpoints,
+- the trained towers behind the paper's numbers, 299 checkpoints,
   [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
   with the scripts that score them as the paper does, five folds and
   fixed split
@@ -315,7 +315,7 @@ profiles select from it:
 
 | Profile | Scope | Cells | Towers | Anchor budgets |
 |---|---|---|---|---|
-| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 27 | 207 | 512 – 2,048 |
+| `fullTest` | every experiment the paper, the appendix **or** the supplement reports | 35 | 231 | 512 – 2,048 |
 | `paperTest` | every experiment the paper body reports, at its own budget | 10 | 77 | 512, 2,048 |
 | `litePaperTest` | the same as `paperTest`, every budget clamped to 1,024 | 10 | 77 | 512, 1,024 |
 
@@ -339,7 +339,7 @@ within 0.02 of the full configuration on every reading (Section 4.2,
 Table A2) and which fits a 24 GB desktop GPU.
 
 **`paperTest` and `litePaperTest` train the same number of towers.** They
-differ only in what those towers cost. `fullTest` is about two and a half
+differ only in what those towers cost. `fullTest` is about three
 times the count; its largest cell is the temperature sweep (30 towers). The body's
 cells include the five-fold towers trained at 512 sentences that Table 2
 tests (CE + anchor-in-I against I-CE and CE), beside the main `pool` block,

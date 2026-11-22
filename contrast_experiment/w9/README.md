@@ -138,7 +138,7 @@ names the run without the tag.
 | `w9_cv.ipynb` | 5-fold base pair |
 | `w9_experiment_5fold_2.ipynb` | slot8 / MoCo-queue / BYOL / VICReg-epd (batch 192) / SimCLR-style / I + SimCLR × 5 folds @pool |
 | `w9_i2ce_t.ipynb` | temperature sweep × 5 folds × {512, 2048} |
-| `w9_sweeps_3fold.ipynb` | invariance weight, view count, view size and latent queries × folds 0 to 2 @512 (Tables A4 to A7) |
+| `w9_sweeps_3fold.ipynb` | invariance weight, view count, view size and latent queries × folds 0 to 2 @512 (Tables A4 to A7); the SimCLR-style arm's view size and batch (Table A6, continued) |
 | `w9_anchor_in_i_5fold.ipynb` | CE + anchor-in-I × 5 folds @512 (Table 2, Table A15) |
 | `w9_docview_5fold.ipynb` | document view absent / LLM-rewritten × 5 folds @512 (Table A19) |
 | `w9_vfa.ipynb` | views-first anchors × 5 folds @512 (Table S1) |
@@ -286,9 +286,9 @@ game, so any tower can be scored on the same ten packs.
 
 The checkpoints are on Hugging Face at
 [`chironYu/latenarray-i2ce-checkpoints`](https://huggingface.co/chironYu/latenarray-i2ce-checkpoints),
-275 files and about 593 MiB in all, every one named by a file of `eval/`:
+299 files and about 626 MiB in all, every one named by a file of `eval/`:
 
-- the 166 five-fold runs of `rank_ckpt_plan.json` and the five folds of
+- the 190 five-fold runs of `rank_ckpt_plan.json` and the five folds of
   I + SimCLR in `i2bce_sel_pool.json`. These are the five-fold towers the
   paper reads, the DINO-style control of Table A1 (fold 0 only) among
   them, and `cells` takes them all;
