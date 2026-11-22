@@ -44,7 +44,8 @@ tag deficit read as a register crossing (K), the neighborhood figures
 and the four-encoder map (L), the displacement and margin table (M), and
 the document-view study (N). Tables A1 to A7, in Appendices A and C, are
 the ones the paper also prints after its references, together with
-Appendix B. Supplements A to C (Tables S1 to S4) carry the
+Appendix B; the continuation of Table A6, the SimCLR-style arm's view
+size and batch, is online only. Supplements A to C (Tables S1 to S4) carry the
 teacher-exclusion result, the two anchor-reading regimes and the
 training-set versus test-set query comparison.
 
